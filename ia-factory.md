@@ -41,15 +41,15 @@ Une chaîne SDLC natif IA outillée dans `ai-sdlc`, où chaque étape produit un
 
 | Lot | Fichier | Validation | Dépend de |
 |---|---|---|---|
-| 0. Mesure | [00-mesure/intent.md](docs/00-mesure/intent.md) | — | — |
-| 1. Socle | [01-socle/intent.md](docs/01-socle/intent.md) | Tech lead | — |
-| 2. Intent | [02-intent/intent.md](docs/02-intent/intent.md) | PO | 1 |
-| 3. Spec | [03-spec/intent.md](docs/03-spec/intent.md) | Tech lead, PO en copie | 2 |
-| 4. Plan | [04-plan/intent.md](docs/04-plan/intent.md) | Tech lead | 3 |
-| 5. Code + tests | [05-code-tests/intent.md](docs/05-code-tests/intent.md) | CI | 1, 4 |
-| 6. Revue PR | [06-revue-pr/intent.md](docs/06-revue-pr/intent.md) | Humain | 5 |
-| 7. Recette | [07-recette/intent.md](docs/07-recette/intent.md) | Recette | 3 |
-| 8. Monitoring | [08-monitoring/intent.md](docs/08-monitoring/intent.md) | Tech lead | 0 |
-| 9. Auto-apprentissage | [09-auto-apprentissage/intent.md](docs/09-auto-apprentissage/intent.md) | Humain (PR) | 8 |
+| 0. Mesure | [00-mesure/intent.md](docs/open/00-mesure/intent.md) | — | — |
+| 1. Socle | [01-socle/intent.md](docs/open/01-socle/intent.md) | Tech lead | — |
+| 2. Intent | [02-intent/intent.md](docs/open/02-intent/intent.md) | PO | 1 |
+| 3. Spec | [03-spec/intent.md](docs/open/03-spec/intent.md) | Tech lead, PO en copie | 2 |
+| 4. Plan | [04-plan/intent.md](docs/open/04-plan/intent.md) | Tech lead | 3 |
+| 5. Code + tests | [05-code-tests/intent.md](docs/open/05-code-tests/intent.md) | CI | 1, 4 |
+| 6. Revue PR | [06-revue-pr/intent.md](docs/open/06-revue-pr/intent.md) | Humain | 5 |
+| 7. Recette | [07-recette/intent.md](docs/open/07-recette/intent.md) | Recette | 3 |
+| 8. Monitoring | [08-monitoring/intent.md](docs/open/08-monitoring/intent.md) | Tech lead | 0 |
+| 9. Auto-apprentissage | [09-auto-apprentissage/intent.md](docs/open/09-auto-apprentissage/intent.md) | Humain (PR) | 8 |
 
 Les lots 0 et 1 démarrent en parallèle. Un premier passage minimal sur les lots 2 à 7 fait traverser toute la chaîne à une PR « activation en masse », puis chaque étape est enrichie.
