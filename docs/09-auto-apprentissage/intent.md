@@ -1,6 +1,6 @@
 # Sous-intent — Lot 9 : Auto-apprentissage
 
-- **Parent :** [ia-factory.md](ia-factory.md)
+- **Parent :** [ia-factory.md](../../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Validation :** Humain (approbation de la PR)
 - **Dépend de :** lot 8

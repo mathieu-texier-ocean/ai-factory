@@ -1,6 +1,6 @@
 # Sous-intent — Lot 5 : Étape Code + tests
 
-- **Parent :** [ia-factory.md](ia-factory.md)
+- **Parent :** [ia-factory.md](../../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Validation :** CI
 - **Dépend de :** lots 1 et 4

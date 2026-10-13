@@ -1,6 +1,6 @@
 # Sous-intent — Lot 1 : Socle agent
 
-- **Parent :** [ia-factory.md](ia-factory.md)
+- **Parent :** [ia-factory.md](../../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Validation :** Tech lead
 - **Dépend de :** —

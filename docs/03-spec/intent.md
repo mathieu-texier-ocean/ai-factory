@@ -1,6 +1,6 @@
 # Sous-intent — Lot 3 : Étape Spec
 
-- **Parent :** [ia-factory.md](ia-factory.md)
+- **Parent :** [ia-factory.md](../../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Validation :** Tech lead, PO en copie
 - **Dépend de :** lot 2
