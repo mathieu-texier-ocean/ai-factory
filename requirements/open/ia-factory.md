@@ -3,7 +3,7 @@
 - **Auteur :** Khaled KORIFI
 - **Statut :** draft
 - **Date :** 2026-10-13
-- **Dépôt :** `ai-sdlc` (outillage IA Factory)
+- **Dépôt :** `ai-factory` (outillage IA Factory)
 - **Projet pilote :** « activation en masse »
 
 ## Problème
@@ -14,7 +14,7 @@ Le savoir de l'équipe (conventions, pièges récurrents, règles de sécurité)
 
 ## Résultat attendu
 
-Une chaîne SDLC natif IA outillée dans `ai-sdlc`, où chaque étape produit un artefact versionné que l'étape suivante lit :
+Une chaîne SDLC natif IA outillée dans `ai-factory`, où chaque étape produit un artefact versionné que l'étape suivante lit :
 
 `intent.md` → `spec.md` → `plan.md` → diff + tests → PR revue → production
 
@@ -41,15 +41,15 @@ Une chaîne SDLC natif IA outillée dans `ai-sdlc`, où chaque étape produit un
 
 | Lot | Fichier | Validation | Dépend de |
 |---|---|---|---|
-| 0. Mesure | [00-mesure/intent.md](docs/open/00-mesure/intent.md) | — | — |
-| 1. Socle | [01-socle/intent.md](docs/open/01-socle/intent.md) | Tech lead | — |
-| 2. Intent | [02-intent/intent.md](docs/open/02-intent/intent.md) | PO | 1 |
-| 3. Spec | [03-spec/intent.md](docs/open/03-spec/intent.md) | Tech lead, PO en copie | 2 |
-| 4. Plan | [04-plan/intent.md](docs/open/04-plan/intent.md) | Tech lead | 3 |
-| 5. Code + tests | [05-code-tests/intent.md](docs/open/05-code-tests/intent.md) | CI | 1, 4 |
-| 6. Revue PR | [06-revue-pr/intent.md](docs/open/06-revue-pr/intent.md) | Humain | 5 |
-| 7. Recette | [07-recette/intent.md](docs/open/07-recette/intent.md) | Recette | 3 |
-| 8. Monitoring | [08-monitoring/intent.md](docs/open/08-monitoring/intent.md) | Tech lead | 0 |
-| 9. Auto-apprentissage | [09-auto-apprentissage/intent.md](docs/open/09-auto-apprentissage/intent.md) | Humain (PR) | 8 |
+| 0. Mesure | [00-mesure/intent.md](00-mesure/intent.md) | — | — |
+| 1. Socle | [01-socle/intent.md](01-socle/intent.md) | Tech lead | — |
+| 2. Intent | [02-intent/intent.md](02-intent/intent.md) | PO | — |
+| 3. Spec | [03-spec/intent.md](03-spec/intent.md) | Tech lead, PO en copie | 2 |
+| 4. Plan | [04-plan/intent.md](04-plan/intent.md) | Tech lead | 3 |
+| 5. Code + tests | [05-code-tests/intent.md](05-code-tests/intent.md) | CI | 1, 4 |
+| 6. Revue PR | [06-revue-pr/intent.md](06-revue-pr/intent.md) | Humain | 5 |
+| 7. Recette | [07-recette/intent.md](07-recette/intent.md) | Recette | 3 |
+| 8. Monitoring | [08-monitoring/intent.md](08-monitoring/intent.md) | Tech lead | 0 |
+| 9. Auto-apprentissage | [09-auto-apprentissage/intent.md](09-auto-apprentissage/intent.md) | Humain (PR) | 8 |
 
-Les lots 0 et 1 démarrent en parallèle. Un premier passage minimal sur les lots 2 à 7 fait traverser toute la chaîne à une PR « activation en masse », puis chaque étape est enrichie.
+Les lots 0, 1 et 2 démarrent en parallèle. Un premier passage minimal sur les lots 2 à 7 fait traverser toute la chaîne à une PR « activation en masse », puis chaque étape est enrichie.

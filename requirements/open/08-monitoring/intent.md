@@ -1,6 +1,6 @@
 # Sous-intent — Lot 8 : Monitoring
 
-- **Parent :** [ia-factory.md](../../../ia-factory.md)
+- **Parent :** [ia-factory.md](../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Validation :** Tech lead
 - **Dépend de :** lot 0

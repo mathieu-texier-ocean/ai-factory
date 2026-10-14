@@ -1,6 +1,6 @@
 # Sous-intent — Lot 7 : Étape Recette
 
-- **Parent :** [ia-factory.md](../../../ia-factory.md)
+- **Parent :** [ia-factory.md](../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Validation :** Recette
 - **Dépend de :** lot 3
