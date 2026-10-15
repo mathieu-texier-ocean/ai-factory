@@ -35,8 +35,8 @@ Chaque section commence par un titre de niveau 2 (`## <Nom>`) reprenant exacteme
 - **C3.** Remplit le template et écrit `intent.md` dans le dossier du lot indiqué.
 - **C4.** N'écrase jamais un `intent.md` existant : il le signale et s'arrête.
 - **C5.** Laisse `Statut : draft`. Ne marque jamais l'intent comme validé.
-- **C20.** Demande la priorité au PO (niveau, justification, échéance). Si elle n'est pas fournie, écrit « à définir par le PO » et la liste dans « Questions ouvertes ». Ne déduit ni n'invente jamais un niveau.
 - **C6.** À la fin, propose de lancer `controle-taille-intent`.
+- **C20.** Demande la priorité au PO (niveau, justification, échéance). Si elle n'est pas fournie, écrit « à définir par le PO » et la liste dans « Questions ouvertes ». Ne déduit ni n'invente jamais un niveau.
 
 ### Skill `controle-taille-intent`
 

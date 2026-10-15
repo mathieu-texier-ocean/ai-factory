@@ -1,7 +1,7 @@
 # Sous-intent — Lot 2 : Étape Intent
 
 - **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Validation :** PO
 - **Dépend de :** —
 
@@ -19,9 +19,20 @@ Les besoins arrivent sous des formes hétérogènes. L'étape spec n'a pas d'ent
 
 Un besoin mal cadré en entrée génère des reprises en spec, puis en revue, et allonge le délai PR → production (≈ 10,7 jours). Un intent structuré, versionné et validé réduit ces allers-retours en amont et sert de point de départ commun à toute la chaîne.
 
+## Priorité
+
+- **Niveau :** à définir par le PO
+- **Justification :**
+- **Échéance :** aucune
+
 ## Résultat attendu
 
 Chaque évolution démarre par un `intent.md` versionné dans Git, rédigé avec l'aide de l'agent et validé par le PO.
+
+## Critère de succès
+
+- Les quatre critères d'acceptation ci-dessous sont atteints.
+- Le lot contribue à l'indicateur de l'intent parent : délai PR → production divisé par deux sur le pilote (≈ 5 jours, référence 10,7 jours).
 
 ## Livrables
 
@@ -72,6 +83,18 @@ Garde-fou : chaque sous-intent doit apporter seul une valeur vérifiable. Un él
 
 **Jeu de données :** un besoin brut quelconque (cas nominal) et un intent volontairement trop gros (cas de découpage).
 
+## Contraintes
+
+- Un lot = un sous-intent = une PR.
+- Source de vérité des intents : Git.
+- Aucune donnée sensible ni secret dans le contexte de l'agent.
+- Aucune brique n'a le droit de valider un intent : la validation reste celle du PO.
+
 ## Hors périmètre
 
 - Génération de la spec (lot 3).
+
+## Questions ouvertes
+
+- Priorité du lot : niveau, justification et échéance à définir par le PO.
+- Les intents des autres lots n'ont pas le format du template : à migrer maintenant, au fil de l'eau, ou règle assouplie pour l'existant ?
