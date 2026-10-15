@@ -1,6 +1,6 @@
 # Sous-intent — Lot 2 : Étape Intent
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Validation :** PO
 - **Dépend de :** —
