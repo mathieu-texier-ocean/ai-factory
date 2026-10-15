@@ -1,7 +1,7 @@
 # Spec — Lot 3 : Étape Spec
 
 - **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead, PO en copie
 
 ## Périmètre
