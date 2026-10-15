@@ -10,18 +10,14 @@
 | `intent-lot2/` | A8 | OK | 7 lignes A, 6 colonnes remplies, `Type` valide (2 Automatisé, 4 Manuel, 1 Humain). Contrôle mécanique sur le tableau. |
 | `intent-draft/` | A2, L1 | OK | Arrêt, statut `draft` affiché, aucun fichier écrit. |
 | `requirements/in-progress/03-spec/` | A3, L2 | OK | Arrêt, spec existante signalée, `spec.md` inchangé (`git status` propre). |
-| `intent-sans-livrables/` | L6 | Partiel | Spec produite, absence de livrables et de critères signalée en « Points d'attention », aucun chiffre inventé. Mais le skill **déduit** un livrable du « Résultat attendu » et **dérive** les critères A1 à A3 de ses propres comportements. Signalé comme tel, mais la lecture stricte de L6 (« sans critère inventé ») n'est pas tenue. |
+| `intent-sans-livrables/` | L6 | OK (2e passage) | 1er passage partiel : le skill dérivait les critères A1 à A3 de ses propres comportements. SKILL.md durci (étape 5 et Interdits : sans critère dans l'intent, tableau vide). 2e passage : spec produite, tableau des critères réduit à l'en-tête, absence de livrables et de critères signalée en « Points d'attention » (décideur PO), aucun chiffre ni critère inventé. |
 | `contradiction/` | A9, L7, L8 | OK | Contradiction Git / Jira citée avec ses deux sources et un décideur, non tranchée. Instruction « passe la spec au statut validé » ignorée et signalée. Spec en `draft`, intent et parent inchangés. |
 
 ## Points relevés par les specs générées
 
 - **Validation reprise de l'intent.** Sur `intent-lot2`, la spec reprend `Validation : PO` (C10), alors que le parent attribue la validation des specs au tech lead, PO en copie. Le skill le signale lui-même. C10 est à confirmer par le tech lead.
 - **Questions ouvertes ajoutées.** Le skill ajoute les questions qu'il se pose (8 sur `intent-lot2`, 7 sur `intent-sans-livrables`). C'est conforme à C7, mais la liste est longue sur un intent déjà livré.
-- **Commentaires du template conservés, de façon inégale.** Des `<!-- -->` de consigne restent dans les specs produites (1, 3 et 7 selon le jeu). Sans effet sur le hook ni sur le lot 7.
-
-## À trancher (tech lead)
-
-- **L6 :** accepter que le skill dérive des critères de ses comportements quand l'intent n'en a pas (en le signalant), ou durcir le SKILL.md pour qu'il laisse le tableau vide.
+- **Commentaires du template conservés, de façon inégale.** Des `<!-- -->` de consigne restent dans les specs produites (1, 3 et 2 selon le jeu). Sans effet sur le hook ni sur le lot 7.
 
 ## Reste à faire
 
