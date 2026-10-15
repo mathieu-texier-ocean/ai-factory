@@ -23,7 +23,7 @@ Les critères d'acceptation de la spec sont transformés en tests automatisés e
 
 ## Critère d'acceptation
 
-- [ ] Les critères d'acceptation de la spec « activation en masse » sont couverts par des tests Gherkin et/ou E2E.
+- [ ] Les critères d'acceptation de la spec sont couverts par des tests Gherkin et/ou E2E.
 - [ ] Le plan de test humain est réduit, validé par la recette.
 
 ## Hors périmètre

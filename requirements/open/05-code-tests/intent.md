@@ -25,7 +25,7 @@ L'agent implémente chaque étape du plan en appliquant les standards de l'équi
 
 ## Critère d'acceptation
 
-- [ ] Une étape du plan « activation en masse » est implémentée et passe la CI au premier passage.
+- [ ] Une étape d'un plan est implémentée et passe la CI au premier passage.
 - [ ] Une PR avec des TU rouges ne peut pas être ouverte.
 
 ## Hors périmètre

@@ -1,0 +1,1 @@
+Les chauffeurs oublient de clôturer leur tournée dans l'application, ce qui fausse les rapports de fin de journée des exploitants. Je voudrais un rappel automatique avant la fin de service.

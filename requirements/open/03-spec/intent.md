@@ -23,7 +23,7 @@ Un `spec.md` généré à partir d'un intent validé, décrivant comportements, 
 
 ## Critère d'acceptation
 
-- [ ] La spec « activation en masse » est générée depuis l'intent du lot 2.
+- [ ] Une spec est générée depuis l'intent du lot 2.
 - [ ] Les critères d'acceptation sont exploitables par le lot 7 (recette).
 - [ ] Validée par le tech lead, PO en copie.
 

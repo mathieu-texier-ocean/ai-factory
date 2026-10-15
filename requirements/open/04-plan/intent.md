@@ -23,7 +23,7 @@ Un `plan.md` qui découpe la spec en étapes ordonnées, chacune livrable en une
 
 ## Critère d'acceptation
 
-- [ ] Le plan « activation en masse » est généré depuis la spec du lot 3.
+- [ ] Un plan est généré depuis la spec du lot 3.
 - [ ] Chaque étape correspond à une PR.
 - [ ] Validé par le tech lead.
 

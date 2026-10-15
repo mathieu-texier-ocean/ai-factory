@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Vérifie la présence des sections obligatoires dans tout intent.md stagé.
+# Source de vérité : les titres "## " de templates/intent.md (hors "Questions ouvertes").
+# Présence uniquement, pas la qualité du contenu.
+set -u
+
+root=$(git rev-parse --show-toplevel)
+template="$root/templates/intent.md"
+optional="Questions ouvertes"
+
+if [ ! -f "$template" ]; then
+  echo "pre-commit : templates/intent.md introuvable, vérification impossible." >&2
+  exit 1
+fi
+
+required=()
+while IFS= read -r line; do
+  [ "$line" = "$optional" ] || required+=("$line")
+done < <(sed -n 's/^## \(.*[^[:space:]]\)[[:space:]]*$/\1/p' "$template")
+
+status=0
+while IFS= read -r path; do
+  [ "$(basename "$path")" = "intent.md" ] || continue
+  content=$(git show ":$path")
+  missing=()
+  for section in "${required[@]}"; do
+    printf '%s\n' "$content" | grep -qxF "## $section" || missing+=("$section")
+  done
+  if [ ${#missing[@]} -gt 0 ]; then
+    list=$(printf '%s, ' "${missing[@]}"); list=${list%, }
+    echo "$path : section(s) obligatoire(s) manquante(s) : $list" >&2
+    status=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACM)
+
+exit $status

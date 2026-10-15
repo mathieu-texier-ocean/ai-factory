@@ -4,7 +4,6 @@
 - **Statut :** draft
 - **Date :** 2026-10-13
 - **Dépôt :** `ai-factory` (outillage IA Factory)
-- **Projet pilote :** « activation en masse »
 
 ## Problème
 
@@ -52,4 +51,4 @@ Une chaîne SDLC natif IA outillée dans `ai-factory`, où chaque étape produit
 | 8. Monitoring | [08-monitoring/intent.md](08-monitoring/intent.md) | Tech lead | 0 |
 | 9. Auto-apprentissage | [09-auto-apprentissage/intent.md](09-auto-apprentissage/intent.md) | Humain (PR) | 8 |
 
-Les lots 0, 1 et 2 démarrent en parallèle. Un premier passage minimal sur les lots 2 à 7 fait traverser toute la chaîne à une PR « activation en masse », puis chaque étape est enrichie.
+Les lots 0, 1 et 2 démarrent en parallèle. Un premier passage minimal sur les lots 2 à 7 fait traverser toute la chaîne à une PR de test, puis chaque étape est enrichie.
