@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Vérifie la présence des sections obligatoires dans tout intent.md stagé.
-# Source de vérité : les titres "## " de templates/intent.md (hors "Questions ouvertes").
-# Présence uniquement, pas la qualité du contenu.
+# Deux contrôles :
+# 1. Tout intent.md stagé contient les sections obligatoires.
+#    Source de vérité : les titres "## " de templates/intent.md (hors "Questions ouvertes").
+#    Présence uniquement, pas la qualité du contenu.
+# 2. Tout spec.md créé a, dans HEAD, un intent.md validé dans le même dossier.
 set -u
 
 root=$(git rev-parse --show-toplevel)
@@ -32,5 +34,25 @@ while IFS= read -r path; do
     status=1
   fi
 done < <(git diff --cached --name-only --diff-filter=ACM)
+
+# Statut lu sur "**Statut :** <valeur>", ligne seule ou ligne de l'auteur. Seul "validé" exact passe.
+check_spec_intent() {
+  local path=$1 dir intent value
+  dir=$(dirname "$path")
+  if [ "$dir" = . ]; then intent=intent.md; else intent="$dir/intent.md"; fi
+  if ! value=$(git show "HEAD:$intent" 2>/dev/null); then
+    echo "$path : intent absent ($intent)" >&2
+    status=1; return
+  fi
+  value=$(printf '%s\n' "$value" | sed -n 's/.*\*\*Statut :\*\* *\([^ ·]*\).*/\1/p' | head -1)
+  if [ "$value" != "validé" ]; then
+    echo "$path : intent non validé (statut : $value)" >&2
+    status=1
+  fi
+}
+
+while IFS= read -r path; do
+  [ "$(basename "$path")" = "spec.md" ] && check_spec_intent "$path"
+done < <(git diff --cached --name-only --diff-filter=A)
 
 exit $status
