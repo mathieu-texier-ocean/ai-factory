@@ -1,6 +1,6 @@
 # Jeux de données — skill du lot 3 (recette manuelle)
 
-Chaque jeu est un dossier, parce que `generation-spec` écrit `spec.md` à côté de l'intent. Après chaque passage, supprimer les `spec.md` générés.
+Chaque jeu est un dossier, parce que `generation-spec` écrit `spec.md` à côté de l'intent. Après chaque passage, déplacer les `spec.md` générés dans `resultats/<jeu>.spec.md` pour que le jeu reste relançable.
 
 | Fichier | Scénario | Attendu |
 |---|---|---|
