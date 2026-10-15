@@ -14,17 +14,18 @@ Ce README couvre l'étape **Intent** (lot 2). Les étapes suivantes sont décrit
 |---|---|
 | `requirements/open/NN-lot/` | Un dossier par lot non démarré, avec son `intent.md` |
 | `requirements/in-progress/NN-lot/` | Le même dossier une fois le lot en cours (convention confirmée par le PO) |
+| `requirements/closed/NN-lot/` | Le même dossier une fois le lot terminé |
 | `templates/intent.md` | Modèle d'intent à remplir |
 | `.claude/skills/redaction-intent` | Rédige un intent depuis un besoin brut |
 | `.claude/skills/controle-taille-intent` | Dit si un intent doit être découpé |
 | `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire |
-| `tests/` | Tests automatisés du hook et jeux de données de la recette manuelle des skills |
+| `requirements/closed/02-intent/tests/` | Tests automatisés du hook et jeux de données de la recette manuelle des skills |
 
 ## Mise en route (une fois)
 
 1. Activer le hook : `git config core.hooksPath hooks`
 2. Vérifier que les skills sont suivis par git. Si votre `.gitignore` global ignore les dossiers cachés (règle `.*/`), les modifications de `.claude/skills/` demandent `git add -f`.
-3. Vérifier l'installation : `bash tests/hook-intent/run.sh` (tout doit être `PASS`).
+3. Vérifier l'installation : `bash requirements/closed/02-intent/tests/hook-intent/run.sh` (tout doit être `PASS`).
 
 ## Créer un intent en partant de zéro
 
@@ -54,5 +55,5 @@ Problème · Pour qui · Pourquoi · Priorité · Résultat attendu · Critère 
 
 ## Vérifier
 
-- `bash tests/hook-intent/run.sh` : sections obligatoires de l'intent.
-- `tests/skills-intent/` : jeux de données de la recette manuelle des skills, avec le résultat attendu de chaque scénario dans son README.
+- `bash requirements/closed/02-intent/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
+- `requirements/closed/02-intent/tests/skills-intent/` : jeux de données de la recette manuelle des skills, avec le résultat attendu de chaque scénario dans son README.

@@ -2,7 +2,7 @@
 # Teste hooks/pre-commit dans un dépôt git temporaire.
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
-repo_root=$(cd "$here/../.." && pwd)
+repo_root=$(git -C "$here" rev-parse --show-toplevel)
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
 cd "$tmp" && git init -q . && git config user.email t@t && git config user.name t
