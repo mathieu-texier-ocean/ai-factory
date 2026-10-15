@@ -1,7 +1,7 @@
 # Sous-intent — Lot 3 : Étape Spec
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Validation :** Tech lead, PO en copie
 - **Dépend de :** lot 2
 
@@ -15,11 +15,11 @@ Un `spec.md` généré à partir d'un intent validé, décrivant comportements, 
 
 ## Livrables
 
-| Type | Élément |
-|---|---|
+| Type     | Élément                                                                                  |
+| -------- | ---------------------------------------------------------------------------------------- |
 | Template | `templates/spec.md` (comportements, cas limites, contrats d'API, critères d'acceptation) |
-| Skill | Génération de spec : lit `intent.md`, produit `spec.md` |
-| Hook | Refus de créer une spec si l'intent n'est pas validé |
+| Skill    | Génération de spec : lit `intent.md`, produit `spec.md`                                  |
+| Hook     | Refus de créer une spec si l'intent n'est pas validé                                     |
 
 ## Critère d'acceptation
 
