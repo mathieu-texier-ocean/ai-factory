@@ -41,14 +41,19 @@ Une chaîne SDLC natif IA outillée dans `ai-factory`, où chaque étape produit
 | Lot | Fichier | Validation | Dépend de |
 |---|---|---|---|
 | 0. Mesure | [00-mesure/intent.md](00-mesure/intent.md) | — | — |
-| 1. Socle | [01-socle/intent.md](01-socle/intent.md) | Tech lead | — |
+| 1a. Socle : contexte d'équipe | [01a-contexte/intent.md](01a-contexte/intent.md) | Tech lead | — |
+| 1b. Socle : commande de vérification | [01b-verification/intent.md](01b-verification/intent.md) | Tech lead | — |
+| 1c. Socle : hook credential | [01c-hook-credential/intent.md](01c-hook-credential/intent.md) | Tech lead | — |
+| 1e. Socle : vérifier avant de déclarer fini | [01e-verifier-avant-fini/intent.md](01e-verifier-avant-fini/intent.md) | Tech lead | 1a, 1b |
+| 1f. Socle : activation des hooks git | [01f-activation-hooks/intent.md](01f-activation-hooks/intent.md) | Tech lead | — |
 | 2. Intent | [02-intent/intent.md](../closed/02-intent/intent.md) | PO | — |
 | 3. Spec | [../closed/03-spec/intent.md](../closed/03-spec/intent.md) | Tech lead, PO en copie | 2 |
 | 4. Plan | [04-plan/intent.md](04-plan/intent.md) | Tech lead | 3 |
-| 5. Code + tests | [05-code-tests/intent.md](05-code-tests/intent.md) | CI | 1, 4 |
+| 5. Code + tests | [05-code-tests/intent.md](05-code-tests/intent.md) | CI | 1a à 1c, 1e, 1f, 4, 13 |
 | 6. Revue PR | [06-revue-pr/intent.md](06-revue-pr/intent.md) | Humain | 5 |
 | 7. Recette | [07-recette/intent.md](07-recette/intent.md) | Recette | 3 |
 | 8. Monitoring | [08-monitoring/intent.md](08-monitoring/intent.md) | Tech lead | 0 |
 | 9. Auto-apprentissage | [09-auto-apprentissage/intent.md](09-auto-apprentissage/intent.md) | Humain (PR) | 8 |
+| 13. Contrôle credential en CI | [13-credential-ci/intent.md](13-credential-ci/intent.md) | Tech lead | 1c |
 
-Les lots 0, 1 et 2 démarrent en parallèle. Un premier passage minimal sur les lots 2 à 7 fait traverser toute la chaîne à une PR de test, puis chaque étape est enrichie.
+Les lots 0, 1 (1a à 1c, 1f) et 2 démarrent en parallèle ; 1e suit 1a et 1b, 13 suit 1c. Un premier passage minimal sur les lots 2 à 7 fait traverser toute la chaîne à une PR de test, puis chaque étape est enrichie.
