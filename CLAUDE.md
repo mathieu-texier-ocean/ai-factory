@@ -29,3 +29,11 @@ bash requirements/closed/03-spec/tests/hook-spec/run.sh       # refus d'une spec
 - Détail des étapes : `README.md`. Ce fichier résume, il ne recopie pas.
 
 ## Erreurs fréquentes
+
+Une erreur de l'agent constatée deux fois donne une ligne ici, ajoutée par PR et approuvée par le code owner de `CLAUDE.md` (tech lead, ou le dev qui a pris la main).
+
+- Statut écrit `Validé`, `valide` ou `validée` → seul `validé` exact est reconnu par le hook.
+- Intent validé et spec ajoutée dans le même commit → refusé : commiter l'intent validé d'abord.
+- Titre de section mal orthographié → compte comme manquant : recopier les titres du template.
+- Dossier de lot déplacé sans mettre à jour les liens (`Parent`, table de `ia-factory.md`) → liens cassés.
+- Fichiers de `.claude/` non suivis à cause d'un `.gitignore` global `.*/` → `git add -f`.
