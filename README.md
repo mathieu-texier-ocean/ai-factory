@@ -10,6 +10,7 @@ Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3).
 
 | Chemin | Rôle |
 |---|---|
+| `CLAUDE.md` | Contexte lu par l'agent à chaque session |
 | `requirements/open/NN-lot/` | Un dossier par lot non démarré, avec son `intent.md` |
 | `requirements/in-progress/NN-lot/` | Le même dossier une fois le lot en cours (convention confirmée par le PO) |
 | `requirements/closed/NN-lot/` | Le même dossier une fois le lot terminé |
