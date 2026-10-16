@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1g : Protection des tests pendant un correctif
 
 - **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** 1e (vérifier avant de déclarer fini), 1f (activation des hooks git)
