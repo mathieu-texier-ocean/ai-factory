@@ -4,7 +4,7 @@
 - **Auteur :** Mathieu TEXIER · **Statut :** draft
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
-- **Dépend de :** 1e (vérifier avant de déclarer fini)
+- **Dépend de :** 1e (vérifier avant de déclarer fini), 1f (activation des hooks git)
 - **Origine :** question ouverte du lot 1b, tranchée le 2026-10-16
 
 ## Problème
@@ -30,7 +30,7 @@ Un test modifié pour coller au code fautif fait passer un correctif au vert san
 
 ## Résultat attendu
 
-Sur une branche `bugfix/…` d'`ai-factory`, toute modification par l'agent d'un fichier sous un dossier `tests/` demande la confirmation de l'humain dans Claude Code avant de s'appliquer.
+Sur une branche `bugfix/…` d'`ai-factory`, toute modification ou suppression par l'agent d'un fichier existant sous un dossier `tests/` demande la confirmation de l'humain dans Claude Code avant de s'appliquer. L'ajout d'un nouveau test reste libre.
 
 ## Critère de succès
 
@@ -41,12 +41,13 @@ Sur une branche `bugfix/…` d'`ai-factory`, toute modification par l'agent d'un
 
 | Type | Élément |
 |---|---|
-| Hook Claude Code | Avant une édition de l'agent (`PreToolUse`) : sur une branche `bugfix/…`, demande la confirmation de l'humain pour toute écriture sous un dossier `tests/` |
+| Hook Claude Code | Avant une édition de l'agent (`PreToolUse`) : sur une branche `bugfix/…`, demande la confirmation de l'humain pour toute modification ou suppression d'un fichier existant sous un dossier `tests/` |
 
 ## Critère d'acceptation
 
-- [ ] Sur une branche `bugfix/…`, une modification par l'agent (Edit ou Write) d'un fichier sous `tests/` demande la confirmation de l'humain, avec la raison.
-- [ ] Sur une branche `bugfix/…`, une commande Bash de l'agent qui écrit sous `tests/` demande aussi la confirmation.
+- [ ] Sur une branche `bugfix/…`, une modification par l'agent (Edit ou Write) d'un fichier existant sous `tests/` demande la confirmation de l'humain, avec la raison.
+- [ ] Sur une branche `bugfix/…`, une commande Bash de l'agent qui modifie ou supprime un fichier existant sous `tests/` demande aussi la confirmation.
+- [ ] Sur une branche `bugfix/…`, la création d'un nouveau fichier sous `tests/` passe sans confirmation.
 - [ ] Sur une branche `bugfix/…`, une modification hors de `tests/` passe sans confirmation.
 - [ ] Sur une autre branche, une modification sous `tests/` passe sans confirmation.
 
@@ -56,7 +57,9 @@ Sur une branche `bugfix/…` d'`ai-factory`, toute modification par l'agent d'un
 - Le correctif est reconnu au nom de la branche courante : préfixe `bugfix/` uniquement.
 - Un « test » est tout fichier sous un dossier `tests/` (scripts et fixtures).
 - Le hook demande confirmation, il ne bloque pas : la décision reste à l'humain.
-- Sont interceptés les outils d'édition (Edit, Write) et les commandes Bash qui écrivent sous `tests/`.
+- Sont interceptés les outils d'édition (Edit, Write) et les commandes Bash qui écrivent sous `tests/`. Pour Bash, la détection se fait sur le texte de la commande, comme au lot 1f : un script qui écrit sous `tests/` lui échappe (risque accepté).
+- Seules la modification et la suppression d'un fichier existant demandent confirmation : créer un test de non-régression est attendu d'un correctif.
+- Le script du hook est dans `.claude/hooks/` et déclaré dans `.claude/settings.json`, comme ceux du lot 1f.
 - Aucune donnée sensible ni secret dans le contexte de l'agent.
 - Un lot = un sous-intent = une PR.
 
@@ -66,9 +69,8 @@ Sur une branche `bugfix/…` d'`ai-factory`, toute modification par l'agent d'un
 - Les modifications faites par l'humain, hors de Claude Code.
 - Les branches autres que `bugfix/…` (dont `fix/` et `hotfix/`).
 - Contrôle au commit ou en CI.
+- La création de nouveaux fichiers sous `tests/`.
+- Les écritures indirectes, par un script lancé par l'agent.
 
 ## Questions ouvertes
 
-- La création d'un nouveau fichier sous `tests/` (ajout d'un test de non-régression, cas courant d'un correctif) demande-t-elle aussi confirmation, ou seulement la modification et la suppression d'un fichier existant ?
-- Détection des écritures Bash : la reconnaissance par le texte de la commande (comme au lot 1f) laisse passer un script qui écrit sous `tests/`. Risque accepté ?
-- Emplacement et déclaration du hook : `.claude/hooks/` et `.claude/settings.json`, comme le lot 1f ? Si oui, 1g dépend aussi de 1f.
