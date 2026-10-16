@@ -1,7 +1,7 @@
 # Spec — Lot 1a : Contexte d'équipe
 
 - **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 
 ## Périmètre
