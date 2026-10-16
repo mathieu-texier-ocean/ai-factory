@@ -38,7 +38,7 @@ check "intent draft bloqué (A4, L1)"          intent-draft.md         lot/spec.
 check "intent absent bloqué (A5, L3)"         -                       lot/spec.md  block "lot/spec.md : intent absent (lot/intent.md)"
 check "intent validé ligne seule (A6)"        intent-valide.md        lot/spec.md  pass
 check "intent validé ligne auteur (A6, C18)"  intent-valide-auteur.md lot/spec.md  pass
-check "casse Validé bloquée (L5)"             intent-Valide.md        lot/spec.md  block "statut : Validé"
+check "casse Validé bloquée (L5)"             intent-statut-majuscule.md lot/spec.md  block "statut : Validé"
 check "autre fichier ignoré (A7, L9)"         intent-draft.md         lot/notes.md pass
 
 init intent-draft.md; fx intent-valide.md lot/intent.md; fx spec.md lot/spec.md; git add lot
