@@ -22,13 +22,13 @@ Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3). Les étapes
 | `.claude/skills/generation-spec` | Génère `spec.md` depuis un intent validé |
 | `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire, et un nouveau `spec.md` dont l'intent n'est pas validé |
 | `requirements/closed/02-intent/tests/` | Tests du lot 2 : hook (sections de l'intent) et jeux de données des skills d'intent |
-| `requirements/in-progress/03-spec/tests/` | Tests du lot 3 : hook (intent validé) et jeux de données de `generation-spec` |
+| `requirements/closed/03-spec/tests/` | Tests du lot 3 : hook (intent validé) et jeux de données de `generation-spec` |
 
 ## Mise en route (une fois)
 
 1. Activer le hook : `git config core.hooksPath hooks`
 2. Vérifier que les skills sont suivis par git. Si votre `.gitignore` global ignore les dossiers cachés (règle `.*/`), les modifications de `.claude/skills/` demandent `git add -f`.
-3. Vérifier l'installation : `bash requirements/closed/02-intent/tests/hook-intent/run.sh` et `bash requirements/in-progress/03-spec/tests/hook-spec/run.sh` (tout doit être `PASS`).
+3. Vérifier l'installation : `bash requirements/closed/02-intent/tests/hook-intent/run.sh` et `bash requirements/closed/03-spec/tests/hook-spec/run.sh` (tout doit être `PASS`).
 
 ## Créer un intent en partant de zéro
 
@@ -81,5 +81,5 @@ Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptati
 
 - `bash requirements/closed/02-intent/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
 - `requirements/closed/02-intent/tests/skills-intent/` : jeux de données de la recette manuelle des skills, avec le résultat attendu de chaque scénario dans son README.
-- `bash requirements/in-progress/03-spec/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
-- `requirements/in-progress/03-spec/tests/skills-spec/` : jeux de données de la recette de `generation-spec`, résultats dans `RESULTATS.md`.
+- `bash requirements/closed/03-spec/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
+- `requirements/closed/03-spec/tests/skills-spec/` : jeux de données de la recette de `generation-spec`, résultats dans `RESULTATS.md`.

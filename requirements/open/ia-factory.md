@@ -43,7 +43,7 @@ Une chaîne SDLC natif IA outillée dans `ai-factory`, où chaque étape produit
 | 0. Mesure | [00-mesure/intent.md](00-mesure/intent.md) | — | — |
 | 1. Socle | [01-socle/intent.md](01-socle/intent.md) | Tech lead | — |
 | 2. Intent | [02-intent/intent.md](../closed/02-intent/intent.md) | PO | — |
-| 3. Spec | [../in-progress/03-spec/intent.md](../in-progress/03-spec/intent.md) | Tech lead, PO en copie | 2 |
+| 3. Spec | [../closed/03-spec/intent.md](../closed/03-spec/intent.md) | Tech lead, PO en copie | 2 |
 | 4. Plan | [04-plan/intent.md](04-plan/intent.md) | Tech lead | 3 |
 | 5. Code + tests | [05-code-tests/intent.md](05-code-tests/intent.md) | CI | 1, 4 |
 | 6. Revue PR | [06-revue-pr/intent.md](06-revue-pr/intent.md) | Humain | 5 |
