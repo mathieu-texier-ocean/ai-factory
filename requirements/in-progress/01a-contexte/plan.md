@@ -1,7 +1,7 @@
 # Plan — Lot 1a : Contexte d'équipe
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 - **Base :** `main` (789bb9e, specs du lot 1 validées).
 
