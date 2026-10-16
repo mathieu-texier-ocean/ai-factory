@@ -48,7 +48,7 @@ Fixtures (intents complets, dérivés de `tests/hook-intent/fixtures/complet.md`
 - `intent-valide.md` : `- **Statut :** validé` sur sa propre ligne.
 - `intent-valide-auteur.md` : `- **Auteur :** X · **Statut :** validé`.
 - `intent-statut-majuscule.md` : `Statut : Validé` (L5).
-- `spec.md` : une spec minimale (le hook n'en lit pas le contenu, C19).
+- `spec-modele.md` : une spec minimale (le hook n'en lit pas le contenu, C19).
 
 Cas :
 

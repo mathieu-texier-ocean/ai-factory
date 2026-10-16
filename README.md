@@ -6,7 +6,7 @@ Outillage du SDLC natif IA : chaque étape produit un artefact versionné dans G
 
 Vue d'ensemble, lots et critères de succès : [requirements/open/ia-factory.md](requirements/open/ia-factory.md).
 
-Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3). Les étapes suivantes sont décrites dans leur lot (`requirements/open/NN-lot/`).
+Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3). Les étapes suivantes sont décrites dans le dossier de leur lot (`requirements/open/`, `in-progress/` ou `closed/`).
 
 ## Ce que contient le dépôt
 

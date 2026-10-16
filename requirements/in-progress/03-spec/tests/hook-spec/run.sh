@@ -30,7 +30,7 @@ attempt() {
 }
 # check <nom> <intent initial|-> <fichier stagé> <attendu> [message]
 check() {
-  init "$2"; fx spec.md "$3"; git add "$3"
+  init "$2"; fx spec-modele.md "$3"; git add "$3"
   attempt "$1" "$4" "${5:-}"
 }
 
@@ -41,10 +41,10 @@ check "intent validé ligne auteur (A6, C18)"  intent-valide-auteur.md lot/spec.
 check "casse Validé bloquée (L5)"             intent-statut-majuscule.md lot/spec.md  block "statut : Validé"
 check "autre fichier ignoré (A7, L9)"         intent-draft.md         lot/notes.md pass
 
-init intent-draft.md; fx intent-valide.md lot/intent.md; fx spec.md lot/spec.md; git add lot
+init intent-draft.md; fx intent-valide.md lot/intent.md; fx spec-modele.md lot/spec.md; git add lot
 attempt "validé dans le même commit bloqué (A11, L4)" block "lot/spec.md : intent non validé (statut : draft)"
 
-init intent-valide.md; fx spec.md lot/spec.md; git add lot/spec.md; git -c core.hooksPath=/dev/null commit -qm spec
+init intent-valide.md; fx spec-modele.md lot/spec.md; git add lot/spec.md; git -c core.hooksPath=/dev/null commit -qm spec
 fx intent-draft.md lot/intent.md; git add lot/intent.md; git -c core.hooksPath=/dev/null commit -qm "intent draft"
 printf '\nRévision.\n' >> lot/spec.md; git add lot/spec.md
 attempt "modification de spec acceptée (A12, L10, L11)" pass
