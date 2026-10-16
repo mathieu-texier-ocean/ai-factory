@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1f : Activation des hooks git
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** —
@@ -23,7 +23,7 @@ Un clone sans `core.hooksPath` accepte en silence un intent incomplet, une spec 
 
 ## Priorité
 
-- **Niveau :** Haute (proposé par l'auteur, à confirmer par le PO)
+- **Niveau :** Haute (confirmé par le PO)
 - **Justification :** Sans activation, les contrôles des lots 2, 3 et 1c ne jouent pas.
 - **Échéance :** aucune
 
@@ -34,7 +34,7 @@ Sur `ai-factory`, quand `core.hooksPath` ne vaut pas `hooks`, une session Claude
 ## Critère de succès
 
 - Les critères d'acceptation ci-dessous sont atteints.
-- Le lot contribue aux indicateurs de l'intent parent : taux de succès CI au premier passage et nombre de cycles de reprise par PR.
+- Le lot contribue aux indicateurs de l'intent parent : nombre de cycles de reprise par PR. Le taux de succès CI au premier passage n'est pas mesurable : aucune CI n'est prévue sur `ai-factory`.
 
 ## Livrables
 

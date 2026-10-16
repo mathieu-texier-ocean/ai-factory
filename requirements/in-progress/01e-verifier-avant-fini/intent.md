@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1e : Vérifier avant de déclarer fini
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** 1a (contexte d'équipe), 1b (commande de vérification)
@@ -23,7 +23,7 @@ Une tâche déclarée finie sans vérification arrive en revue avec des erreurs 
 
 ## Priorité
 
-- **Niveau :** Haute (proposé par l'auteur, à confirmer par le PO)
+- **Niveau :** Haute (confirmé par le PO)
 - **Justification :** Transforme la commande du lot 1b en habitude de l'agent, pour le coût de quelques lignes.
 - **Échéance :** aucune
 
@@ -34,7 +34,7 @@ L'agent lance la commande de vérification avant de déclarer une tâche finie e
 ## Critère de succès
 
 - Les critères d'acceptation ci-dessous sont atteints.
-- Le lot contribue aux indicateurs de l'intent parent : nombre de cycles de reprise par PR et, quand une CI existera, taux de succès CI au premier passage.
+- Le lot contribue aux indicateurs de l'intent parent : nombre de cycles de reprise par PR. Le taux de succès CI au premier passage n'est pas mesurable : aucune CI n'est prévue sur `ai-factory`.
 
 ## Livrables
 

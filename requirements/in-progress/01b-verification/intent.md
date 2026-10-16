@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1b : Commande de vérification
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** —
@@ -24,7 +24,7 @@ Sans commande unique, l'agent ou le relecteur oublie un `run.sh`, et une erreur 
 
 ## Priorité
 
-- **Niveau :** Haute (proposé par l'auteur, à confirmer par le PO)
+- **Niveau :** Haute (confirmé par le PO)
 - **Justification :** Prérequis des lots 1e et 5.
 - **Échéance :** aucune
 
@@ -35,7 +35,7 @@ Une commande lance toutes les vérifications automatisées d'`ai-factory` et dit
 ## Critère de succès
 
 - Les critères d'acceptation ci-dessous sont atteints.
-- Le lot contribue aux indicateurs de l'intent parent : nombre de cycles de reprise par PR et, quand une CI existera, taux de succès CI au premier passage.
+- Le lot contribue aux indicateurs de l'intent parent : nombre de cycles de reprise par PR. Le taux de succès CI au premier passage n'est pas mesurable : aucune CI n'est prévue sur `ai-factory`.
 
 ## Livrables
 
@@ -61,10 +61,9 @@ Une commande lance toutes les vérifications automatisées d'`ai-factory` et dit
 - Hook « commande au vert avant ouverture de PR » (lot 5).
 - Build et lint : `ai-factory` n'en a pas aujourd'hui.
 - Recettes manuelles des skills (`skills-intent`, `skills-spec`).
-- Mise en place d'une CI.
+- Mise en place d'une CI : aucune n'est prévue sur `ai-factory`.
 - Règles transverses bloquantes (lot 1c).
 
 ## Questions ouvertes
 
 - Quel lot porte le hook qui protège les tests pendant un correctif ?
-- Une CI est-elle prévue sur `ai-factory` ? Sans elle, l'indicateur « taux de succès CI au premier passage » n'est pas mesurable.

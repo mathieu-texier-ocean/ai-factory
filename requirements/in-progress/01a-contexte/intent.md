@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1a : Contexte d'équipe
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** —
@@ -13,7 +13,7 @@ L'agent ne connaît ni les commandes, ni les conventions, ni les pièges récurr
 
 ## Pour qui
 
-- **Tech lead** : relit et approuve `CLAUDE.md` en code owner.
+- **Tech lead** : relit et approuve `CLAUDE.md` en code owner. Un dev peut prendre la main sur ce rôle.
 - **Équipe** : maintient `CLAUDE.md` au fil des erreurs constatées.
 - **Agent** : lit `CLAUDE.md` à chaque session.
 - **Lot 5 (Code + tests)** : s'appuie sur ce contexte.
@@ -24,7 +24,7 @@ Sans contexte partagé, l'agent refait les mêmes erreurs d'une session à l'aut
 
 ## Priorité
 
-- **Niveau :** Haute (proposé par l'auteur, à confirmer par le PO)
+- **Niveau :** Haute (confirmé par le PO)
 - **Justification :** Prérequis du lot 5 et utile tout de suite sur `ai-factory`, pour le coût d'une page.
 - **Échéance :** aucune
 
@@ -36,14 +36,14 @@ Un `CLAUDE.md` versionné à la racine d'`ai-factory`, lu par l'agent à chaque 
 
 - Les critères d'acceptation ci-dessous sont atteints.
 - Indicateur propre au lot : nombre d'erreurs répétées que `CLAUDE.md` aurait dû éviter, suivi par les corrections dans son historique git.
-- Le lot contribue aux indicateurs de l'intent parent : taux de succès CI au premier passage et nombre de cycles de reprise par PR.
+- Le lot contribue aux indicateurs de l'intent parent : nombre de cycles de reprise par PR. Le taux de succès CI au premier passage n'est pas mesurable : aucune CI n'est prévue sur `ai-factory`.
 
 ## Livrables
 
-| Type | Élément |
-|---|---|
+| Type    | Élément                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------- |
 | Fichier | `CLAUDE.md` à la racine d'`ai-factory` : commandes, conventions, architecture, erreurs fréquentes |
-| Règle | Entretien : une erreur de l'agent constatée deux fois donne une correction dans `CLAUDE.md` |
+| Règle   | Entretien : une erreur de l'agent constatée deux fois donne une correction dans `CLAUDE.md`       |
 
 ## Critère d'acceptation
 
@@ -51,7 +51,7 @@ Un `CLAUDE.md` versionné à la racine d'`ai-factory`, lu par l'agent à chaque 
 - [ ] Il contient les sections Commandes, Conventions, Architecture et Erreurs fréquentes.
 - [ ] Chaque commande listée s'exécute telle quelle sur `ai-factory`.
 - [ ] La règle d'entretien figure dans `CLAUDE.md`.
-- [ ] `CLAUDE.md` est ajouté par PR et approuvé par le tech lead.
+- [ ] `CLAUDE.md` est ajouté par PR et approuvé par son code owner (tech lead, ou le dev qui a pris la main).
 
 ## Contraintes
 
@@ -70,5 +70,3 @@ Un `CLAUDE.md` versionné à la racine d'`ai-factory`, lu par l'agent à chaque 
 
 ## Questions ouvertes
 
-- Priorité proposée (Haute) : à confirmer par le PO.
-- Qui est code owner de `CLAUDE.md` en dehors du tech lead ?
