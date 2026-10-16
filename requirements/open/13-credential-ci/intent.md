@@ -2,6 +2,7 @@
 
 - **Parent :** [ia-factory.md](../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Suspendu :** tant qu'aucune CI n'existe sur `ai-factory` (décision PO, 2026-10-16)
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** 1c (hook credential)
