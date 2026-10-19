@@ -54,6 +54,9 @@ cp_fx affectation.txt affectation.txt
 essai "affectation littérale bloquée" block "affectation.txt : $msg (affectation générique)"
 absent "valeur d'affectation jamais affichée (C7)" "fictif-0000-EXAMPLE"
 
+cp_fx affectation-guillemets.txt affectation-guillemets.txt
+essai "affectation littérale entre guillemets bloquée" block "affectation-guillemets.txt : $msg (affectation générique)"
+
 cp_fx affectation-reference.txt affectation-reference.txt
 essai "affectation par référence acceptée (L15)" pass
 
