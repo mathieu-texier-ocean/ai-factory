@@ -1,7 +1,7 @@
 # Plan — Lot 1e : Vérifier avant de déclarer fini
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 - **Base :** `main` après merge des lots 1a et 1b (dépendances de l'intent).
 
