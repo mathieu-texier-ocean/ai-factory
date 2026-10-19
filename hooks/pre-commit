@@ -3,9 +3,10 @@
 # 1. Tout intent.md stagé contient les sections obligatoires.
 #    Source de vérité : les titres "## " de templates/intent.md (hors "Questions ouvertes").
 #    Présence uniquement, pas la qualité du contenu.
-# 2. Tout spec.md créé a, dans HEAD, un intent.md validé dans le même dossier.
+# 2. Tout spec.md créé a, dans HEAD, un intent.md validé dans le même dossier (hors templates/ à la racine).
 # 3. Aucune ligne ajoutée à un fichier texte indexé ne contient de credential en clair.
-#    Une ligne qui porte le marqueur credential-ok est ignorée. La valeur n'est jamais affichée.
+#    Une ligne qui porte le marqueur credential-ok est ignorée, ainsi que les fixtures de tests
+#    (tests/<nom>/fixtures/, à toute profondeur). La valeur n'est jamais affichée.
 set -u
 
 root=$(git rev-parse --show-toplevel)
@@ -54,6 +55,7 @@ check_spec_intent() {
 }
 
 while IFS= read -r path; do
+  case $path in templates/*) continue ;; esac
   [ "$(basename "$path")" = "spec.md" ] && check_spec_intent "$path"
 done < <(git diff --cached --name-only --diff-filter=A)
 
@@ -77,6 +79,8 @@ while IFS= read -r -d '' rec; do
     IFS= read -r -d '' ancien; IFS= read -r -d '' chemin
   fi
   [ "$ajouts" = - ] && continue
+  # Le "/" en tête couvre tests/ à la racine.
+  case "/$chemin" in */tests/*/fixtures/*) continue ;; esac
   # Les deux chemins gardent le renommage apparié : seules les lignes ajoutées sont lues.
   lignes=$(git diff --cached -U0 -M --no-color -- "$ancien" "$chemin" \
     | awk '/^@@/ { h = 1; next } h && /^\+/' | grep -vF credential-ok)
