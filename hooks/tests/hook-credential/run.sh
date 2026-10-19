@@ -110,4 +110,24 @@ essai "renommé sans ajout accepté (L13)" pass
 cp_fx aws.txt "dossier é/clé é.txt"
 essai "nom accentué avec espace nommé en clair (L14)" block "dossier é/clé é.txt : $msg"
 
+cp_fx aws.txt hooks/tests/x/fixtures/aws.txt
+essai "fixture sous hooks/tests/<nom>/fixtures/ acceptée (L16)" pass
+
+cp_fx aws.txt tests/x/fixtures/aws.txt
+essai "fixture sous tests/<nom>/fixtures/ à la racine acceptée (L16)" pass
+
+cp_fx aws.txt hooks/tests/x/fixtures/aws.txt && sans_hook "état initial"
+cat "$fx/slack.txt" >> hooks/tests/x/fixtures/aws.txt && git add hooks/tests/x/fixtures/aws.txt
+essai "fixture modifiée acceptée (L6)" pass
+
+cp_fx aws.txt fixtures/aws.txt
+essai "fixtures/ hors d'un dossier tests/ contrôlé (L17)" block "fixtures/aws.txt : $msg"
+
+cp_fx aws.txt tests/fixtures/aws.txt
+essai "tests/fixtures/ sans dossier <nom> contrôlé (L17)" block "tests/fixtures/aws.txt : $msg"
+
+cat "$fx/aws.txt" "$fx/propre.txt" > f.txt && mkdir -p tests/x/fixtures && mv f.txt tests/x/fixtures/ && git add tests && sans_hook "état initial"
+mkdir doc && git mv tests/x/fixtures/f.txt doc/f.txt
+essai "fixture déplacée hors de fixtures/ sans modification acceptée (L18)" pass
+
 exit $fail

@@ -50,4 +50,10 @@ printf '\nRévision.\n' >> lot/spec.md; git add lot/spec.md
 attempt "modification de spec acceptée (A12, L10, L11)" pass
 
 check "spec à la racine sans intent (C15)"   -                       spec.md      block "spec.md : intent absent (intent.md)"
+
+init -; fx spec-modele.md templates/spec.md; git add templates/spec.md
+attempt "modèle templates/spec.md ignoré (lot 1c C17, A6)" pass
+
+init -; mkdir -p lot/templates; fx spec-modele.md lot/templates/spec.md; git add lot/templates/spec.md
+attempt "spec sous lot/templates/ contrôlée (lot 1c L20)" block "lot/templates/spec.md : intent absent"
 exit $fail
