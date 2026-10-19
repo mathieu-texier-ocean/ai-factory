@@ -1,7 +1,7 @@
 # Plan — Lot 1h : Livrables rangés à la racine
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 - **Base :** `main` (18e7ba1, spec du lot 1h validée).
 
