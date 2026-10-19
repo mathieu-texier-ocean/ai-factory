@@ -41,7 +41,7 @@ Une chaîne SDLC natif IA outillée dans `ai-factory`, où chaque étape produit
 | Lot | Fichier | Validation | Dépend de |
 |---|---|---|---|
 | 0. Mesure | [00-mesure/intent.md](00-mesure/intent.md) | — | — |
-| 1a. Socle : contexte d'équipe | [01a-contexte/intent.md](../in-progress/01a-contexte/intent.md) | Tech lead | — |
+| 1a. Socle : contexte d'équipe | [01a-contexte/intent.md](../closed/01a-contexte/intent.md) | Tech lead | — |
 | 1b. Socle : commande de vérification | [01b-verification/intent.md](../in-progress/01b-verification/intent.md) | Tech lead | — |
 | 1c. Socle : hook credential | [01c-hook-credential/intent.md](../in-progress/01c-hook-credential/intent.md) | Tech lead | — |
 | 1e. Socle : vérifier avant de déclarer fini | [01e-verifier-avant-fini/intent.md](../in-progress/01e-verifier-avant-fini/intent.md) | Tech lead | 1a, 1b |
