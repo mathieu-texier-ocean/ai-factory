@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1h : Livrables rangés à la racine
 
 - **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Date :** 2026-10-19
 - **Validation :** Tech lead
 - **Dépend de :** —
