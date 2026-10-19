@@ -31,8 +31,10 @@ essai() {
   git reset -q --hard "$base"; git clean -qfdx
 }
 # absent <nom> <texte> : le texte n'apparaît pas dans la sortie du dernier essai.
+# Les valeurs sont lues dans les fixtures : aucune n'est écrite dans ce script (C11).
 absent() {
-  if printf '%s' "$out" | grep -qF -- "$2"; then echo "FAIL $1 : « $2 » affiché"; fail=1
+  if [ -z "$2" ]; then echo "FAIL $1 : valeur à chercher vide"; fail=1
+  elif printf '%s' "$out" | grep -qF -- "$2"; then echo "FAIL $1 : « $2 » affiché"; fail=1
   else echo "PASS $1"; fi
 }
 
@@ -48,11 +50,11 @@ done
 
 cp_fx aws.txt aws.txt
 essai "jeton AWS bloqué, valeur cachée" block "aws.txt : $msg"
-absent "valeur jamais affichée (C7)" "AKIAIOSFODNN7EXAMPLE"
+absent "valeur jamais affichée (C7)" "$(grep -oE 'AKIA[A-Z0-9]+' "$fx/aws.txt")"
 
 cp_fx affectation.txt affectation.txt
 essai "affectation littérale bloquée" block "affectation.txt : $msg (affectation générique)"
-absent "valeur d'affectation jamais affichée (C7)" "fictif-0000-EXAMPLE"
+absent "valeur d'affectation jamais affichée (C7)" "$(grep -m1 = "$fx/affectation.txt" | cut -d= -f2-)"
 
 cp_fx affectation-guillemets.txt affectation-guillemets.txt
 essai "affectation littérale entre guillemets bloquée" block "affectation-guillemets.txt : $msg (affectation générique)"
