@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1c : Hook credential en clair
 
 - **Parent :** [ia-factory.md](../../open/ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** validé
+- **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** —
@@ -48,6 +48,7 @@ Un commit qui introduit un credential en clair est refusé par `hooks/pre-commit
 - [ ] Un commit qui introduit un credential en clair est refusé, et le message nomme le fichier, la raison et la façon de corriger.
 - [ ] Un commit sans credential passe, et les tests existants des lots 2 et 3 restent au vert.
 - [ ] Les tests du contrôle passent et sont un `run.sh` dans `hooks/tests/hook-credential/`, à côté du hook, au même format que ceux des lots 2 et 3.
+- [ ] Le premier commit d'un nouveau projet copié d'`ai-factory` passe avec le hook actif.
 
 ## Contraintes
 
@@ -55,7 +56,7 @@ Un commit qui introduit un credential en clair est refusé par `hooks/pre-commit
 - La règle est bloquante.
 - Détection par un contrôle maison dans `hooks/pre-commit`. gitleaks est réservé à la CI, si elle existe (lot 13).
 - Seul le contenu indexé pour le commit est contrôlé.
-- Les fixtures de test utilisent des credentials fictifs, jamais de vrais. Elles sont commitées avec `--no-verify`, dans un commit qui ne contient qu'elles, puisque `--no-verify` saute tous les contrôles.
+- Les fixtures de test utilisent des credentials fictifs, jamais de vrais. Rangées sous `tests/<nom>/fixtures/`, elles ne sont pas contrôlées et se commitent sans `--no-verify` (révision du 2026-10-19 : le premier commit d'un nouveau projet copié d'`ai-factory` était refusé).
 - Aucune donnée sensible ni secret dans le contexte de l'agent.
 - Un lot = un sous-intent = une PR.
 

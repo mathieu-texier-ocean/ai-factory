@@ -1,7 +1,7 @@
 # Plan — Lot 1c : Hook credential en clair
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** validé
+- **Auteur :** Mathieu TEXIER · **Statut :** draft
 - **Validation :** Tech lead
 - **Base :** `main` (011bdc5, lot 1b clos : `scripts/verifier.sh` est sur `main`).
 
@@ -110,10 +110,21 @@ Couvre : C1 à C9, C12 à C15.
 
 Couvre : contrats (annotation, tests).
 
+### 5. Révision du 2026-10-19 : fixtures et modèle exclus
+
+Constat de la recette : le premier commit d'un nouveau projet, hook actif, est refusé. Spec révisée : C16, C17, L6 modifié, L16 à L20, A5, A6, P2 tranché, P6.
+
+- **Tests d'abord.** `hooks/tests/hook-credential/run.sh` : credential fictif sous `hooks/tests/x/fixtures/` et sous `tests/x/fixtures/` acceptés (L16, L6) ; sous `fixtures/` et `tests/fixtures/` refusés (L17). `hooks/tests/hook-spec/run.sh` : `templates/spec.md` sans intent accepté, `lot/templates/spec.md` refusé (L20, A6).
+- **Hook.** Contrôle des credentials : `case "/$chemin" in */tests/*/fixtures/*) continue ;; esac`, après la lecture des deux chemins (le `/` en tête couvre `tests/` à la racine). Contrôle « intent validé » : `case $path in templates/*) continue ;; esac` avant le test du nom (C17, modifie une boucle existante : révise C1 pour ce seul point).
+- **README.** « Règles à respecter » : fixtures non contrôlées ; étape 3 de la spec : le modèle `templates/spec.md` n'est pas contrôlé.
+- **Recette.** A5 en manuel : copie sans `requirements/`, `git init`, hook actif, premier commit sans `--no-verify` ; L18 constaté.
+
+Couvre : C16, C17, L6, L16 à L20, A5, A6.
+
 ## Tests à écrire
 
 - Automatisés : `hooks/tests/hook-credential/run.sh`, environ 21 cas (étape 2).
-- Manuel : L6 (une fixture modifiée est refusée au commit normal), constaté pendant le build et noté dans la PR.
+- Manuel : A5 (premier commit d'un nouveau projet), à la recette de l'étape 5. L6 n'est plus manuel : la fixture modifiée est acceptée et testée (étape 5).
 
 ## Couverture de la spec
 
@@ -122,7 +133,7 @@ Couvre : contrats (annotation, tests).
 | C1–C9, C12–C15 | 3 (testé en 2) |
 | C10, C11 | 2, 1 |
 | L1–L5, L9–L15 | 2 |
-| L6 | manuel (build) |
+| C16, C17, L6, L16–L20, A5, A6 | 5 |
 | L7, L8 | hors portée du hook (lots 13 et 1f) |
 | A1–A4 | 2, 3 |
 
