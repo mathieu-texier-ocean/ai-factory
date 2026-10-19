@@ -1,0 +1,7 @@
+Affectations par référence ou gabarit : aucune valeur littérale.
+password=$DB_PASSWORD
+token=<à renseigner>
+api_key=${API_KEY}
+password="$DB_PASSWORD"
+token="${GH_TOKEN}"
+secret='<à renseigner>'

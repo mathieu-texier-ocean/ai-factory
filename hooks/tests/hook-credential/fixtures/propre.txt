@@ -1,0 +1,14 @@
+Texte sans credential.
+Le hook pre-commit contrôle les lignes ajoutées au commit.
+Une référence comme une variable d'environnement n'est pas une valeur.
+Les fichiers binaires ne sont pas lus.
+Seul le contenu indexé compte.
+Une ligne déjà présente dans HEAD n'est pas relue.
+Un fichier supprimé n'ajoute aucune ligne.
+Le message nomme le fichier et la famille reconnue.
+Il ne montre jamais la valeur.
+Il dit comment corriger.
+Une annotation ne vaut que pour sa ligne.
+Les autres contrôles du hook s'exécutent quand même.
+Leurs messages s'ajoutent.
+Ce fichier est assez long pour que git détecte un renommage.

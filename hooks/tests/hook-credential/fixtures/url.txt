@@ -1,0 +1,2 @@
+URL de base de données avec identifiants fictifs.
+postgres://utilisateur:fictif0000EXAMPLE@localhost:5432/base
