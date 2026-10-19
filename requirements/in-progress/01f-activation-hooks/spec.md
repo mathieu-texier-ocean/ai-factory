@@ -31,7 +31,7 @@ Deux hooks Claude Code, déclarés dans `.claude/settings.json` versionné, qui 
 
 ### Arbitrages du 2026-10-16
 
-- **C11.** Les scripts des deux hooks sont dans `.claude/hooks/`, séparés des hooks git de `hooks/`. Un `run.sh` dans `tests/hook-activation/` les teste hors de Claude Code (entrée JSON simulée, code de sortie et message) ; `scripts/verifier.sh` (lot 1b) le lance avec les autres.
+- **C11.** Les scripts des deux hooks sont dans `.claude/hooks/`, séparés des hooks git de `hooks/`. Un `run.sh` dans `.claude/hooks/tests/hook-activation/` les teste hors de Claude Code (entrée JSON simulée, code de sortie et message) ; `scripts/verifier.sh` (lot 1b) le lance avec les autres.
 - **C12.** `core.hooksPath` désigne le dossier `hooks` du dépôt quand le chemin qu'il donne, résolu depuis la racine, est `<racine>/hooks` : `hooks`, `./hooks` ou le chemin absolu de ce dossier valent activation.
 
 ## Cas limites
@@ -49,7 +49,7 @@ Deux hooks Claude Code, déclarés dans `.claude/settings.json` versionné, qui 
 
 ## Contrats
 
-- **Scripts :** `.claude/hooks/` ; tests : `tests/hook-activation/run.sh`.
+- **Scripts :** `.claude/hooks/` ; tests : `.claude/hooks/tests/hook-activation/run.sh`.
 - **Déclaration :** `.claude/settings.json`, clé `hooks`, une entrée `SessionStart` et une entrée `PreToolUse` sur l'outil `Bash`.
 - **Lecture :** `git config --get core.hooksPath` dans le dépôt de la session.
 - **`SessionStart`, hooks inactifs :** message d'avertissement avec la commande d'activation, visible par l'humain et ajouté au contexte de l'agent ; session ouverte normalement.

@@ -3,13 +3,13 @@
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
 - **Auteur :** Mathieu TEXIER · **Statut :** draft
 - **Validation :** Tech lead
-- **Base :** `main` (d38af65, plan du lot 1e commité).
+- **Base :** `main` (a2123fb, lot 1e clos).
 
 ## Prérequis
 
 - `spec.md` commitée au statut `validé` : fait (789bb9e).
 - Une seule PR pour le lot. Chaque étape ci-dessous = un commit.
-- Le lot 1b n'est pas un prérequis : sans lui, le `run.sh` de l'étape 2 se lance à la main ; avec lui, `scripts/verifier.sh` le trouve (C11).
+- Lot 1b clos : `scripts/verifier.sh` trouve tout `run.sh` du dépôt, celui de `.claude/hooks/tests/` compris (C11).
 - P1 de la spec (livrable « tests » absent de l'intent) : le plan livre le `run.sh` décidé le 2026-10-16 ; l'ajout du livrable à l'intent reste au PO.
 
 ## Fichiers touchés
@@ -19,9 +19,10 @@
 | `.claude/hooks/hooks-git-actifs.sh` | nouveau, exécutable | 1 |
 | `.claude/hooks/session-hooks-git.sh` | nouveau, exécutable | 1 |
 | `.claude/hooks/commit-hooks-git.sh` | nouveau, exécutable | 1 |
-| `requirements/in-progress/01f-activation-hooks/tests/hook-activation/run.sh` | nouveau, exécutable | 2 |
+| `.claude/hooks/tests/hook-activation/run.sh` | nouveau, exécutable | 2 |
 | `.claude/settings.json` | nouveau | 3 |
 | `README.md` | modifié (mise en route, tableau du dépôt) | 4 |
+| `CLAUDE.md` | modifié (commandes, architecture) | 4 |
 | `requirements/in-progress/01f-activation-hooks/RECETTE.md` | nouveau | 4 |
 
 Les noms de scripts sont une proposition ; seul l'emplacement `.claude/hooks/` est fixé (C11).
@@ -54,9 +55,9 @@ Bash et git seulement, comme `hooks/pre-commit` : pas de `jq` ni de Python, pour
 
 Couvre : C1 à C9, C12.
 
-### 2. Tests `tests/hook-activation/run.sh`
+### 2. Tests `.claude/hooks/tests/hook-activation/run.sh`
 
-Sur le modèle des `run.sh` des lots 2 et 3 : dépôt temporaire avec un dossier `hooks/`, copie de `.claude/hooks/`, `CLAUDE_PROJECT_DIR` pointé sur ce dépôt, entrées JSON simulées via `printf | script`, une ligne `PASS`/`FAIL` par cas, sortie en erreur si un cas échoue (C11).
+Sur le modèle de `hooks/tests/<nom>/run.sh` : dépôt temporaire avec un dossier `hooks/`, copie des scripts de `.claude/hooks/` (sans `tests/`), `CLAUDE_PROJECT_DIR` pointé sur ce dépôt, `GIT_CONFIG_GLOBAL=/dev/null` et `GIT_CONFIG_NOSYSTEM=1` exportés (un `core.hooksPath` global ou système fausserait les cas « absent »), entrées JSON simulées via `printf | script`, une ligne `PASS`/`FAIL` par cas, sortie en erreur si un cas échoue (C11).
 
 | Cas | `core.hooksPath` | Script et entrée | Attendu | Réf. |
 |---|---|---|---|---|
@@ -91,13 +92,14 @@ Couvre : C11, et la vérification de C1 à C9, C12.
 }
 ```
 
-Fichier versionné (C10). Vérifier `git check-ignore -v .claude/settings.json` : un `.gitignore` global `.*/` impose `git add -f` (README).
+Fichier versionné (C10). Vérifier `git check-ignore -v .claude/settings.json .claude/hooks/*.sh .claude/hooks/tests/hook-activation/run.sh` : si un `.gitignore` global `.*/` les ignore, `git add -f` sur `settings.json` et tout `.claude/hooks/` (README). Un script déclaré mais non suivi fait échouer le hook en code 127, qui ne bloque rien (R6).
 
 Couvre : C10.
 
 ### 4. README, recette et PR
 
-- README : « Mise en route », étape 1 : dire que Claude Code signale et bloque tant que les hooks ne sont pas actifs ; tableau du dépôt : lignes `.claude/settings.json` et `.claude/hooks/`.
+- README : « Mise en route », étape 1 : dire que Claude Code signale et bloque tant que les hooks ne sont pas actifs ; étape 2 : `git add -f` étendu à tout `.claude/` (skills, hooks, `settings.json`) ; tableau du dépôt : lignes `.claude/settings.json`, `.claude/hooks/` et `.claude/hooks/tests/`.
+- `CLAUDE.md` : « Commandes », le commentaire de `verifier.sh` cite aussi `.claude/hooks/tests/` ; « Architecture » : ligne `.claude/hooks/` et `.claude/settings.json`.
 - `RECETTE.md`, en session réelle de Claude Code, dans un clone jetable :
   - A1 : `git config --unset core.hooksPath`, nouvelle session → message visible et commande donnée.
   - A2 : demander un commit à l'agent → refus, raison et commande.
@@ -108,7 +110,7 @@ Couvre : A1 à A3.
 
 ## Tests à écrire
 
-- Automatisés : `tests/hook-activation/run.sh`, 13 cas (étape 2), lancés par `scripts/verifier.sh` une fois le lot 1b mergé.
+- Automatisés : `.claude/hooks/tests/hook-activation/run.sh`, 13 cas (étape 2), lancés par `scripts/verifier.sh`.
 - Manuels : A1 à A3 en session réelle (étape 4), consignés dans `RECETTE.md`.
 
 ## Couverture de la spec
@@ -129,6 +131,7 @@ Couvre : A1 à A3.
 - **R3 — Dépôt de session.** La configuration lue est celle de `$CLAUDE_PROJECT_DIR`. Un commit de l'agent dans un autre dépôt est évalué sur celle-ci (P3 de la spec).
 - **R4 — Hooks de projet à approuver.** Claude Code peut demander à chaque personne d'approuver les hooks déclarés dans `.claude/settings.json` à leur première apparition. Tant que ce n'est pas fait, ni signalement ni blocage : à mentionner dans le README.
 - **R5 — Lot 1g.** Le lot 1g ajoutera un second `PreToolUse` dans le même `settings.json` et réutilisera `.claude/hooks/`. Garder les scripts indépendants pour qu'il s'ajoute sans modifier ceux de 1f.
+- **R6 — Scripts non suivis.** Un clone qui a `settings.json` sans les scripts de `.claude/hooks/` (`.gitignore` global `.*/`) échoue en code 127 : ni signalement ni blocage, sans message, soit le cas que le lot veut supprimer. Parade : `git check-ignore` de l'étape 3.
 
 ## Hors périmètre
 
