@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1c : Hook credential en clair
 
 - **Parent :** [ia-factory.md](../../open/ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** validé
+- **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** —
@@ -41,13 +41,13 @@ Un commit qui introduit un credential en clair est refusé par `hooks/pre-commit
 | Type | Élément |
 |---|---|
 | Hook | Contrôle « pas de credential en clair » dans `hooks/pre-commit` (bloquant) |
-| Tests | `run.sh` et fixtures du contrôle, au même format que ceux des lots 2 et 3 |
+| Tests | `run.sh` et fixtures du contrôle, au même format que ceux des lots 2 et 3, dans `hooks/tests/hook-credential/` |
 
 ## Critère d'acceptation
 
 - [ ] Un commit qui introduit un credential en clair est refusé, et le message nomme le fichier, la raison et la façon de corriger.
 - [ ] Un commit sans credential passe, et les tests existants des lots 2 et 3 restent au vert.
-- [ ] Les tests du contrôle passent et sont un `run.sh` dans le dossier `tests/` du lot, au même format que ceux des lots 2 et 3.
+- [ ] Les tests du contrôle passent et sont un `run.sh` dans `hooks/tests/hook-credential/`, à côté du hook, au même format que ceux des lots 2 et 3.
 
 ## Contraintes
 
