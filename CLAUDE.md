@@ -6,10 +6,27 @@
 
 ```bash
 git config core.hooksPath hooks       # active les contrôles de commit
-bash hooks/tests/hook-intent/run.sh   # sections obligatoires de l'intent
-bash hooks/tests/hook-spec/run.sh     # refus d'une spec sur un intent non validé
-bash hooks/tests/hook-credential/run.sh  # refus d'un credential en clair
+bash scripts/verifier.sh              # tous les tests (hooks/tests/*/run.sh)
 ```
+
+## Vérifier son travail
+
+Commande, depuis la racine : `bash scripts/verifier.sh`. Sortie saine (code 0, `…` = coupe) :
+
+```
+== hooks/tests/hook-intent/run.sh
+PASS complet accepté (scénario 3)
+…
+OK hooks/tests/hook-intent/run.sh
+…
+
+3 run.sh lancés, 0 en échec
+```
+
+- Avant de déclarer une tâche finie, lancer la commande et coller sa sortie, même si la tâche ne touche aucun fichier testé.
+- Sortie en erreur sans changement volontaire : la tâche n'est pas finie ; coller la sortie et corriger le code.
+- Pendant un correctif, corriger le code, pas le test.
+- Si le comportement change volontairement, mettre à jour le test et le signaler explicitement.
 
 ## Conventions
 
