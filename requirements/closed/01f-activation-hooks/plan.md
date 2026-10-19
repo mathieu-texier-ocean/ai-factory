@@ -23,7 +23,7 @@
 | `.claude/settings.json` | nouveau | 3 |
 | `README.md` | modifié (mise en route, tableau du dépôt) | 4 |
 | `CLAUDE.md` | modifié (commandes, architecture) | 4 |
-| `requirements/in-progress/01f-activation-hooks/RECETTE.md` | nouveau | 4 |
+| `requirements/closed/01f-activation-hooks/RECETTE.md` | nouveau | 4 |
 
 Les noms de scripts sont une proposition ; seul l'emplacement `.claude/hooks/` est fixé (C11).
 
