@@ -15,8 +15,8 @@
 | Fichier | Nature | Étape |
 |---|---|---|
 | `templates/spec.md` | nouveau | 1 |
-| `tests/hook-spec/run.sh` | nouveau | 2 |
-| `tests/hook-spec/fixtures/*.md` | nouveaux | 2 |
+| `hooks/tests/hook-spec/run.sh` | nouveau | 2 |
+| `hooks/tests/hook-spec/fixtures/*.md` | nouveaux | 2 |
 | `hooks/pre-commit` | modifié | 3 |
 | `.claude/skills/generation-spec/SKILL.md` | nouveau | 4 |
 | `tests/skills-spec/README.md` + jeux de données | nouveaux | 5 |
@@ -39,11 +39,11 @@ Couvre : section « Template » de la spec.
 
 ### 2. Tests du hook (écrits avant le hook)
 
-`tests/hook-spec/run.sh` sur le modèle de `tests/hook-intent/run.sh` : dépôt temporaire, copie de `templates/intent.md` et `hooks/pre-commit`, `core.hooksPath hooks`.
+`hooks/tests/hook-spec/run.sh` sur le modèle de `hooks/tests/hook-intent/run.sh` : dépôt temporaire, copie de `templates/intent.md` et `hooks/pre-commit`, `core.hooksPath hooks`.
 
 Différence avec le lot 2 : chaque cas a un état initial commité (l'intent), puis un commit testé. Fonction `check <nom> <intent initial|-> <fichiers stagés> <pass|block> [message]`. L'état initial est commité avec `-c core.hooksPath=/dev/null`. Chaque cas repart d'un dossier vide (`git rm` + commit, ou un dossier par cas).
 
-Fixtures (intents complets, dérivés de `tests/hook-intent/fixtures/complet.md`, pour que le contrôle du lot 2 ne bloque pas pour une autre raison) :
+Fixtures (intents complets, dérivés de `hooks/tests/hook-intent/fixtures/complet.md`, pour que le contrôle du lot 2 ne bloque pas pour une autre raison) :
 - `intent-draft.md` : `- **Statut :** draft` sur sa propre ligne.
 - `intent-valide.md` : `- **Statut :** validé` sur sa propre ligne.
 - `intent-valide-auteur.md` : `- **Auteur :** X · **Statut :** validé`.
@@ -64,7 +64,7 @@ Cas :
 | modification de spec | validé + spec, puis intent → draft commité | spec modifiée → draft | accepté | A12, C20, L10, L11 |
 | spec à la racine | — | `spec.md` | bloqué, « intent absent (intent.md) » | C15 |
 
-Non-régression : `tests/hook-intent/run.sh` passe sans changement.
+Non-régression : `hooks/tests/hook-intent/run.sh` passe sans changement.
 
 ### 3. Hook `hooks/pre-commit`
 
@@ -113,12 +113,12 @@ Les jeux sont des dossiers, parce que le skill écrit `spec.md` à côté de l'i
 ### 6. Recette manuelle et validation
 
 - Lancer `generation-spec` sur chaque jeu et consigner le résultat dans `tests/skills-spec/RESULTATS.md` (A1, A2, A3, A8, A9).
-- `tests/hook-spec/run.sh` et `tests/hook-intent/run.sh` au vert (A4 à A7, A11, A12).
+- `hooks/tests/hook-spec/run.sh` et `hooks/tests/hook-intent/run.sh` au vert (A4 à A7, A11, A12).
 - Revue de la PR par le tech lead, PO en copie, puis passage de la spec générée en A1 à `validé` par un humain (A10).
 
 ## Tests à écrire
 
-- Automatisés : `tests/hook-spec/run.sh`, 9 cas (étape 2).
+- Automatisés : `hooks/tests/hook-spec/run.sh`, 9 cas (étape 2).
 - Manuels : 5 jeux dans `tests/skills-spec/` (étape 5), résultats dans `RESULTATS.md`.
 
 ## Couverture de la spec

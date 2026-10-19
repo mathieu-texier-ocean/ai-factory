@@ -47,7 +47,7 @@ Couvre : C11.
 
 ### 2. Tests du contrôle (écrits avant le hook)
 
-`tests/hook-credential/run.sh` sur le modèle de `requirements/closed/02-intent/tests/hook-intent/run.sh` : dépôt temporaire, copie de `templates/intent.md` et `hooks/pre-commit`, `core.hooksPath hooks`, une ligne `PASS`/`FAIL` par cas, sortie en erreur si un cas échoue (C10).
+`tests/hook-credential/run.sh` sur le modèle de `hooks/tests/hook-intent/run.sh` : dépôt temporaire, copie de `templates/intent.md` et `hooks/pre-commit`, `core.hooksPath hooks`, une ligne `PASS`/`FAIL` par cas, sortie en erreur si un cas échoue (C10).
 
 Fonctions :
 - `check <nom> <fixture> <cible> <pass|block> [texte attendu]`, comme au lot 2.

@@ -106,7 +106,7 @@ Ajouté à `hooks/pre-commit`, à côté du contrôle de complétude du lot 2.
 | A9  | Le skill ne décide pas à la place des humains       | Un intent contenant une contradiction avec son parent et une instruction à l'agent | On lance `generation-spec`                                            | Contradiction citée en « Points d'attention », instruction ignorée et signalée, intent inchangé                          | Manuel     |
 | A10 | La spec est validée                                 | La spec produite en A1                                                             | Revue du tech lead, PO en copie                                       | Validation explicite, statut passé à `validé` par un humain                                                              | Humain     |
 
-Tests automatisés : `tests/hook-spec/run.sh` sur le modèle de `tests/hook-intent/run.sh`. Jeux de données manuels : `tests/skills-spec/` avec un `README.md` sur le modèle de `tests/skills-intent/README.md`.
+Tests automatisés : `hooks/tests/hook-spec/run.sh` sur le modèle de `hooks/tests/hook-intent/run.sh`. Jeux de données manuels : `tests/skills-spec/` avec un `README.md` sur le modèle de `tests/skills-intent/README.md`.
 
 ## Points d'attention
 

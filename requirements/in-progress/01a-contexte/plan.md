@@ -30,8 +30,8 @@ Créer `CLAUDE.md` avec un titre `# ai-factory` et les quatre sections de niveau
 `## Commandes` liste uniquement ce qui existe aujourd'hui, dans un bloc de code, à lancer depuis la racine (C3) :
 
 - `git config core.hooksPath hooks` : active les contrôles de commit.
-- `bash requirements/closed/02-intent/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
-- `bash requirements/closed/03-spec/tests/hook-spec/run.sh` : refus d'une spec sur un intent non validé.
+- `bash hooks/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
+- `bash hooks/tests/hook-spec/run.sh` : refus d'une spec sur un intent non validé.
 
 Les deux `run.sh` ont été lancés sur 789bb9e : toutes les lignes sont `PASS`. Rien sur `scripts/verifier.sh` (lot 1b) ni sur le bloc « Vérifier son travail » (lot 1e).
 

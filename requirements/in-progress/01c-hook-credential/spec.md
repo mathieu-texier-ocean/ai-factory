@@ -24,7 +24,7 @@ Ajouter à `hooks/pre-commit` un contrôle bloquant qui refuse un commit introdu
 
 ### Tests du contrôle
 
-- **C10.** Un `run.sh` dans `tests/` du lot (sur le modèle de `tests/hook-spec/run.sh`) crée un dépôt temporaire, y copie le hook et les fixtures, tente des commits et affiche une ligne `PASS` ou `FAIL` par cas. Il sort en erreur si un cas échoue.
+- **C10.** Un `run.sh` dans `tests/` du lot (sur le modèle de `hooks/tests/hook-spec/run.sh`) crée un dépôt temporaire, y copie le hook et les fixtures, tente des commits et affiche une ligne `PASS` ou `FAIL` par cas. Il sort en erreur si un cas échoue.
 - **C11.** Les fixtures contiennent des credentials fictifs, jamais de vrais. Elles sont commitées avec `--no-verify`, dans un commit qui ne contient qu'elles.
 - **C12.** Les `run.sh` des lots 2 et 3 restent au vert avec le hook modifié.
 
