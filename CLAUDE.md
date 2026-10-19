@@ -8,6 +8,7 @@
 git config core.hooksPath hooks       # active les contrôles de commit
 bash hooks/tests/hook-intent/run.sh   # sections obligatoires de l'intent
 bash hooks/tests/hook-spec/run.sh     # refus d'une spec sur un intent non validé
+bash hooks/tests/hook-credential/run.sh  # refus d'un credential en clair
 ```
 
 ## Conventions
@@ -26,7 +27,7 @@ bash hooks/tests/hook-spec/run.sh     # refus d'une spec sur un intent non valid
 - Chaîne : `intent.md` → `spec.md` → `plan.md` → diff + tests → PR revue → production.
 - `templates/` : modèles d'intent et de spec.
 - `.claude/skills/` : `redaction-intent`, `controle-taille-intent`, `generation-spec`.
-- `hooks/pre-commit` : contrôles de commit (sections de l'intent, intent validé avant la spec) ; tests dans `hooks/tests/`.
+- `hooks/pre-commit` : contrôles de commit (sections de l'intent, intent validé avant la spec, pas de credential en clair ; faux positif annoté `credential-ok`) ; tests dans `hooks/tests/`.
 - `requirements/<état>/<NN-lot>/` : artefacts d'un lot (intent, spec, plan, recette).
 - Détail des étapes : `README.md`. Ce fichier résume, il ne recopie pas.
 
