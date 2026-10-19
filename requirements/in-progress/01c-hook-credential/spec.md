@@ -1,12 +1,12 @@
 # Spec — Lot 1c : Hook credential en clair
 
 - **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** validé
+- **Auteur :** Mathieu TEXIER · **Statut :** draft
 - **Validation :** Tech lead
 
 ## Périmètre
 
-Ajouter à `hooks/pre-commit` un contrôle bloquant qui refuse un commit introduisant un credential en clair dans `ai-factory`, avec un message qui nomme le fichier, la raison et la façon de corriger. La détection est un contrôle maison dans le hook (décision du PO) ; gitleaks reste réservé à une éventuelle CI (lot 13). Le lot livre aussi les tests du contrôle, au format des lots 2 et 3.
+Ajouter à `hooks/pre-commit` un contrôle bloquant qui refuse un commit introduisant un credential en clair dans `ai-factory`, avec un message qui nomme le fichier, la raison et la façon de corriger. La détection est un contrôle maison dans le hook (décision du PO) ; gitleaks reste réservé à une éventuelle CI (lot 13). Le lot livre aussi les tests du contrôle, au format des lots 2 et 3, rangés à côté du hook dans `hooks/tests/hook-credential/` (règle du lot 1h).
 
 ## Comportements
 
@@ -24,13 +24,13 @@ Ajouter à `hooks/pre-commit` un contrôle bloquant qui refuse un commit introdu
 
 ### Tests du contrôle
 
-- **C10.** Un `run.sh` dans `tests/` du lot (sur le modèle de `hooks/tests/hook-spec/run.sh`) crée un dépôt temporaire, y copie le hook et les fixtures, tente des commits et affiche une ligne `PASS` ou `FAIL` par cas. Il sort en erreur si un cas échoue.
+- **C10.** Un `run.sh` dans `hooks/tests/hook-credential/`, avec ses fixtures dans `fixtures/` (sur le modèle de `hooks/tests/hook-spec/run.sh`) crée un dépôt temporaire, y copie le hook et les fixtures, tente des commits et affiche une ligne `PASS` ou `FAIL` par cas. Il sort en erreur si un cas échoue. Son chemin ne dépend pas du lot : il reste valable quand le lot passe en `closed/` et dans un nouveau projet copié sans `requirements/`.
 - **C11.** Les fixtures contiennent des credentials fictifs, jamais de vrais. Elles sont commitées avec `--no-verify`, dans un commit qui ne contient qu'elles.
 - **C12.** Les `run.sh` des lots 2 et 3 restent au vert avec le hook modifié.
 
 ### Arbitrages du 2026-10-16
 
-- **C13.** Familles de credentials reconnues : clés privées (`-----BEGIN … PRIVATE KEY-----`) ; jetons de fournisseurs à préfixe connu (AWS `AKIA…`, GitHub `ghp_` et `github_pat_`, Anthropic `sk-ant-`, Slack `xox…`) ; affectations génériques (`password=`, `secret=`, `token=`, `api_key=` suivis d'une valeur littérale) ; URL avec identifiants (`scheme://user:motdepasse@hôte`). La raison du message (C6) nomme la famille reconnue.
+- **C13.** Familles de credentials reconnues : clés privées (`-----BEGIN … PRIVATE KEY-----`) ; jetons de fournisseurs à préfixe connu (AWS `AKIA…`, GitHub `ghp_` et `github_pat_`, Anthropic `sk-ant-`, Slack `xox…`) ; affectations génériques (`password=`, `secret=`, `token=`, `api_key=` suivis d'une valeur littérale ; une référence ou un gabarit, entre guillemets ou non, n'est pas une valeur littérale : `$VAR`, `${VAR}`, `<à renseigner>`) ; URL avec identifiants (`scheme://user:motdepasse@hôte`). La raison du message (C6) nomme la famille reconnue.
 - **C14.** Une ligne ajoutée qui porte une annotation d'exception en commentaire n'est pas signalée. L'annotation ne vaut que pour sa ligne et ne désactive pas les autres contrôles du hook. Le texte exact du marqueur est fixé au build (proposition : `credential-ok`).
 - **C15.** Les fichiers binaires indexés ne sont pas contrôlés : seuls les fichiers texte sont lus.
 
@@ -49,6 +49,10 @@ Ajouter à `hooks/pre-commit` un contrôle bloquant qui refuse un commit introdu
 | L9 | Faux positif (valeur d'exemple qui ressemble à un credential) | La ligne porte l'annotation d'exception et passe (C14) |
 | L10 | Ligne annotée dans un commit qui contient aussi un credential non annoté | Commit refusé, seul le fichier non annoté est nommé (C14) |
 | L11 | Fichier binaire indexé contenant un motif | Non contrôlé, commit accepté (C15) |
+| L12 | Fichier renommé ou déplacé dans le commit, avec un credential ajouté | Commit refusé, le nouveau chemin nommé (C3) |
+| L13 | Fichier renommé ou déplacé sans ligne ajoutée, alors qu'il contenait déjà un credential | Commit accepté : aucune ligne ajoutée (C3) |
+| L14 | Nom de fichier avec accents ou espaces | Contrôlé comme les autres, chemin nommé en clair dans le message (C2, C6) |
+| L15 | Affectation par une référence entre guillemets (`password="$DB_PASSWORD"`) | Commit accepté (C13) |
 
 ## Contrats
 
@@ -56,7 +60,7 @@ Ajouter à `hooks/pre-commit` un contrôle bloquant qui refuse un commit introdu
 - **Sortie en cas de refus :** code ≠ 0 et, sur la sortie d'erreur, une ligne par détection au format des messages existants : `<chemin> : <raison>`, suivie de la façon de corriger. Aucune valeur détectée n'est affichée.
 - **Sortie sans détection :** rien d'ajouté par ce contrôle ; le code de sortie dépend des autres contrôles.
 - **Annotation d'exception :** marqueur en commentaire sur la ligne concernée (texte fixé au build, C14).
-- **Tests :** `bash requirements/in-progress/01c-hook-credential/tests/hook-credential/run.sh`, lignes `PASS <nom>` / `FAIL <nom>`, code 0 si tout passe.
+- **Tests :** `bash hooks/tests/hook-credential/run.sh`, depuis la racine du dépôt, lignes `PASS <nom>` / `FAIL <nom>`, code 0 si tout passe.
 
 ## Critères d'acceptation
 
@@ -65,7 +69,7 @@ Ajouter à `hooks/pre-commit` un contrôle bloquant qui refuse un commit introdu
 | A1 | Un credential en clair est refusé, avec fichier, raison et correction | Un dépôt avec le hook actif | On commite un fichier contenant un credential fictif | Commit refusé ; le message nomme le fichier, la raison et la façon de corriger, sans afficher la valeur | Automatisé |
 | A2 | Un commit sans credential passe | Un dépôt avec le hook actif | On commite un fichier sans credential | Commit accepté | Automatisé |
 | A3 | Les tests existants restent au vert | Le hook modifié | On lance les `run.sh` des lots 2 et 3 | Toutes les lignes sont `PASS`, code 0 | Automatisé |
-| A4 | Les tests du contrôle passent, au format des lots 2 et 3 | Le `run.sh` du lot dans son dossier `tests/` | On le lance | Toutes les lignes sont `PASS`, code 0 ; structure `run.sh` + `fixtures/` comme les lots 2 et 3 | Automatisé |
+| A4 | Les tests du contrôle passent, au format des lots 2 et 3 | `hooks/tests/hook-credential/run.sh` | On le lance | Toutes les lignes sont `PASS`, code 0 ; structure `run.sh` + `fixtures/` comme les lots 2 et 3 | Automatisé |
 
 ## Points d'attention
 
