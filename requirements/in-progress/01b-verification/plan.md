@@ -1,7 +1,7 @@
 # Plan — Lot 1b : Commande de vérification
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 - **Base :** `main` (1dec5ac, lots 1a et 1h fermés : tests des hooks dans `hooks/tests/`).
 
