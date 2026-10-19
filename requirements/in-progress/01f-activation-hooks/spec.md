@@ -71,6 +71,7 @@ Deux hooks Claude Code, déclarés dans `.claude/settings.json` versionné, qui 
 - **P3 — Commits de l'agent dans un autre dépôt.** Les `run.sh` des lots 2 et 3 commitent dans des dépôts temporaires, mais via `bash run.sh`, donc sans être concernés. Un `git -C <autre dépôt> commit` lancé directement serait évalué sur la configuration du dépôt de session. Décideur : tech lead.
 - **P4 — Pas de CI.** Le PO a confirmé l'absence de CI sur `ai-factory` : rien ne rattrape un commit fait sans hooks hors de Claude Code. Le lot 13 est suspendu tant qu'aucune CI n'existe. Décideur : PO.
 - **P5 — Aucun skill de standards.** Aucun skill de conventions n'existe dans `.claude/skills/` ; l'emplacement `.claude/hooks/` est une décision du 2026-10-16. Décideur : tech lead.
+- **P6 — Session lancée hors de la racine.** Claude Code ne lit le `.claude/settings.json` de projet que dans le dossier où il est lancé : lancé depuis un dossier parent (par exemple `/home/ocean/Projets`), il ne charge pas les hooks d'`ai-factory`, et ni signalement ni blocage n'a lieu. Limite documentée dans le README (2026-10-19) ; un hook livré par un plugin, activé au niveau de l'utilisateur, fera l'objet du lot 1i. Décideur : tech lead.
 
 ## Hors périmètre
 

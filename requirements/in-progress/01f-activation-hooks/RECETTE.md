@@ -14,19 +14,21 @@
 | Fichiers suivis | `git check-ignore -v .claude/settings.json .claude/hooks/*.sh .claude/hooks/tests/hook-activation/run.sh` | aucune sortie : rien n'est ignoré sur ce poste | C10, R6 |
 | Ensemble du dépôt | `bash scripts/verifier.sh` | `4 run.sh lancés, 0 en échec` | C11 |
 
-## Recette en session réelle (A1 à A3) — à faire
+## Recette en session réelle (A1 à A3)
 
-À faire par un humain dans un clone jetable, une nouvelle session Claude Code par cas. Approuver les hooks du projet si Claude Code le demande (R4).
+Faite par un humain le 2026-10-19 dans un clone jetable, une nouvelle session Claude Code par cas. Approuver les hooks du projet si Claude Code le demande (R4).
 
-| # | Préparation | Action | Attendu | Observé |
-|---|---|---|---|---|
-| A1 | `git config --unset core.hooksPath` | ouvrir une session | message « Hooks git inactifs… » visible, avec `git config core.hooksPath hooks` ; l'agent le connaît | |
-| A2 | idem | demander un commit à l'agent | commande refusée ; l'agent rapporte la raison et la commande | |
-| A3 | `git config core.hooksPath hooks` | ouvrir une session, puis demander le commit d'un intent incomplet, puis d'un fichier sain | aucun message à l'ouverture ; intent incomplet refusé par `pre-commit` ; fichier sain commité | |
+| #   | Préparation                         | Action                                                                                    | Attendu                                                                                              | Observé |
+| --- | ----------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------- |
+| A1  | `git config --unset core.hooksPath` | ouvrir une session                                                                        | message « Hooks git inactifs… » visible, avec `git config core.hooksPath hooks` ; l'agent le connaît | OK      |
+| A2  | idem                                | demander un commit à l'agent                                                              | commande refusée ; l'agent rapporte la raison et la commande                                         | OK      |
+| A3  | `git config core.hooksPath hooks`   | ouvrir une session, puis demander le commit d'un intent incomplet, puis d'un fichier sain | aucun message à l'ouverture ; intent incomplet refusé par `pre-commit` ; fichier sain commité        | OK      |
+
+Constaté pendant la recette : une session lancée depuis un dossier parent du dépôt ne charge pas `.claude/settings.json`, et rien n'est signalé ni bloqué. Claude Code ne lit les réglages de projet que dans le dossier de lancement ([documentation](https://code.claude.com/docs/en/settings.md)). Limite documentée dans le README, traitement au lot 1i (P6, R7).
 
 ## Points à signaler en revue
 
 - **Écart au plan, racine du dépôt.** `hooks-git-actifs.sh` prend le toplevel git de `$CLAUDE_PROJECT_DIR` au lieu de `$CLAUDE_PROJECT_DIR` tel quel. Le résultat est le même à la racine, et le hook tient aussi pour une session ouverte dans un sous-dossier.
 - **`CLAUDE.md` à 60 lignes**, soit la limite du lot 1e (C6). La prochaine ligne demandera d'en retirer une.
-- **Spec modifiée après validation** (2cda17d) : chemin des tests (C11, contrats). Le statut reste `validé`, et la modification est à confirmer par le tech lead.
+- **Spec modifiée après validation** : chemin des tests (C11, contrats, 2cda17d) et point P6 (lancement hors de la racine). Le statut reste `validé`, et la modification est à confirmer par le tech lead.
 - **Plan au statut `draft`** : il n'a pas été validé avant le build.

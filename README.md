@@ -28,7 +28,7 @@ Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3).
 
 ## Mise en route (une fois)
 
-1. Activer le hook : `git config core.hooksPath hooks`. Tant que ce n'est pas fait, Claude Code le signale à l'ouverture de chaque session et refuse les `git commit` de l'agent. Claude Code peut demander d'approuver les hooks de `.claude/settings.json` à leur première apparition : sans approbation, ni signalement ni blocage.
+1. Activer le hook : `git config core.hooksPath hooks`. Tant que ce n'est pas fait, Claude Code le signale à l'ouverture de chaque session et refuse les `git commit` de l'agent. Claude Code peut demander d'approuver les hooks de `.claude/settings.json` à leur première apparition : sans approbation, ni signalement ni blocage. Lancez Claude Code depuis la racine du dépôt : lancé depuis un dossier parent, il ne lit pas `.claude/settings.json` et aucun de ces hooks ne joue.
 2. Vérifier que `.claude/` est suivi par git. Si votre `.gitignore` global ignore les dossiers cachés (règle `.*/`), les modifications de `.claude/` (skills, hooks, `settings.json`) demandent `git add -f`. Un script de `.claude/hooks/` non suivi fait échouer son hook sans rien bloquer.
 3. Vérifier l'installation : `scripts/verifier.sh`, depuis la racine (tout doit être `OK`, code de sortie 0).
 

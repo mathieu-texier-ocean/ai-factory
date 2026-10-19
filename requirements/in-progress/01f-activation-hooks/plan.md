@@ -132,6 +132,7 @@ Couvre : A1 à A3.
 - **R4 — Hooks de projet à approuver.** Claude Code peut demander à chaque personne d'approuver les hooks déclarés dans `.claude/settings.json` à leur première apparition. Tant que ce n'est pas fait, ni signalement ni blocage : à mentionner dans le README.
 - **R5 — Lot 1g.** Le lot 1g ajoutera un second `PreToolUse` dans le même `settings.json` et réutilisera `.claude/hooks/`. Garder les scripts indépendants pour qu'il s'ajoute sans modifier ceux de 1f.
 - **R6 — Scripts non suivis.** Un clone qui a `settings.json` sans les scripts de `.claude/hooks/` (`.gitignore` global `.*/`) échoue en code 127 : ni signalement ni blocage, sans message, soit le cas que le lot veut supprimer. Parade : `git check-ignore` de l'étape 3.
+- **R7 — Session lancée hors de la racine** (constaté en recette). Les hooks de projet ne sont chargés que depuis le dossier de lancement : depuis un dossier parent, rien ne joue. Limite documentée dans le README ; traitement au lot 1i (P6 de la spec).
 
 ## Hors périmètre
 
