@@ -1,7 +1,7 @@
 # Plan — Lot 1f : Activation des hooks git
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 - **Base :** `main` (a2123fb, lot 1e clos).
 
