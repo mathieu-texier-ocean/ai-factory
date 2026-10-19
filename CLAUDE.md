@@ -6,7 +6,7 @@
 
 ```bash
 git config core.hooksPath hooks       # active les contrôles de commit
-bash scripts/verifier.sh              # tous les tests (hooks/tests/*/run.sh)
+bash scripts/verifier.sh              # tous les tests (tous les run.sh du dépôt)
 ```
 
 ## Vérifier son travail
@@ -45,6 +45,7 @@ OK hooks/tests/hook-intent/run.sh
 - `templates/` : modèles d'intent et de spec.
 - `.claude/skills/` : `redaction-intent`, `controle-taille-intent`, `generation-spec`.
 - `hooks/pre-commit` : contrôles de commit (sections de l'intent, intent validé avant la spec, pas de credential en clair ; faux positif annoté `credential-ok`) ; tests dans `hooks/tests/`.
+- `.claude/hooks/`, déclarés dans `.claude/settings.json` : signalent et bloquent les commits de l'agent tant que `core.hooksPath` n'est pas `hooks` ; tests dans `.claude/hooks/tests/`.
 - `requirements/<état>/<NN-lot>/` : artefacts d'un lot (intent, spec, plan, recette).
 - Détail des étapes : `README.md`. Ce fichier résume, il ne recopie pas.
 
