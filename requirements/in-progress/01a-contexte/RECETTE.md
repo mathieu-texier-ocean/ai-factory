@@ -21,4 +21,4 @@
 ## Points à signaler en revue
 
 - **R3 du plan.** Les erreurs fréquentes viennent du README et des pièges constatés par l'équipe, pas encore d'erreurs de l'agent constatées deux fois. À confirmer par le tech lead.
-- **R5 du plan.** `requirements/closed/02-intent/tests/skills-intent/README.md` cite toujours `requirements/open/01-socle/intent.md`, découpé en 1a à 1f. Non corrigé (hors périmètre).
+- **R5 du plan.** `requirements/closed/02-intent/tests/skills-intent/README.md` cite toujours `requirements/open/01-socle/intent.md`, découpé en 1a à 1f. Hors périmètre de 1a, corrigé à part par 944700c (jeu remplacé par une copie de l'intent 1a, `intent-coherent.md`).
