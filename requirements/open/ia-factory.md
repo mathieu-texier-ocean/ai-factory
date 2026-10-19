@@ -44,7 +44,7 @@ Une chaîne SDLC natif IA outillée dans `ai-factory`, où chaque étape produit
 | 1a. Socle : contexte d'équipe | [01a-contexte/intent.md](../closed/01a-contexte/intent.md) | Tech lead | — |
 | 1b. Socle : commande de vérification | [01b-verification/intent.md](../closed/01b-verification/intent.md) | Tech lead | — |
 | 1c. Socle : hook credential | [01c-hook-credential/intent.md](../closed/01c-hook-credential/intent.md) | Tech lead | — |
-| 1e. Socle : vérifier avant de déclarer fini | [01e-verifier-avant-fini/intent.md](../in-progress/01e-verifier-avant-fini/intent.md) | Tech lead | 1a, 1b |
+| 1e. Socle : vérifier avant de déclarer fini | [01e-verifier-avant-fini/intent.md](../closed/01e-verifier-avant-fini/intent.md) | Tech lead | 1a, 1b |
 | 1f. Socle : activation des hooks git | [01f-activation-hooks/intent.md](../in-progress/01f-activation-hooks/intent.md) | Tech lead | — |
 | 1g. Socle : protection des tests pendant un correctif | [01g-protection-tests/intent.md](../in-progress/01g-protection-tests/intent.md) | Tech lead | 1e, 1f |
 | 1h. Socle : livrables rangés à la racine | [01h-livrables-racine/intent.md](../closed/01h-livrables-racine/intent.md) | Tech lead | — |

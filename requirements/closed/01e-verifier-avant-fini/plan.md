@@ -18,7 +18,7 @@
 | Fichier | Nature | Étape |
 |---|---|---|
 | `CLAUDE.md` | modifié (`## Commandes` resserré, bloc `## Vérifier son travail`) | 2 |
-| `requirements/in-progress/01e-verifier-avant-fini/RECETTE.md` | nouveau | 4 |
+| `requirements/closed/01e-verifier-avant-fini/RECETTE.md` | nouveau | 4 |
 
 `templates/intent.md` et les fixtures du lot 2 ne sont modifiés que dans la démonstration, jamais dans la PR.
 
