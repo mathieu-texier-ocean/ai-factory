@@ -4,9 +4,7 @@ Outillage du SDLC natif IA : chaque étape produit un artefact versionné dans G
 
 `intent.md` → `spec.md` → `plan.md` → diff + tests → PR revue → production
 
-Vue d'ensemble, lots et critères de succès : [requirements/open/ia-factory.md](requirements/open/ia-factory.md).
-
-Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3). Les étapes suivantes sont décrites dans le dossier de leur lot (`requirements/open/`, `in-progress/` ou `closed/`).
+Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3).
 
 ## Ce que contient le dépôt
 
@@ -21,20 +19,19 @@ Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3). Les étapes
 | `.claude/skills/controle-taille-intent` | Dit si un intent doit être découpé |
 | `.claude/skills/generation-spec` | Génère `spec.md` depuis un intent validé |
 | `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire, et un nouveau `spec.md` dont l'intent n'est pas validé |
-| `requirements/closed/02-intent/tests/` | Tests du lot 2 : hook (sections de l'intent) et jeux de données des skills d'intent |
-| `requirements/closed/03-spec/tests/` | Tests du lot 3 : hook (intent validé) et jeux de données de `generation-spec` |
+| `hooks/tests/` | Tests des hooks git : sections de l'intent (`hook-intent`), intent validé (`hook-spec`) |
 
 ## Mise en route (une fois)
 
 1. Activer le hook : `git config core.hooksPath hooks`
 2. Vérifier que les skills sont suivis par git. Si votre `.gitignore` global ignore les dossiers cachés (règle `.*/`), les modifications de `.claude/skills/` demandent `git add -f`.
-3. Vérifier l'installation : `bash requirements/closed/02-intent/tests/hook-intent/run.sh` et `bash requirements/closed/03-spec/tests/hook-spec/run.sh` (tout doit être `PASS`).
+3. Vérifier l'installation : `bash hooks/tests/hook-intent/run.sh` et `bash hooks/tests/hook-spec/run.sh` (tout doit être `PASS`).
 
 ## Créer un intent en partant de zéro
 
 Règle de base : **un lot = un sous-intent = une PR**.
 
-1. **Créer le dossier du lot** : `requirements/open/NN-nom-du-lot/` (numéro suivant, nom court en minuscules). Quand le lot démarre, le dossier est déplacé tel quel vers `requirements/in-progress/NN-nom-du-lot/`, et les liens qui le citent (par exemple dans `ia-factory.md`) sont mis à jour.
+1. **Créer le dossier du lot** : `requirements/open/NN-nom-du-lot/` (numéro suivant, nom court en minuscules). Quand le lot démarre, le dossier est déplacé tel quel vers `requirements/in-progress/NN-nom-du-lot/`, et les liens qui le citent (par exemple dans l'intent parent) sont mis à jour.
 2. **Rédiger l'intent** : dans Claude Code, demandez « rédiger un intent » (skill `redaction-intent`) en donnant votre besoin brut en texte libre et le dossier cible.
    - Le skill pose les questions manquantes, une série à la fois.
    - Il n'invente rien : ce que vous ne savez pas va dans « Questions ouvertes ».
@@ -70,6 +67,12 @@ Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptati
 - Les numéros `C`, `L` et `A` sont stables : une révision ajoute un numéro, elle ne renumérote pas. Le plan (lot 4) et la recette (lot 7) s'y réfèrent.
 - Critères d'acceptation : `| # | Critère | Étant donné | Quand | Alors | Type |`, avec `Type` = `Automatisé`, `Manuel` ou `Humain`. Une ligne = un scénario de recette.
 
+## Ranger les livrables
+
+- Les livrables (hooks, skills, templates, scripts, documentation) se trouvent hors de `requirements/` et n'y renvoient pas. `requirements/` ne contient que les artefacts des lots (intent, spec, plan, recette) et n'est pas copié dans un nouveau projet.
+- Les tests automatisés d'un livrable vont dans `<dossier du livrable>/tests/<nom>/` (`run.sh` et `fixtures/`), à un chemin indépendant du lot qui l'a produit : par exemple `hooks/tests/<nom>/`, `.claude/hooks/tests/<nom>/`, `scripts/tests/<nom>/`.
+- Seuls les tests d'exigence (recette des critères d'acceptation d'un lot, jeux de données des skills compris) restent dans le dossier du lot.
+
 ## Règles à respecter
 
 - Ne jamais écrire `validé` pour quelqu'un d'autre : la validation est humaine.
@@ -79,7 +82,6 @@ Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptati
 
 ## Vérifier
 
-- `bash requirements/closed/02-intent/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
-- `requirements/closed/02-intent/tests/skills-intent/` : jeux de données de la recette manuelle des skills, avec le résultat attendu de chaque scénario dans son README.
-- `bash requirements/closed/03-spec/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
-- `requirements/closed/03-spec/tests/skills-spec/` : jeux de données de la recette de `generation-spec`, résultats dans `RESULTATS.md`.
+- `bash hooks/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
+- `bash hooks/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
+- La recette manuelle d'un skill (jeux de données, résultats) est consignée dans le dossier du lot qui l'a livré.
