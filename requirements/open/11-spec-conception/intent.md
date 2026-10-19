@@ -1,7 +1,7 @@
 # Intent : Production automatique de la spec depuis un intent validé
 
 - **Auteur :** PHAN Van Khai
-- **Statut :** draft
+- **Statut :** validé
 - **Date :** 2026-10-15
 - **Validation :** PO
 - **Dépend de :** lot 3 (génération de spec), lot 2 (statut `validé` de l'intent)
