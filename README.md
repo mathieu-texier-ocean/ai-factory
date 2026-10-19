@@ -21,12 +21,13 @@ Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3).
 | `.claude/skills/generation-spec` | Génère `spec.md` depuis un intent validé |
 | `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire, et un nouveau `spec.md` dont l'intent n'est pas validé |
 | `hooks/tests/` | Tests des hooks git : sections de l'intent (`hook-intent`), intent validé (`hook-spec`) |
+| `scripts/verifier.sh` | Lance tous les `run.sh` du dépôt ; sort en erreur si l'un échoue |
 
 ## Mise en route (une fois)
 
 1. Activer le hook : `git config core.hooksPath hooks`
 2. Vérifier que les skills sont suivis par git. Si votre `.gitignore` global ignore les dossiers cachés (règle `.*/`), les modifications de `.claude/skills/` demandent `git add -f`.
-3. Vérifier l'installation : `bash hooks/tests/hook-intent/run.sh` et `bash hooks/tests/hook-spec/run.sh` (tout doit être `PASS`).
+3. Vérifier l'installation : `scripts/verifier.sh`, depuis la racine (tout doit être `OK`, code de sortie 0).
 
 ## Créer un intent en partant de zéro
 
@@ -83,6 +84,7 @@ Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptati
 
 ## Vérifier
 
+- `scripts/verifier.sh`, depuis la racine : lance tous les `run.sh` du dépôt, affiche `OK` ou `ÉCHEC` pour chacun puis un récapitulatif, et sort en erreur si l'un échoue.
 - `bash hooks/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
 - `bash hooks/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
 - La recette manuelle d'un skill (jeux de données, résultats) est consignée dans le dossier du lot qui l'a livré.
