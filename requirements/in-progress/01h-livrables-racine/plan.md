@@ -77,7 +77,7 @@ Remplacer les anciens chemins, sans autre changement de texte :
 - plan 1c, étape 2 : `requirements/closed/02-intent/tests/hook-intent/run.sh` → `hooks/tests/hook-intent/run.sh` (P2) ;
 - spec 1c, C10 : `tests/hook-spec/run.sh` → `hooks/tests/hook-spec/run.sh` (P2).
 
-Puis : `git grep -nP '(?<!hooks/)tests/hook-(intent|spec)' -- ':!requirements/*/01h-livrables-racine'` ne renvoie que les lignes du README, traitées à l'étape 4.
+Puis : `git grep -nP '(?<!hooks/)tests/hook-(intent|spec)' -- ':!requirements/*/01h-livrables-racine/*'` ne renvoie que les lignes du README, traitées à l'étape 4.
 
 Commit : `Lot 1h : met à jour les chemins des tests des hooks dans les lots`.
 
@@ -95,7 +95,7 @@ Couvre : C9, C10, P2, P4.
 
 Puis :
 
-- `git grep -nP '(?<!hooks/)tests/hook-(intent|spec)' -- ':!requirements/*/01h-livrables-racine'` : aucune ligne (C11, A4) ;
+- `git grep -nP '(?<!hooks/)tests/hook-(intent|spec)' -- ':!requirements/*/01h-livrables-racine/*'` : aucune ligne (C11, A4) ;
 - `git grep -nE 'requirements/(open|in-progress|closed)/([0-9]|ia-factory)' -- ':!requirements'` : aucune ligne (C12, A7) ;
 - `git grep -n 'ia-factory.md' -- ':!requirements'` : aucune ligne.
 
