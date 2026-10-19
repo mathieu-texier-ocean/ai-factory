@@ -8,7 +8,7 @@
 ## Prérequis
 
 - `spec.md` commitée au statut `validé` : fait (789bb9e).
-- Lot 1a mergé : `CLAUDE.md` existe, 45 lignes au plus (cible du plan 1a), soit au moins 15 lignes libres sous la limite de 60.
+- Lot 1a mergé : `CLAUDE.md` existe, 42 lignes (mesuré le 2026-10-19), 40 après le resserrage de `## Commandes` (étape 2), soit 20 lignes libres sous la limite de 60.
 - Lot 1b mergé : `scripts/verifier.sh` existe et sort en 0 sur `main`.
 - Une seule PR pour le lot. Chaque étape ci-dessous = un commit, sauf la démonstration (étape 3), qui ne se merge pas.
 - P1 de la spec (où faire la démonstration) tranché par le tech lead avant l'étape 3 : voir R1.
@@ -17,7 +17,7 @@
 
 | Fichier | Nature | Étape |
 |---|---|---|
-| `CLAUDE.md` | modifié (bloc `## Vérifier son travail`) | 2 |
+| `CLAUDE.md` | modifié (`## Commandes` resserré, bloc `## Vérifier son travail`) | 2 |
 | `requirements/in-progress/01e-verifier-avant-fini/RECETTE.md` | nouveau | 4 |
 
 `templates/intent.md` et les fixtures du lot 2 ne sont modifiés que dans la démonstration, jamais dans la PR.
@@ -32,19 +32,31 @@ Couvre : C2 (exemple recopié d'une exécution réelle).
 
 ### 2. Bloc « Vérifier son travail » dans `CLAUDE.md`
 
-Section `## Vérifier son travail`, placée après `## Commandes`, 15 lignes au plus :
+Section `## Vérifier son travail`, placée après `## Commandes`, 18 lignes au plus :
 
 - **Commande (C1)** : `scripts/verifier.sh`, à lancer depuis la racine.
-- **Exemple de sortie saine (C2)** : bloc de code de 4 à 6 lignes repris de l'étape 1 — un `== <chemin>` suivi de `OK`, une ligne `…` pour les autres `run.sh`, puis le récapitulatif `<n> run.sh lancés, 0 en échec`. La coupe est signalée par le `…`.
-- **Règles (C3 à C5)**, une puce chacune :
+- **Exemple de sortie saine (C2)** : extrait balisé de la sortie de l'étape 1, lignes recopiées telles quelles :
+
+  ```
+  == hooks/tests/hook-intent/run.sh
+  PASS complet accepté (scénario 3)
+  …
+  OK hooks/tests/hook-intent/run.sh
+  …
+
+  3 run.sh lancés, 0 en échec
+  ```
+
+  Chaque `…` signale une coupe : les autres lignes `PASS` du script, puis les autres `run.sh`.
+- **Règles (C3 à C5)**, quatre puces (C3, L1, C4, C5) :
   - Avant de déclarer une tâche finie, lancer `scripts/verifier.sh` et coller sa sortie, même si la tâche ne touche aucun fichier testé (L5).
-  - Sortie en erreur : la tâche n'est pas finie ; coller la sortie et corriger (L1).
+  - Sortie en erreur sans changement volontaire : la tâche n'est pas finie ; coller la sortie et corriger le code (L1).
   - Pendant un correctif, corriger le code, pas le test.
   - Si le comportement change volontairement, mettre à jour le test et le signaler explicitement (L2).
 
-Contrôle de taille : `wc -l CLAUDE.md` ≤ 60 (C6). Si le bloc ne tient pas, resserrer l'exemple de sortie avant de toucher aux sections du lot 1a (L4).
+Contrôle de taille : `wc -l CLAUDE.md` ≤ 60 (C6) ; budget prévu 40 + 1 ligne vide + 18 = 59. Si le bloc ne tient pas, resserrer l'exemple de sortie avant de toucher aux sections du lot 1a (L4).
 
-La section `## Commandes` du lot 1a garde ses lignes `run.sh` individuelles ; si le budget manque, elles peuvent être remplacées par `scripts/verifier.sh` (L3, règle d'entretien du lot 1a).
+Dans `## Commandes` (lot 1a), les trois lignes `bash hooks/tests/*/run.sh` sont remplacées par `bash scripts/verifier.sh   # tous les tests (hooks/tests/*/run.sh)`, comme le prévoit le R1 du plan 1a. Une seule façon de vérifier : un nouveau `run.sh` est pris en compte sans retoucher `CLAUDE.md` (L3, règle d'entretien du lot 1a).
 
 Couvre : C1 à C6, L1 à L5.
 
@@ -53,7 +65,7 @@ Couvre : C1 à C6, L1 à L5.
 Dans l'environnement retenu pour P1 (proposition : un clone jetable, voir R1), avec la branche du lot 1e :
 
 1. Ouvrir une nouvelle session Claude Code à la racine du clone (le bloc est chargé avec `CLAUDE.md`).
-2. Demander, sans mentionner la vérification : « Ajoute une section obligatoire `## Risques` à `templates/intent.md`. »
+2. Demander, sans mentionner la vérification : « Ajoute une section obligatoire `## Risques` à la fin de `templates/intent.md`. » L'emplacement est imposé : le hook liste les sections manquantes dans l'ordre du template et `run.sh` compare par sous-chaîne, donc une section insérée plus haut ferait aussi échouer `sans-deux`, `sans-priorite` ou `sans-pourquoi`.
 3. Observer, sans intervenir :
    - l'agent modifie `templates/intent.md` ;
    - il lance `scripts/verifier.sh` avant de déclarer fini ;
@@ -96,7 +108,7 @@ Couvre : A1, A2.
 
 - **R1 — Lieu de la démonstration (P1 de la spec, à trancher par le tech lead).** La branche jetable n'a pas été retenue le 2026-10-16. Le plan propose un clone jetable hors du dépôt de travail : même effet (rien n'est mergé), sans branche à nettoyer sur `origin`. Autre option : faire la démonstration dans le dépôt et reverter, au risque d'un merge accidentel.
 - **R2 — Une démonstration ne prouve pas l'habitude (P2 de la spec).** A2 vérifie un cas. Si l'agent oublie la vérification, le bloc est reformulé et la démonstration rejouée ; le vrai indicateur est le nombre de cycles de reprise par PR.
-- **R3 — Budget de lignes.** Le bloc dépend de la place laissée par le lot 1a. Si 1a dépasse 45 lignes, l'exemple de sortie est le premier à être raccourci.
+- **R3 — Budget de lignes.** Le budget prévu est de 59 lignes sur 60. Si le bloc déborde, l'exemple de sortie est le premier à être raccourci.
 - **R4 — Interaction avec le lot 1g.** Sur une branche `bugfix/…`, une fois 1g livré, la mise à jour des fixtures de la démonstration demandera confirmation. La démonstration se fait sur une branche qui ne commence pas par `bugfix/`.
 - **R5 — Sortie de la commande qui change.** Si le format de `scripts/verifier.sh` évolue, l'exemple de sortie du bloc devient faux. La règle d'entretien du lot 1a s'applique.
 

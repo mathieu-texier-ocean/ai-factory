@@ -23,7 +23,7 @@ Ajouter à `CLAUDE.md` (lot 1a) un bloc « Vérifier son travail » qui donne la
 
 | # | Cas | Comportement attendu |
 |---|---|---|
-| L1 | La commande sort en erreur | L'agent ne déclare pas la tâche finie ; il colle la sortie et corrige le code (C3, C4) |
+| L1 | La commande sort en erreur sans changement volontaire de comportement | L'agent ne déclare pas la tâche finie ; il colle la sortie et corrige le code (C3, C4) |
 | L2 | Un test échoue parce que le comportement a changé volontairement | L'agent met à jour le test et le signale (C5) |
 | L3 | La commande du lot 1b change de nom ou d'emplacement | Le bloc est mis à jour par PR, comme toute commande de `CLAUDE.md` (lot 1a) |
 | L4 | L'ajout du bloc ferait dépasser 60 lignes | Le bloc ou une section de `CLAUDE.md` est resserré (C6) |
