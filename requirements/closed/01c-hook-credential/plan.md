@@ -1,7 +1,7 @@
 # Plan — Lot 1c : Hook credential en clair
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 - **Base :** `main` (011bdc5, lot 1b clos : `scripts/verifier.sh` est sur `main`).
 

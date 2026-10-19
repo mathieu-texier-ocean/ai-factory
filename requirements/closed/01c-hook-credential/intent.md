@@ -1,7 +1,7 @@
 # Sous-intent — Lot 1c : Hook credential en clair
 
 - **Parent :** [ia-factory.md](../../open/ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
 - **Dépend de :** —
