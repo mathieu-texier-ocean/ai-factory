@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Deux contrôles :
+# Trois contrôles :
 # 1. Tout intent.md stagé contient les sections obligatoires.
 #    Source de vérité : les titres "## " de templates/intent.md (hors "Questions ouvertes").
 #    Présence uniquement, pas la qualité du contenu.
 # 2. Tout spec.md créé a, dans HEAD, un intent.md validé dans le même dossier.
+# 3. Aucune ligne ajoutée à un fichier texte indexé ne contient de credential en clair.
+#    Une ligne qui porte le marqueur credential-ok est ignorée. La valeur n'est jamais affichée.
 set -u
 
 root=$(git rev-parse --show-toplevel)
@@ -54,5 +56,37 @@ check_spec_intent() {
 while IFS= read -r path; do
   [ "$(basename "$path")" = "spec.md" ] && check_spec_intent "$path"
 done < <(git diff --cached --name-only --diff-filter=A)
+
+# Une famille par indice : nom affiché, motif grep -E, option de casse.
+familles=("clé privée" "jeton fournisseur" "affectation générique" "URL avec identifiants")
+motifs=(
+  '-----BEGIN ([A-Z0-9]+ )*PRIVATE KEY-----'
+  'AKIA[A-Z0-9]{16}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|sk-ant-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}'
+  "(password|secret|token|api_key)[[:space:]]*=[[:space:]]*[\"']?[^\"'\$<{[:space:]][^\"'[:space:]]{3,}"
+  '[A-Za-z][A-Za-z0-9+.-]*://[^/:@[:space:]]+:[^/@[:space:]]+@'
+)
+casse=("" "" "-i" "")
+
+# -z : chemins bruts, sans les guillemets de core.quotePath. -M : un renommage donne
+# "<ajouts>\t<suppressions>\t" puis l'ancien et le nouveau chemin ; binaire : "-\t-".
+while IFS= read -r -d '' rec; do
+  ajouts=${rec%%$'\t'*}
+  chemin=${rec#*$'\t'}; chemin=${chemin#*$'\t'}
+  ancien=$chemin
+  if [ -z "$chemin" ]; then
+    IFS= read -r -d '' ancien; IFS= read -r -d '' chemin
+  fi
+  [ "$ajouts" = - ] && continue
+  # Les deux chemins gardent le renommage apparié : seules les lignes ajoutées sont lues.
+  lignes=$(git diff --cached -U0 -M --no-color -- "$ancien" "$chemin" \
+    | awk '/^@@/ { h = 1; next } h && /^\+/' | grep -vF credential-ok)
+  [ -n "$lignes" ] || continue
+  for i in "${!familles[@]}"; do
+    if printf '%s\n' "$lignes" | grep -qE ${casse[i]} -e "${motifs[i]}"; then
+      echo "$chemin : credential en clair (${familles[i]}). Retirez la valeur, remplacez-la par une référence (variable d'environnement, gestionnaire de secrets) et révoquez-la si elle est réelle. Faux positif : ajoutez credential-ok en commentaire sur la ligne." >&2
+      status=1
+    fi
+  done
+done < <(git diff --cached --numstat -z -M --diff-filter=ACMR)
 
 exit $status
