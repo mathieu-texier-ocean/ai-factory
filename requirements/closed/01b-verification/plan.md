@@ -17,7 +17,7 @@
 |---|---|---|
 | `scripts/verifier.sh` | nouveau, exécutable (mode `100755`) | 1 |
 | `README.md` | modifié (tableau du dépôt, section « Vérifier ») | 2 |
-| `requirements/in-progress/01b-verification/RECETTE.md` | nouveau | 3 |
+| `requirements/in-progress/01b-verification/validation.md` | nouveau | 3 |
 
 Pas de test automatisé de la commande (décision du 2026-10-16, P1 de la spec).
 
@@ -51,7 +51,7 @@ Couvre : contrats (consommateurs).
 
 ### 3. Recette manuelle
 
-Dans un clone jetable (`git clone . "$(mktemp -d)"`), pour ne jamais commiter de faux `run.sh`. Chaque cas repart d'un clone propre, sauf « Lot déplacé » qui reprend la préparation de « Deux échecs ». Résultats dans `RECETTE.md` : date, action, sortie observée, code de sortie.
+Dans un clone jetable (`git clone . "$(mktemp -d)"`), pour ne jamais commiter de faux `run.sh`. Chaque cas repart d'un clone propre, sauf « Lot déplacé » qui reprend la préparation de « Deux échecs ». Résultats dans `validation.md` : date, action, sortie observée, code de sortie.
 
 | Cas | Préparation | Action | Attendu | Réf. |
 |---|---|---|---|---|
@@ -76,7 +76,7 @@ Couvre : A1 à A4.
 ## Tests à écrire
 
 - Aucun test automatisé (P1 de la spec).
-- Recette manuelle de l'étape 3, consignée dans `RECETTE.md`.
+- Recette manuelle de l'étape 3, consignée dans `validation.md`.
 
 ## Couverture de la spec
 

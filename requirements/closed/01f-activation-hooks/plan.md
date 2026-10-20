@@ -23,7 +23,7 @@
 | `.claude/settings.json` | nouveau | 3 |
 | `README.md` | modifié (mise en route, tableau du dépôt) | 4 |
 | `CLAUDE.md` | modifié (commandes, architecture) | 4 |
-| `requirements/closed/01f-activation-hooks/RECETTE.md` | nouveau | 4 |
+| `requirements/closed/01f-activation-hooks/validation.md` | nouveau | 4 |
 
 Les noms de scripts sont une proposition ; seul l'emplacement `.claude/hooks/` est fixé (C11).
 
@@ -100,7 +100,7 @@ Couvre : C10.
 
 - README : « Mise en route », étape 1 : dire que Claude Code signale et bloque tant que les hooks ne sont pas actifs ; étape 2 : `git add -f` étendu à tout `.claude/` (skills, hooks, `settings.json`) ; tableau du dépôt : lignes `.claude/settings.json`, `.claude/hooks/` et `.claude/hooks/tests/`.
 - `CLAUDE.md` : « Commandes », le commentaire de `verifier.sh` cite aussi `.claude/hooks/tests/` ; « Architecture » : ligne `.claude/hooks/` et `.claude/settings.json`.
-- `RECETTE.md`, en session réelle de Claude Code, dans un clone jetable :
+- `validation.md`, en session réelle de Claude Code, dans un clone jetable :
   - A1 : `git config --unset core.hooksPath`, nouvelle session → message visible et commande donnée.
   - A2 : demander un commit à l'agent → refus, raison et commande.
   - A3 : `git config core.hooksPath hooks`, nouvelle session → aucun message ; commit de l'agent accepté, et le `pre-commit` joue (un intent incomplet est refusé).
@@ -111,7 +111,7 @@ Couvre : A1 à A3.
 ## Tests à écrire
 
 - Automatisés : `.claude/hooks/tests/hook-activation/run.sh`, 13 cas (étape 2), lancés par `scripts/verifier.sh`.
-- Manuels : A1 à A3 en session réelle (étape 4), consignés dans `RECETTE.md`.
+- Manuels : A1 à A3 en session réelle (étape 4), consignés dans `validation.md`.
 
 ## Couverture de la spec
 

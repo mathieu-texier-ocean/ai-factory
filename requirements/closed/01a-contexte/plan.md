@@ -17,7 +17,7 @@
 |---|---|---|
 | `CLAUDE.md` | nouveau | 1, 2, 3 |
 | `README.md` | modifié (une ligne dans « Ce que contient le dépôt ») | 2 |
-| `requirements/in-progress/01a-contexte/RECETTE.md` | nouveau | 4 |
+| `requirements/in-progress/01a-contexte/validation.md` | nouveau | 4 |
 
 Aucun hook, skill ni test automatisé : le lot ne livre qu'un fichier de contexte.
 
@@ -76,7 +76,7 @@ Couvre : C6, C7, C8, C9.
 
 ### 4. Recette et PR
 
-Consigner dans `RECETTE.md` (une ligne par critère : date, commande ou action, résultat) :
+Consigner dans `validation.md` (une ligne par critère : date, commande ou action, résultat) :
 
 - A1 : `wc -l CLAUDE.md` → nombre de lignes ≤ 60.
 - A2 : `grep -n '^## ' CLAUDE.md` → les quatre sections.
@@ -91,7 +91,7 @@ Couvre : A1 à A5.
 ## Tests à écrire
 
 - Aucun test automatisé : les critères A1 à A4 sont `Manuel`, A5 est `Humain` (spec).
-- Recette manuelle consignée dans `RECETTE.md` (étape 4).
+- Recette manuelle consignée dans `validation.md` (étape 4).
 
 ## Couverture de la spec
 

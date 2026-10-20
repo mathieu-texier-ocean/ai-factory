@@ -24,7 +24,7 @@
 | `scripts/tests/ai-factory/fixtures/source/…` | nouveau (faux clone d'ai-factory) | 4 |
 | `README.md` | modifié (section « Créer un nouveau projet », tableau du dépôt, « Vérifier ») | 5 |
 | `CLAUDE.md` | modifié (architecture) | 5 |
-| `requirements/closed/15-nouveau-projet/RECETTE.md` | nouveau | 5 |
+| `requirements/closed/15-nouveau-projet/validation.md` | nouveau | 5 |
 
 ## Étapes
 
@@ -159,7 +159,7 @@ Couvre : C33, et la vérification de C1 à C35, C37 à C40, L1 à L21, A1 à A7.
 
 - `README.md` d'ai-factory : section « Créer un nouveau projet » (commande `create`, marche à suivre, `git add -f`) et « Mettre à jour un projet » (commande, `.nouveau`, `--forcer`) ; lignes `scripts/ai-factory.sh`, `templates/projet/` et `scripts/tests/ai-factory/` au tableau du dépôt ; ligne `bash scripts/tests/ai-factory/run.sh` dans « Vérifier ».
 - `CLAUDE.md` d'ai-factory, « Architecture » : lignes `scripts/ai-factory.sh` et `templates/projet/`.
-- `RECETTE.md` : sortie de `bash scripts/verifier.sh` (A1 à A7 via le `run.sh`), puis un essai réel : `scripts/ai-factory.sh create /tmp/<dossier> demo`, marche à suivre, `bash scripts/verifier.sh` dans le projet, une modification de `CLAUDE.md`, un commit factice dans ai-factory, `update`, relecture du rapport.
+- `validation.md` : sortie de `bash scripts/verifier.sh` (A1 à A7 via le `run.sh`), puis un essai réel : `scripts/ai-factory.sh create /tmp/<dossier> demo`, marche à suivre, `bash scripts/verifier.sh` dans le projet, une modification de `CLAUDE.md`, un commit factice dans ai-factory, `update`, relecture du rapport.
 - PR ouverte par l'humain, revue par le tech lead.
 
 Couvre : A1 à A7 (consignés).
@@ -167,7 +167,7 @@ Couvre : A1 à A7 (consignés).
 ## Tests à écrire
 
 - Automatisés : `scripts/tests/ai-factory/run.sh`, les cas du tableau de l'étape 4, lancés par `scripts/verifier.sh`.
-- Manuel : essai réel de l'étape 5, consigné dans `RECETTE.md`.
+- Manuel : essai réel de l'étape 5, consigné dans `validation.md`.
 
 ## Couverture de la spec
 

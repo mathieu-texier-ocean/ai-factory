@@ -32,7 +32,7 @@
 | `requirements/closed/03-spec/plan.md`, `spec.md` | modifiés (chemins) | 3 |
 | `requirements/in-progress/01c-hook-credential/plan.md`, `spec.md` | modifiés (renvois « sur le modèle de ») | 3 |
 | `README.md` | modifié | 4 |
-| `requirements/in-progress/01h-livrables-racine/RECETTE.md` | nouveau | 5 |
+| `requirements/in-progress/01h-livrables-racine/validation.md` | nouveau | 5 |
 
 Aucun hook ni skill modifié, aucun nouveau test (hors périmètre).
 
@@ -105,7 +105,7 @@ Couvre : C6, C7, C8, C11 à C13, L8, L9.
 
 ### 5. Recette
 
-Sur un clone propre de la branche (`git clone . "$tmp"`), lancer les critères et consigner commandes et sorties dans `RECETTE.md` :
+Sur un clone propre de la branche (`git clone . "$tmp"`), lancer les critères et consigner commandes et sorties dans `validation.md` :
 
 - A1 : `ls hooks/tests/hook-intent hooks/tests/hook-spec` ; `git log --follow --oneline` sur les deux `run.sh`, `fixtures/complet.md` et `fixtures/intent-valide.md` → des commits des lots 2 et 3.
 - A2 : les deux `run.sh` → tout `PASS`, code 0.
@@ -122,7 +122,7 @@ Couvre : A1 à A8, C14, L10.
 ## Tests à écrire
 
 - Aucun nouveau test (hors périmètre de l'intent) : les `run.sh` existants sont déplacés tels quels.
-- Les critères `Automatisé` sont des commandes, lancées à l'étape 5 et consignées dans `RECETTE.md`.
+- Les critères `Automatisé` sont des commandes, lancées à l'étape 5 et consignées dans `validation.md`.
 
 ## Couverture de la spec
 

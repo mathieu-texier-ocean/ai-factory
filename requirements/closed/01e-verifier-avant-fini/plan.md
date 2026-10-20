@@ -18,7 +18,7 @@
 | Fichier | Nature | Étape |
 |---|---|---|
 | `CLAUDE.md` | modifié (`## Commandes` resserré, bloc `## Vérifier son travail`) | 2 |
-| `requirements/closed/01e-verifier-avant-fini/RECETTE.md` | nouveau | 4 |
+| `requirements/closed/01e-verifier-avant-fini/validation.md` | nouveau | 4 |
 
 `templates/intent.md` et les fixtures du lot 2 ne sont modifiés que dans la démonstration, jamais dans la PR.
 
@@ -26,7 +26,7 @@
 
 ### 1. Relevé de la sortie réelle
 
-Sur `main` à jour, depuis la racine : `scripts/verifier.sh`, sortie complète conservée pour l'étape 2 et pour `RECETTE.md`. Vérifier le code de sortie (`echo $?` → 0).
+Sur `main` à jour, depuis la racine : `scripts/verifier.sh`, sortie complète conservée pour l'étape 2 et pour `validation.md`. Vérifier le code de sortie (`echo $?` → 0).
 
 Couvre : C2 (exemple recopié d'une exécution réelle).
 
@@ -72,7 +72,7 @@ Dans l'environnement retenu pour P1 (proposition : un clone jetable, voir R1), a
    - la vérification échoue sur `hook-intent` (les fixtures `complet.md` et `section-vide.md` n'ont pas la nouvelle section) ;
    - il met à jour ces fixtures et le signale comme un changement volontaire de test ;
    - il relance la commande et colle une sortie au vert.
-4. Conserver la transcription (ou ses extraits) pour `RECETTE.md`.
+4. Conserver la transcription (ou ses extraits) pour `validation.md`.
 
 Le clone est supprimé ensuite : la nouvelle section rendrait incomplets tous les intents existants au prochain commit qui les touche (P1 de la spec).
 
@@ -80,7 +80,7 @@ Couvre : A2.
 
 ### 4. Recette et PR
 
-`RECETTE.md` consigne :
+`validation.md` consigne :
 
 - A1 : `grep -n '^## Vérifier son travail' CLAUDE.md`, relecture du bloc (commande, exemple, règles C3 à C5), `wc -l CLAUDE.md` ≤ 60.
 - A2 : résultat de la démonstration, étape par étape, avec la sortie collée par l'agent ; écarts éventuels (vérification oubliée, test modifié sans le dire).
@@ -92,7 +92,7 @@ Couvre : A1, A2.
 ## Tests à écrire
 
 - Aucun test automatisé : A1 est `Manuel`, A2 est `Humain` (spec). Le lot ne livre qu'une consigne.
-- Démonstration de l'étape 3, consignée dans `RECETTE.md`.
+- Démonstration de l'étape 3, consignée dans `validation.md`.
 
 ## Couverture de la spec
 
