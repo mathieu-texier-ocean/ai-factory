@@ -25,6 +25,9 @@ Ce README couvre les étapes **Intent** (lot 2) et **Spec** (lot 3).
 | `.claude/hooks/` | Hooks Claude Code : signalent à l'ouverture de session, et bloquent les `git commit` de l'agent, tant que les hooks git ne sont pas actifs |
 | `.claude/hooks/tests/` | Tests des hooks Claude Code : activation des hooks git (`hook-activation`) |
 | `scripts/verifier.sh` | Lance tous les `run.sh` du dépôt ; sort en erreur si l'un échoue |
+| `scripts/ai-factory.sh` | Crée un nouveau projet équipé de l'outillage (`create`), puis y répercute les évolutions d'ai-factory (`update`) |
+| `templates/projet/` | Modèles du `CLAUDE.md` et du `README.md` d'un nouveau projet ; non copiés tels quels |
+| `scripts/tests/ai-factory/` | Tests de `scripts/ai-factory.sh` sur un faux clone d'ai-factory |
 
 ## Mise en route (une fois)
 
@@ -78,6 +81,32 @@ Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptati
 - Les tests automatisés d'un livrable vont dans `<dossier du livrable>/tests/<nom>/` (`run.sh` et `fixtures/`), à un chemin indépendant du lot qui l'a produit : par exemple `hooks/tests/<nom>/`, `.claude/hooks/tests/<nom>/`, `scripts/tests/<nom>/`.
 - Seuls les tests d'exigence (recette des critères d'acceptation d'un lot, jeux de données des skills compris) restent dans le dossier du lot.
 
+## Créer un nouveau projet
+
+Depuis un clone d'ai-factory à jour :
+
+1. `scripts/ai-factory.sh create <dossier cible> <nom du projet>`. Le dossier cible doit être absent ou vide.
+   - Sont copiés les fichiers suivis par git à `HEAD` de `.claude/`, `hooks/`, `scripts/`, `templates/` (sauf `templates/projet/`) et `.gitignore`. Une modification non commitée du clone est ignorée, avec un avertissement.
+   - `CLAUDE.md` et `README.md` sont produits depuis `templates/projet/`, avec le nom du projet. Leurs sections propres au projet (architecture, erreurs fréquentes) sont à remplir.
+   - `requirements/`, `documents/` et le reste d'ai-factory ne sont pas copiés.
+   - `.ai-factory/manifeste` garde le SHA d'ai-factory et l'empreinte de chaque fichier copié : c'est ce qui permet les mises à jour.
+2. Suivre la marche à suivre affichée, que le script n'exécute pas : `cd <dossier cible>`, `git init`, `git config core.hooksPath hooks`. Avec un `.gitignore` global `.*/` : `git add -f .claude .ai-factory`.
+3. `bash scripts/verifier.sh` dans le projet doit sortir en 0.
+
+La liste des dossiers copiés est écrite en tête de `scripts/ai-factory.sh` (`LISTE_BLANCHE`), à un seul endroit.
+
+## Mettre à jour un projet
+
+Depuis la racine du projet : `scripts/ai-factory.sh update [--forcer] <chemin du clone ai-factory>`.
+
+- C'est toujours la version du script présente dans le clone qui applique la mise à jour : une évolution de la liste blanche ou des règles arrive dès la première exécution.
+- Fichier non modifié dans le projet : remplacé, ou supprimé s'il a disparu d'ai-factory ; son bit exécutable suit ai-factory.
+- Fichier modifié dans le projet : conservé. Si ai-factory l'a changé, sa version est écrite à côté en `<fichier>.nouveau` (ignoré par git), à fusionner à la main puis supprimer.
+- Fichier supprimé dans le projet : pas recréé.
+- Le rapport liste les fichiers remplacés, ajoutés, supprimés, les droits alignés, les `.nouveau` écrits et les fichiers sortis du manifeste.
+- Un clone plus ancien que la version installée, ou sur une autre branche, est refusé ; `--forcer` passe outre après avertissement.
+- Le script ne fait aucune opération git dans le projet : relire le diff, lancer `bash scripts/verifier.sh`, committer.
+
 ## Règles à respecter
 
 - Ne jamais écrire `validé` pour quelqu'un d'autre : la validation est humaine.
@@ -92,5 +121,6 @@ Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptati
 - `bash hooks/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
 - `bash hooks/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
 - `bash hooks/tests/hook-credential/run.sh` : refus d'un credential en clair.
+- `bash scripts/tests/ai-factory/run.sh` : création et mise à jour d'un projet par `scripts/ai-factory.sh`.
 - `bash .claude/hooks/tests/hook-activation/run.sh` : signalement et blocage tant que les hooks git ne sont pas actifs.
 - La recette manuelle d'un skill (jeux de données, résultats) est consignée dans le dossier du lot qui l'a livré.
