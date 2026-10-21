@@ -4,7 +4,7 @@
 
 - **Intent :** [intent.md](intent.md)
 - **Auteur :** Mathieu TEXIER
-- **Statut :** draft
+- **Statut :** validé
 - **Validation :** Développeur, tech lead si le changement est à risque
 
 ## Périmètre
