@@ -1,7 +1,7 @@
 # Sous-intent — Lot 4a : Étape Plan, production du plan
 
 - **Parent :** [ia-factory.md](../ia-factory.md)
-- **Auteur :** Khaled KORIFI · **Statut :** draft
+- **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Développeur, tech lead si le changement est à risque
 - **Dépend de :** lot 3, lot 4b (intent validé, pour le critère d'acceptation sur son plan)
