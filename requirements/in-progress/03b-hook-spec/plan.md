@@ -1,7 +1,7 @@
 # Plan — Lot 3b : Étape Spec, contrôle de la spec aligné sur celui du plan
 
 - **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **À risque :** oui (contrôle bloquant de `hooks/pre-commit`, actif sur tous les commits de spec du dépôt et des projets mis à jour par `scripts/ai-factory.sh update` : un faux refus bloque une spec, un faux accept laisse entrer une spec sur un intent non validé)
 - **Validation :** Tech lead
 - **Base :** `feat/lot-3b-hook-spec` (3a88b05 : `main` 561f5f4, lot 4b clos, + intent rédigé 4c270a2, validé 3a88b05)
