@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Trois contrôles :
+# Quatre contrôles :
 # 1. Tout intent.md stagé contient les sections obligatoires.
 #    Source de vérité : les titres "## " de templates/intent.md (hors "Questions ouvertes").
 #    Présence uniquement, pas la qualité du contenu.
@@ -7,6 +7,9 @@
 # 3. Aucune ligne ajoutée à un fichier texte indexé ne contient de credential en clair.
 #    Une ligne qui porte le marqueur credential-ok est ignorée, ainsi que les fixtures de tests
 #    (tests/<nom>/fixtures/, à toute profondeur). La valeur n'est jamais affichée.
+# 4. Tout plan.md créé ou renommé a un intent.md dans son dossier, et un amont validé :
+#    la spec.md du dossier si elle existe, sinon l'intent.md. Amont lu dans l'index
+#    (commit en cours, sinon HEAD). Hors templates/ à la racine et fixtures de tests.
 set -u
 
 root=$(git rev-parse --show-toplevel)
@@ -58,6 +61,41 @@ while IFS= read -r path; do
   case $path in templates/*) continue ;; esac
   [ "$(basename "$path")" = "spec.md" ] && check_spec_intent "$path"
 done < <(git diff --cached --name-only --diff-filter=A)
+
+# Amont lu dans l'index : la version du commit en cours, sinon celle de HEAD ; absent si supprimé.
+present_index() { git cat-file -e ":$1" 2>/dev/null; }
+statut_index() {
+  local value
+  value=$(git show ":$1" | sed -n 's/.*\*\*Statut :\*\* *\([^ ·]*\).*/\1/p' | head -1)
+  printf '%s\n' "${value:-absent}"
+}
+
+check_plan() {
+  local path=$1 dir intent spec value
+  dir=$(dirname "$path")
+  if [ "$dir" = . ]; then intent=intent.md spec=spec.md; else intent="$dir/intent.md" spec="$dir/spec.md"; fi
+  if ! present_index "$intent"; then
+    echo "$path : intent absent ($intent)" >&2
+    status=1; return
+  fi
+  if present_index "$spec"; then
+    value=$(statut_index "$spec")
+    [ "$value" = "validé" ] || { echo "$path : spec non validée (statut : $value)" >&2; status=1; }
+  else
+    value=$(statut_index "$intent")
+    [ "$value" = "validé" ] || { echo "$path : intent non validé (statut : $value)" >&2; status=1; }
+  fi
+}
+
+# -z : chemins bruts. Un ajout donne "A" puis le chemin ; un renommage "R<score>", l'ancien puis le nouveau.
+while IFS= read -r -d '' etat; do
+  IFS= read -r -d '' chemin
+  case $etat in R*) IFS= read -r -d '' chemin ;; esac
+  [ "$(basename "$chemin")" = plan.md ] || continue
+  case $chemin in templates/*) continue ;; esac
+  case "/$chemin" in */tests/*/fixtures/*) continue ;; esac
+  check_plan "$chemin"
+done < <(git diff --cached --name-status -z -M --diff-filter=AR)
 
 # Une famille par indice : nom affiché, motif grep -E, option de casse.
 familles=("clé privée" "jeton fournisseur" "affectation générique" "URL avec identifiants")
