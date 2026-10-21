@@ -3,7 +3,7 @@
 - **Parent :** [ia-factory.md](../ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Validation :** CI
-- **Dépend de :** lots 1 et 4
+- **Dépend de :** lots 1 et 4a
 
 ## Problème
 

@@ -45,7 +45,7 @@ Il est assez complet pour qu'un développeur qui n'a pas vu la conversation puis
 | Type | Élément |
 |---|---|
 | Template | `templates/plan.md` (en-tête, fichiers touchés, étapes, tests, risques, couverture de la spec) |
-| Skill | Production du plan : séance en plan mode qui lit `spec.md` si elle existe et exige qu'elle soit `validé`, se replie sur `intent.md` validé seulement quand il n'y a pas de spec, et refuse en disant pourquoi sinon (statut lu dans l'arbre de travail) ; lit aussi le code, interroge le développeur (ce que le changement peut casser, étape la plus risquée, options écartées), puis écrit `plan.md` en `draft` et le complète au fil des réponses ; s'il modifie un plan `validé`, il le repasse en `draft` |
+| Skill | Production du plan : séance en plan mode qui lit `spec.md` si elle existe et exige qu'elle soit `validé`, se replie sur `intent.md` validé seulement quand il n'y a pas de spec, et refuse en disant pourquoi sinon (statut lu dans l'arbre de travail) ; lit aussi le code, interroge le développeur (ce que le changement peut casser, étape la plus risquée, options écartées), puis écrit `plan.md` en `draft` et le complète au fil des réponses ; s'il modifie un plan `validé`, il le repasse en `draft` ; avertit, sans bloquer, quand le plan dépasse 5 à 7 étapes ou a des branches parallèles : l'intent est peut-être à découper |
 
 ## Critère d'acceptation
 
@@ -67,7 +67,7 @@ Il est assez complet pour qu'un développeur qui n'a pas vu la conversation puis
 - Refus par hook d'un plan sans amont validé (lot 4b).
 - Génération du code (lot 5).
 - Contrôle de conformité du diff au plan (lot 6).
-- Taille du plan comme signal de découpage de l'intent (retiré par le lot 14).
+- Refus d'un plan trop long : la taille ne donne qu'un avertissement du skill (reprend le signal 7 retiré par le lot 14).
 - Déclenchement automatique du plan à la validation de la spec.
 
 ## Questions ouvertes

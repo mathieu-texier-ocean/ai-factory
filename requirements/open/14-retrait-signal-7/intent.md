@@ -53,7 +53,7 @@ Un signal qui ne peut pas être évalué au moment du contrôle brouille le verd
 
 ## Hors périmètre
 
-- Tout contrôle de la taille d'un `plan.md` (lot 4 et suivants).
+- Tout contrôle de la taille d'un `plan.md` : avertissement du skill de production du plan (lot 4a).
 - Les autres signaux du contrôle de taille.
 
 ## Questions ouvertes

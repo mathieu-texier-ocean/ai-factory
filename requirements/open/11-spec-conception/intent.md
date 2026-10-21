@@ -57,7 +57,7 @@ Quand un `intent.md` passe à `Statut : validé`, Claude reprend automatiquement
 ## Hors périmètre
 
 - Contenu et structure de la spec (lot 3).
-- Découpage en tâches (lot 4).
+- Découpage en tâches (lot 4a).
 
 ## Questions ouvertes
 

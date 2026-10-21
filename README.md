@@ -72,7 +72,7 @@ Prérequis : l'intent est au statut `validé` **et commité**. Le hook lit l'int
 
 Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptation · Points d'attention · Hors périmètre · Questions ouvertes.
 
-- Les numéros `C`, `L` et `A` sont stables : une révision ajoute un numéro, elle ne renumérote pas. Le plan (lot 4) et la recette (lot 7) s'y réfèrent.
+- Les numéros `C`, `L` et `A` sont stables : une révision ajoute un numéro, elle ne renumérote pas. Le plan (lot 4a) et la recette (lot 7) s'y réfèrent.
 - Critères d'acceptation : `| # | Critère | Étant donné | Quand | Alors | Type |`, avec `Type` = `Automatisé`, `Manuel` ou `Humain`. Une ligne = un scénario de recette.
 
 ## Ranger les livrables

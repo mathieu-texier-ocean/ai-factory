@@ -4,7 +4,7 @@
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Date :** 2026-10-16
 - **Validation :** Tech lead
-- **Dépend de :** lot 3
+- **Dépend de :** lot 3, lot 4a (son plan est produit par le skill du 4a)
 - **Origine :** découpage du lot 4 (Étape Plan)
 
 ## Problème
@@ -46,7 +46,7 @@ Le message nomme le fichier en cause et, selon le cas, l'intent attendu ou le st
 | Type | Élément |
 |---|---|
 | Hook | `hooks/pre-commit` : contrôle « plan à côté de son intent, spec validée, sinon intent validé » |
-| Tests | Tests automatisés du contrôle, sur le modèle de `requirements/closed/03-spec/tests/hook-spec/run.sh` |
+| Tests | Tests automatisés du contrôle, dans `hooks/tests/hook-plan/`, sur le modèle de `hooks/tests/hook-spec/run.sh` |
 
 ## Critère d'acceptation
 
@@ -64,7 +64,7 @@ Le message nomme le fichier en cause et, selon le cas, l'intent attendu ou le st
 - Même motif de statut que le contrôle du lot 3 : première occurrence de `**Statut :** <valeur>`, seul `validé` exact passe. L'intent et la spec sont lus dans le commit en cours quand ils en font partie, sinon dans `HEAD`.
 - Le `plan.md` est produit dans le dossier de l'intent associé : l'intent attendu est `<dossier du plan>/intent.md`, comme pour la spec.
 - Sont contrôlés la création d'un `plan.md` et son renommage (`git mv`), qui ne doit pas permettre de contourner le contrôle.
-- Sont exclus, comme pour la spec, `templates/` à la racine et les fixtures de tests (`tests/<nom>/fixtures/`, à toute profondeur).
+- Sont exclus `templates/` à la racine, comme pour la spec, et les fixtures de tests (`tests/<nom>/fixtures/`, à toute profondeur), comme pour le contrôle credential.
 - Bash et git uniquement, comme les contrôles existants.
 - Source de vérité : Git. Aucune donnée sensible ni secret dans le contexte de l'agent.
 
