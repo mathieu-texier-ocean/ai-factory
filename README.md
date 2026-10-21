@@ -21,8 +21,8 @@ Ce README couvre les étapes **Intent** (lot 2), **Spec** (lot 3) et **Plan** (l
 | `.claude/skills/controle-taille-intent` | Dit si un intent doit être découpé |
 | `.claude/skills/generation-spec` | Génère `spec.md` depuis un intent validé |
 | `.claude/skills/generation-plan` | Conduit la séance de plan et écrit `plan.md` sur un amont validé |
-| `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire, un nouveau `spec.md` dont l'intent n'est pas validé, et un credential en clair dans une ligne ajoutée |
-| `hooks/tests/` | Tests des hooks git : sections de l'intent (`hook-intent`), intent validé (`hook-spec`), credential en clair (`hook-credential`) |
+| `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire, un nouveau `spec.md` dont l'intent n'est pas validé, un nouveau `plan.md` dont l'amont n'est pas validé, et un credential en clair dans une ligne ajoutée |
+| `hooks/tests/` | Tests des hooks git : sections de l'intent (`hook-intent`), intent validé (`hook-spec`), amont du plan validé (`hook-plan`), credential en clair (`hook-credential`) |
 | `.claude/settings.json` | Déclare les hooks Claude Code de `.claude/hooks/` |
 | `.claude/hooks/` | Hooks Claude Code : signalent à l'ouverture de session, et bloquent les `git commit` de l'agent, tant que les hooks git ne sont pas actifs |
 | `.claude/hooks/tests/` | Tests des hooks Claude Code : activation des hooks git (`hook-activation`) |
@@ -87,7 +87,7 @@ Prérequis : la spec est au statut `validé` ; sans spec, l'intent est au statut
    - Il signale un numéro `C`, `L` ou `A` de la spec qui n'est rattaché à aucune étape. Au-delà de 7 étapes, ou avec des étapes indépendantes, il avertit que l'intent est peut-être à découper, sans bloquer.
    - Il écrit `plan.md` en `draft` à la sortie du plan mode, que vous accordez. S'il révise un plan `validé`, il le repasse en `draft`.
    - Sans skill, copiez `templates/plan.md` dans le dossier et remplissez-le à la main.
-2. **Committer le plan** avant tout code.
+2. **Committer le plan** avant tout code. Le hook refuse un nouveau `plan.md`, ou un `plan.md` arrivé par renommage, si l'`intent.md` du même dossier est absent (`<plan> : intent absent (<dossier>/intent.md)`), si la `spec.md` du dossier n'est pas `validé` (`<plan> : spec non validée (statut : <valeur>)`), ou, sans spec, si l'intent n'est pas `validé` (`<plan> : intent non validé (statut : <valeur>)`). Il lit l'intent et la spec dans le commit en cours quand ils en font partie, sinon dans le dernier commit : un amont validé peut être commité avec le plan. Il ne contrôle ni le contenu du plan, ni ses modifications ultérieures, ni le modèle `templates/plan.md`, ni les fixtures de tests.
 3. **Faire valider** par le développeur, ou par le tech lead si `À risque` vaut `oui` : il passe lui-même le plan à `**Statut :** validé`.
 4. **Implémenter** : une étape du plan = un commit. Si l'implémentation s'écarte du plan, mettez `plan.md` à jour dans le même commit ; un plan `validé` modifié repasse en `draft` et doit être revalidé.
 
@@ -142,6 +142,7 @@ Depuis la racine du projet : `scripts/ai-factory.sh update [--forcer] <chemin du
 - `scripts/verifier.sh`, depuis la racine : lance tous les `run.sh` du dépôt, affiche `OK` ou `ÉCHEC` pour chacun puis un récapitulatif, et sort en erreur si l'un échoue.
 - `bash hooks/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
 - `bash hooks/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
+- `bash hooks/tests/hook-plan/run.sh` : refus d'un plan sans intent ou dont l'amont n'est pas validé.
 - `bash hooks/tests/hook-credential/run.sh` : refus d'un credential en clair.
 - `bash scripts/tests/ai-factory/run.sh` : création et mise à jour d'un projet par `scripts/ai-factory.sh`.
 - `bash .claude/hooks/tests/hook-activation/run.sh` : signalement et blocage tant que les hooks git ne sont pas actifs.
