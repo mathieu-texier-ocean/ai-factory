@@ -1,6 +1,6 @@
 # Sous-intent — Lot 3b : Étape Spec, contrôle de la spec aligné sur celui du plan
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
 - **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Date :** 2026-10-21
 - **Validation :** Tech lead
