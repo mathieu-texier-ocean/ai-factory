@@ -1,7 +1,7 @@
 # Plan — Lot 4b : Étape Plan, refus d'un plan sans amont validé
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **À risque :** oui (contrôle bloquant ajouté à `hooks/pre-commit`, actif sur tous les commits du dépôt et des projets mis à jour par `scripts/ai-factory.sh update` : un faux refus bloque tout commit d'un plan)
 - **Validation :** Tech lead
 - **Base :** `feat/lot-4b-hook-plan` (04ca046 : `main` 6642eb5, lot 4a clos, + spec rédigée fedf468, tranchée 56f7a4d, validée 04ca046).
