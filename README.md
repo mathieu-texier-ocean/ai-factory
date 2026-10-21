@@ -58,7 +58,7 @@ Problème · Pour qui · Pourquoi · Priorité · Résultat attendu · Critère 
 
 ## Créer une spec depuis un intent validé
 
-Prérequis : l'intent est au statut `validé` **et commité**. Le hook lit l'intent du dernier commit : valider l'intent et ajouter la spec dans le même commit est refusé.
+Prérequis : l'intent est au statut `validé`. Commitez-le, ou stagez-le avec la spec.
 
 1. **Générer la spec** : dans Claude Code, demandez « générer la spec » (skill `generation-spec`) en donnant le chemin de l'`intent.md` ou du dossier du lot.
    - Le skill s'arrête si l'intent n'est pas `validé`, ou si `spec.md` existe déjà. Il n'écrase jamais une spec.
@@ -67,7 +67,7 @@ Prérequis : l'intent est au statut `validé` **et commité**. Le hook lit l'int
    - Il écrit `spec.md` avec `Statut : draft` et ne modifie pas l'intent.
    - Sans skill, copiez `templates/spec.md` dans le dossier et remplissez-le à la main.
 2. **Trancher les points d'attention** avec le décideur nommé pour chacun.
-3. **Committer** : le hook refuse un nouveau `spec.md` si l'`intent.md` du même dossier est absent ou n'est pas `validé`. Il ne contrôle ni le contenu de la spec, ni ses modifications ultérieures, ni le modèle `templates/spec.md`.
+3. **Committer** : le hook refuse un nouveau `spec.md`, ou un `spec.md` arrivé par renommage, si l'`intent.md` du même dossier est absent (`<spec> : intent absent (<dossier>/intent.md)`) ou n'est pas `validé` (`<spec> : intent non validé (statut : <valeur>)`, `absent` sans champ `**Statut :**`). Il lit l'intent dans le commit en cours quand il en fait partie, sinon dans le dernier commit : un intent validé peut être commité avec la spec. Il ne contrôle ni le contenu de la spec, ni ses modifications ultérieures, ni le modèle `templates/spec.md`, ni les fixtures de tests.
 4. **Faire valider par le tech lead**, PO en copie : il passe lui-même la spec à `**Statut :** validé`.
 
 ### Sections de la spec

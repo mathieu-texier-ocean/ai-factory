@@ -54,7 +54,6 @@ OK hooks/tests/hook-intent/run.sh
 Une erreur de l'agent constatée deux fois donne une ligne ici, ajoutée par PR et approuvée par le code owner de `CLAUDE.md` (tech lead, ou le dev qui a pris la main).
 
 - Statut écrit `Validé`, `valide` ou `validée` → seul `validé` exact est reconnu par le hook.
-- Intent validé et spec ajoutée dans le même commit → refusé : commiter l'intent validé d'abord.
 - Titre de section mal orthographié → compte comme manquant : recopier les titres du template.
 - Dossier de lot déplacé sans mettre à jour les liens (`Parent`, table de l'intent parent) → liens cassés.
 - Fichiers de `.claude/` non suivis à cause d'un `.gitignore` global `.*/` → `git add -f`.
