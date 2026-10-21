@@ -16,8 +16,8 @@ Le projet suit le SDLC natif IA : chaque étape produit un artefact versionné d
 | `requirements/open/NN-lot/` | Un dossier par lot non démarré, avec son `intent.md` |
 | `requirements/in-progress/NN-lot/` | Le même dossier une fois le lot en cours |
 | `requirements/closed/NN-lot/` | Le même dossier une fois le lot terminé |
-| `templates/` | Modèles d'intent et de spec |
-| `.claude/skills/` | Skills de rédaction d'intent, de contrôle de taille et de génération de spec |
+| `templates/` | Modèles d'intent, de spec et de plan |
+| `.claude/skills/` | Skills de rédaction d'intent, de contrôle de taille, de génération de spec et de plan |
 | `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire, un nouveau `spec.md` dont l'intent n'est pas validé, et un credential en clair dans une ligne ajoutée |
 | `.claude/hooks/` | Hooks Claude Code : signalent et bloquent les `git commit` de l'agent tant que les hooks git ne sont pas actifs |
 | `scripts/verifier.sh` | Lance tous les `run.sh` du dépôt ; sort en erreur si l'un échoue |
@@ -72,6 +72,26 @@ Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptati
 
 - Les numéros `C`, `L` et `A` sont stables : une révision ajoute un numéro, elle ne renumérote pas. Le plan et la recette s'y réfèrent.
 - Critères d'acceptation : `| # | Critère | Étant donné | Quand | Alors | Type |`, avec `Type` = `Automatisé`, `Manuel` ou `Humain`. Une ligne = un scénario de recette.
+
+## Produire le plan
+
+Prérequis : la spec est au statut `validé` ; sans spec, l'intent est au statut `validé`. Commitez-les, ou stagez-les avec le plan.
+
+1. **Lancer la séance** : dans Claude Code, demandez « générer le plan » (skill `generation-plan`) en donnant le dossier du lot ou le chemin de son `intent.md`.
+   - Le skill refuse, sans rien écrire, si l'intent est absent, si la spec existe sans être `validé` (pas de repli sur l'intent), ou, sans spec, si l'intent n'est pas `validé`. Il lit le statut dans l'arbre de travail, et rappelle de stager un amont validé non commité.
+   - Il passe en plan mode, lit l'intent, la spec et le code concerné, puis vous interroge : ce que le changement peut casser, l'étape la plus risquée, les options écartées, et si le changement est à risque.
+   - Il signale un numéro `C`, `L` ou `A` de la spec qui n'est rattaché à aucune étape. Au-delà de 7 étapes, ou avec des étapes indépendantes, il avertit que l'intent est peut-être à découper, sans bloquer.
+   - Il écrit `plan.md` en `draft` à la sortie du plan mode, que vous accordez. S'il révise un plan `validé`, il le repasse en `draft`.
+   - Sans skill, copiez `templates/plan.md` dans le dossier et remplissez-le à la main.
+2. **Committer le plan** avant tout code.
+3. **Faire valider** par le développeur, ou par le tech lead si `À risque` vaut `oui` : il passe lui-même le plan à `**Statut :** validé`.
+4. **Implémenter** : une étape du plan = un commit. Si l'implémentation s'écarte du plan, mettez `plan.md` à jour dans le même commit ; un plan `validé` modifié repasse en `draft` et doit être revalidé.
+
+### Sections du plan
+
+En-tête : `Spec` · `Intent` · `Auteur` · `Statut` · `À risque` · `Validation` · `Base`. Sections : Prérequis · Fichiers touchés · Étapes · Tests à écrire · Couverture de la spec · Risques · Hors périmètre.
+
+- Couverture de la spec : `| Réf. | Étape |`, chaque numéro `C`, `L` et `A` rattaché à au moins une étape ; « Sans objet » sans spec.
 
 ## Ranger les livrables
 

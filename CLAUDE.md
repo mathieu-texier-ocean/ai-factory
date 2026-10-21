@@ -42,8 +42,8 @@ OK hooks/tests/hook-intent/run.sh
 ## Architecture
 
 - Chaîne : `intent.md` → `spec.md` → `plan.md` → diff + tests → PR revue → production.
-- `templates/` : modèles d'intent et de spec ; `templates/projet/` : `CLAUDE.md` et `README.md` d'un projet créé par `scripts/ai-factory.sh` (`create`, `update` ; liste blanche en tête du script).
-- `.claude/skills/` : `redaction-intent`, `controle-taille-intent`, `generation-spec`.
+- `templates/` : modèles d'intent, de spec et de plan ; `templates/projet/` : `CLAUDE.md` et `README.md` d'un projet créé par `scripts/ai-factory.sh` (`create`, `update` ; liste blanche en tête du script).
+- `.claude/skills/` : `redaction-intent`, `controle-taille-intent`, `generation-spec`, `generation-plan`.
 - `hooks/pre-commit` : contrôles de commit (sections de l'intent, intent validé avant la spec, pas de credential en clair ; faux positif annoté `credential-ok`) ; tests dans `hooks/tests/`.
 - `.claude/hooks/`, déclarés dans `.claude/settings.json` : signalent et bloquent les commits de l'agent tant que `core.hooksPath` n'est pas `hooks` ; tests dans `.claude/hooks/tests/`.
 - `requirements/<état>/<NN-lot>/` : artefacts d'un lot (intent, spec, plan, recette).
