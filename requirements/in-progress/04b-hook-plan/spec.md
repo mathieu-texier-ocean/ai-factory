@@ -31,7 +31,7 @@ Ajouté à `hooks/pre-commit`, à la suite du contrôle « intent validé » du 
 - **C12.** Bash et git uniquement, comme les contrôles existants.
 - **C16.** Champ `**Statut :**` absent de la spec ou de l'intent qui décide : refus avec la valeur `absent` à la place du statut, par exemple `<plan> : spec non validée (statut : absent)` (question ouverte 1 de l'intent, tranchée le 2026-10-21).
 - **C17.** Suppression dans le commit du plan : un `intent.md` supprimé donne le refus « intent absent » (C4) ; une `spec.md` supprimée laisse l'intent décider (C6), comme s'il n'y avait pas de spec (question ajoutée par la spec, tranchée le 2026-10-21).
-- **C18.** Le contrôle de la spec du lot 3 n'est pas aligné sur la règle de ce lot : il garde la lecture de l'intent dans `HEAD` seulement. L'écart (P1) et les failles du lot 3 (P3) sont traités dans un lot dédié (question ouverte 2 de l'intent, tranchée le 2026-10-21).
+- **C18.** Le contrôle de la spec du lot 3 n'est pas aligné sur la règle de ce lot : il garde la lecture de l'intent dans `HEAD` seulement. L'écart (P1) et les failles du lot 3 (P3) sont traités dans le lot 3b, `requirements/open/03b-hook-spec/` (question ouverte 2 de l'intent, tranchée le 2026-10-21).
 
 ### Tests `hooks/tests/hook-plan/`
 
@@ -48,7 +48,7 @@ Ajouté à `hooks/pre-commit`, à la suite du contrôle « intent validé » du 
 | L3 | Intent `draft` dans `HEAD`, spec `validé` dans le dossier | Accepté : la spec décide seule (C5) |
 | L4 | Spec `validé` dans `HEAD`, repassée en `draft` dans le même commit que le plan | Refusé, statut `draft` : la version du commit en cours prime (C3, C5) |
 | L5 | Intent `draft` dans `HEAD`, passé à `validé` dans le même commit que le plan, sans spec | Accepté (C3, C6). Diffère du contrôle de la spec du lot 3 (voir P1) |
-| L6 | Spec créée en `validé` dans le même commit que le plan, intent `draft` dans `HEAD` | Le contrôle du plan passe (C5), mais le commit est refusé par le contrôle de la spec du lot 3 (voir P2) |
+| L6 | Spec créée en `validé` dans le même commit que le plan, intent `draft` dans `HEAD` | Le contrôle du plan passe (C5), mais le commit est refusé par le contrôle de la spec du lot 3 jusqu'à la livraison du lot 3b (voir P2) |
 | L7 | Statut écrit `Validé`, `valide` ou `validée` | Refusé, statut trouvé affiché tel quel (C7) |
 | L8 | Champ `**Statut :**` absent de la spec ou de l'intent | Refusé, statut affiché `absent` (C16) |
 | L9 | `git mv` d'un `plan.md` d'un dossier validé vers un dossier dont l'amont n'est pas validé | Refusé (C1) |
@@ -91,7 +91,7 @@ Code de retour du hook : `0` si tous les contrôles passent, `1` sinon (commit r
 | A2 | Plan refusé sur une spec non validée | Un intent `validé` et une spec `draft` commités | On commite un nouveau `plan.md` | Commit refusé, message « spec non validée (statut : draft) » | Automatisé |
 | A3 | Plan accepté sur une spec validée | Un intent `validé` et une spec `validé` commités | On commite un nouveau `plan.md` | Commit accepté | Automatisé |
 | A4 | Spec et plan dans le même commit, spec en `draft` | Un intent `validé` commité, sans spec | On commite ensemble une nouvelle `spec.md` `draft` et un nouveau `plan.md` | Commit refusé, message « `<dossier>/plan.md : spec non validée (statut : draft)` » | Automatisé |
-| A5 | Spec et plan dans le même commit, spec `validé` | Un intent `validé` commité, sans spec | On commite ensemble une nouvelle `spec.md` `validé` et un nouveau `plan.md` | Commit accepté | Automatisé |
+| A5 | Spec et plan dans le même commit, spec `validé` | Un intent `validé` commité dans `HEAD`, sans spec | On commite ensemble une nouvelle `spec.md` `validé` et un nouveau `plan.md` | Commit accepté | Automatisé |
 | A6 | Intent et plan dans le même commit, intent en `draft` | Un dossier vide, sans spec | On commite ensemble un nouvel `intent.md` `draft` complet et un nouveau `plan.md` | Commit refusé, message « intent non validé (statut : draft) » | Automatisé |
 | A7 | Intent et plan dans le même commit, intent `validé` | Un dossier vide, sans spec | On commite ensemble un nouvel `intent.md` `validé` complet et un nouveau `plan.md` | Commit accepté | Automatisé |
 | A8 | Sans spec, plan refusé sur un intent non validé | Un intent `draft` commité, sans spec | On commite un nouveau `plan.md` | Commit refusé, message « intent non validé (statut : draft) » | Automatisé |
@@ -106,12 +106,12 @@ Les cas limites L3, L4, L7, L8, L10, L13, L15, L17, L18, L19, L20 et L21 ont aus
 
 ## Points d'attention
 
-- **P1 — Règle différente de celle du lot 3.** Ici l'intent est lu dans le commit en cours quand il en fait partie (L5) ; le contrôle de la spec du lot 3 lit l'intent dans `HEAD` seulement, et refuse un intent validé dans le même commit que la spec (lot 3, C14 et A11). Tranché le 2026-10-21 : les deux règles cohabitent, l'alignement du lot 3 part dans un lot dédié (C18). Reste à ouvrir ce lot. Décideur : tech lead.
-- **P2 — A5 suppose un intent validé dans `HEAD`.** Une spec créée dans le même commit que le plan passe aussi par le contrôle du lot 3, qui exige un intent `validé` dans `HEAD`. Le critère de l'intent « accepté si elle est `validé` » ne vaut donc, pour le commit entier, que si l'intent est déjà validé et commité ; avec un intent `draft` dans `HEAD`, le plan passe ce contrôle mais le commit est refusé (L6). Décideur : tech lead (lié à P1).
-- **P3 — Le contrôle de la spec du lot 3 est contournable par renommage et se trompe sur les chemins accentués.** Il ne lit que les ajouts (`--diff-filter=A`) et sans `-z` : un `git mv` d'une `spec.md` donne un `R` et n'est pas contrôlé, et un dossier accentué arrive entre guillemets et produit un faux « intent absent » (constaté avec git 2.51). Ce lot couvre ces deux cas pour le plan (C1) sans corriger le lot 3 : la correction va dans le lot dédié de C18. Décideur : tech lead.
-- **P4 — Liens cassés vers ce lot.** Le dossier est dans `requirements/in-progress/`, mais le `Parent` de l'intent pointe vers `../ia-factory.md` (le parent est dans `requirements/open/`), et la table de l'intent parent pointe vers `04b-hook-plan/intent.md` sous `open/`. Même erreur pour le lot 4a. Ni l'intent ni le parent ne sont modifiés par cette spec. Décideur : auteur de l'intent.
+- **P1 — Règle différente de celle du lot 3.** Ici l'intent est lu dans le commit en cours quand il en fait partie (L5) ; le contrôle de la spec du lot 3 lit l'intent dans `HEAD` seulement, et refuse un intent validé dans le même commit que la spec (lot 3, C14 et A11). Tranché le 2026-10-21 : les deux règles cohabitent, l'alignement du lot 3 part dans le lot 3b (C18). Clos.
+- **P2 — A5 suppose un intent validé dans `HEAD`.** Une spec créée dans le même commit que le plan passe aussi par le contrôle du lot 3, qui exige un intent `validé` dans `HEAD`. Le critère de l'intent « accepté si elle est `validé` » ne vaut donc, pour le commit entier, que si l'intent est déjà validé et commité ; avec un intent `draft` dans `HEAD`, le plan passe ce contrôle mais le commit est refusé (L6). Tranché le 2026-10-21 : A5 part d'un intent validé dans `HEAD`, L6 reste refusé par le lot 3 jusqu'au lot 3b. Clos.
+- **P3 — Le contrôle de la spec du lot 3 est contournable par renommage et se trompe sur les chemins accentués.** Il ne lit que les ajouts (`--diff-filter=A`) et sans `-z` : un `git mv` d'une `spec.md` donne un `R` et n'est pas contrôlé, et un dossier accentué arrive entre guillemets et produit un faux « intent absent » (constaté avec git 2.51). Ce lot couvre ces deux cas pour le plan (C1) sans corriger le lot 3 : la correction va dans le lot 3b (C18). Clos.
+- **P4 — Liens cassés vers ce lot.** Le dossier est dans `requirements/in-progress/`, mais le `Parent` de l'intent pointe vers `../ia-factory.md` (le parent est dans `requirements/open/`), et la table de l'intent parent pointe vers `04b-hook-plan/intent.md` sous `open/`. Même erreur pour le lot 4a. Tranché le 2026-10-21 : corrigé dans ce lot (lignes `Parent` des intents 4a et 4b, table de l'intent parent). Clos.
 - **P5 — `templates/plan.md` n'existe pas encore.** Il est livré par le lot 4a ; A11 utilise un plan modèle de fixture copié à ce chemin dans le dépôt de test, comme `hook-spec` le fait pour `templates/spec.md`.
-- **P6 — Lecture du statut : arbre de travail pour le skill du 4a, commit pour ce hook.** Le skill du lot 4a lit le statut dans l'arbre de travail, ce hook dans l'index ou `HEAD`. Un plan produit par le skill sur un amont validé mais non stagé sera refusé au commit. Cohérent avec le rôle de contrôle bloquant, à signaler dans la doc du skill. Décideur : tech lead.
+- **P6 — Lecture du statut : arbre de travail pour le skill du 4a, commit pour ce hook.** Le skill du lot 4a lit le statut dans l'arbre de travail, ce hook dans l'index ou `HEAD`. Un plan produit par le skill sur un amont validé mais non stagé sera refusé au commit. Tranché le 2026-10-21 : l'écart est gardé, aucun intent n'est modifié ; à signaler au lot 4a, dont la doc du skill rappelle de stager l'amont validé avec le plan. Clos côté 4b.
 - **P7 — Le statut `validé` est déclaratif.** Comme pour le lot 3, le hook vérifie un mot, pas l'identité de celui qui l'a écrit ; la garantie repose sur la revue de PR et les code owners. Décideur : tech lead.
 - **P8 — Aucun skill de standards** (sécurité, conventions) n'existe dans `.claude/skills/` ; la spec n'est contrainte que par l'intent, le parent et les conventions de `CLAUDE.md`.
 
@@ -121,7 +121,6 @@ Les cas limites L3, L4, L7, L8, L10, L13, L15, L17, L18, L19, L20 et L21 ont aus
 - Contrôle du contenu ou de la taille du plan.
 - Contrôle des modifications, suppressions et renommages sortants d'un plan existant.
 - Correction du contrôle de la spec du lot 3 (renommage, chemins accentués, intent du même commit) : voir P1 et P3.
-- Correction des liens `Parent` et de la table de l'intent parent (P4).
 
 ## Questions ouvertes
 

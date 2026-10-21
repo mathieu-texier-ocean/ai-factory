@@ -1,6 +1,6 @@
 # Sous-intent — Lot 4b : Étape Plan, refus d'un plan sans amont validé
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead

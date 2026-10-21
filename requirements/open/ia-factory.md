@@ -50,8 +50,8 @@ Une chaîne SDLC natif IA outillée dans `ai-factory`, où chaque étape produit
 | 1h. Socle : livrables rangés à la racine | [01h-livrables-racine/intent.md](../closed/01h-livrables-racine/intent.md) | Tech lead | — |
 | 2. Intent | [02-intent/intent.md](../closed/02-intent/intent.md) | PO | — |
 | 3. Spec | [../closed/03-spec/intent.md](../closed/03-spec/intent.md) | Tech lead, PO en copie | 2 |
-| 4a. Plan : production du plan | [04a-plan/intent.md](04a-plan/intent.md) | Développeur, tech lead si à risque | 3, 4b (intent validé) |
-| 4b. Plan : refus d'un plan sans amont validé | [04b-hook-plan/intent.md](04b-hook-plan/intent.md) | Tech lead | 3, 4a (skill) |
+| 4a. Plan : production du plan | [04a-plan/intent.md](../in-progress/04a-plan/intent.md) | Développeur, tech lead si à risque | 3, 4b (intent validé) |
+| 4b. Plan : refus d'un plan sans amont validé | [04b-hook-plan/intent.md](../in-progress/04b-hook-plan/intent.md) | Tech lead | 3, 4a (skill) |
 | 5. Code + tests | [05-code-tests/intent.md](05-code-tests/intent.md) | CI | 1a à 1c, 1e, 1f, 4a, 13 |
 | 6. Revue PR | [06-revue-pr/intent.md](06-revue-pr/intent.md) | Humain | 5 |
 | 7. Recette | [07-recette/intent.md](07-recette/intent.md) | Recette | 3 |

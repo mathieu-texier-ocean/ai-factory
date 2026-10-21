@@ -1,6 +1,6 @@
 # Sous-intent — Lot 4a : Étape Plan, production du plan
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
+- **Parent :** [ia-factory.md](../../open/ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Développeur, tech lead si le changement est à risque
