@@ -4,7 +4,7 @@
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Date :** 2026-10-16
 - **Validation :** Développeur, tech lead si le changement est à risque
-- **Dépend de :** lot 3
+- **Dépend de :** lot 3, lot 4b (intent validé, pour le critère d'acceptation sur son plan)
 - **Origine :** découpage du lot 4 (Étape Plan)
 
 ## Problème
@@ -45,12 +45,12 @@ Il est assez complet pour qu'un développeur qui n'a pas vu la conversation puis
 | Type | Élément |
 |---|---|
 | Template | `templates/plan.md` (en-tête, fichiers touchés, étapes, tests, risques, couverture de la spec) |
-| Skill | Production du plan : séance en plan mode qui lit `spec.md` validée, ou à défaut `intent.md` validé, et le code, interroge le développeur (ce que le changement peut casser, étape la plus risquée, options écartées), puis écrit `plan.md` en `draft` sans écraser un plan existant |
+| Skill | Production du plan : séance en plan mode qui lit `spec.md` si elle existe et exige qu'elle soit `validé`, se replie sur `intent.md` validé seulement quand il n'y a pas de spec, et refuse en disant pourquoi sinon (statut lu dans l'arbre de travail) ; lit aussi le code, interroge le développeur (ce que le changement peut casser, étape la plus risquée, options écartées), puis écrit `plan.md` en `draft` et le complète au fil des réponses ; s'il modifie un plan `validé`, il le repasse en `draft` |
 
 ## Critère d'acceptation
 
-- [ ] Le plan du lot 4a, écrit à la main en plan mode et conforme à `templates/plan.md`, est commité à côté de son intent et de sa spec.
-- [ ] Le skill, relancé sur la spec du lot 4a, produit un plan comparable au plan manuel ; les écarts sont consignés dans la PR.
+- [ ] Le plan du lot 4a, écrit en plan mode sans le skill (qui n'existe pas encore) et conforme à `templates/plan.md`, est commité à côté de son intent et de sa spec.
+- [ ] Le skill produit le `plan.md` du lot 4b, conforme à `templates/plan.md` et assez complet pour qu'un développeur qui n'a pas vu la conversation l'implémente.
 - [ ] Chaque étape du plan correspond à un commit de la PR du lot.
 - [ ] Le plan est validé par le développeur, ou par le tech lead si le changement est à risque.
 
@@ -58,7 +58,7 @@ Il est assez complet pour qu'un développeur qui n'a pas vu la conversation puis
 
 - Un lot = un sous-intent = un plan = une PR ; une étape du plan = un commit.
 - Le plan est accepté avant tout code.
-- Quand l'implémentation s'écarte du plan, `plan.md` est mis à jour dans le même commit. La conformité est contrôlée en revue (lot 6).
+- Quand l'implémentation s'écarte du plan, `plan.md` est mis à jour dans le même commit ; un plan `validé` modifié repasse en `draft` et doit être revalidé. La conformité est contrôlée en revue (lot 6).
 - Le skill lit le statut avec le même motif que le hook du lot 3 : première occurrence de `**Statut :** <valeur>`, seul `validé` exact passe.
 - Source de vérité : Git. Aucune donnée sensible ni secret dans le contexte de l'agent.
 
