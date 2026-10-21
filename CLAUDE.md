@@ -20,7 +20,7 @@ PASS complet accepté (scénario 3)
 OK hooks/tests/hook-intent/run.sh
 …
 
-3 run.sh lancés, 0 en échec
+6 run.sh lancés, 0 en échec
 ```
 
 - Avant de déclarer une tâche finie, lancer la commande et coller sa sortie, même si la tâche ne touche aucun fichier testé.
@@ -44,7 +44,7 @@ OK hooks/tests/hook-intent/run.sh
 - Chaîne : `intent.md` → `spec.md` → `plan.md` → diff + tests → PR revue → production.
 - `templates/` : modèles d'intent, de spec et de plan ; `templates/projet/` : `CLAUDE.md` et `README.md` d'un projet créé par `scripts/ai-factory.sh` (`create`, `update` ; liste blanche en tête du script).
 - `.claude/skills/` : `redaction-intent`, `controle-taille-intent`, `generation-spec`, `generation-plan`.
-- `hooks/pre-commit` : contrôles de commit (sections de l'intent, intent validé avant la spec, plan à côté d'un amont validé, pas de credential en clair ; faux positif annoté `credential-ok`) ; tests dans `hooks/tests/`.
+- `hooks/pre-commit` : contrôles de commit (sections de l'intent, spec et plan à côté d'un amont validé, pas de credential en clair ; faux positif annoté `credential-ok`) ; tests dans `hooks/tests/`.
 - `.claude/hooks/`, déclarés dans `.claude/settings.json` : signalent et bloquent les commits de l'agent tant que `core.hooksPath` n'est pas `hooks` ; tests dans `.claude/hooks/tests/`.
 - `requirements/<état>/<NN-lot>/` : artefacts d'un lot (intent, spec, plan, recette).
 - Détail des étapes : `README.md`. Ce fichier résume, il ne recopie pas.
