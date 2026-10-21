@@ -1,7 +1,7 @@
 # Plan — Lot 4a : Étape Plan, production du plan
 
 - **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **À risque :** non (nouveaux fichiers et documentation ; aucun hook ni contrôle bloquant modifié)
 - **Validation :** Développeur
 - **Base :** `feat/lot-4a-plan` (48213e9 : `main` 83457e7 + spec rédigée c66a664 + spec validée).
