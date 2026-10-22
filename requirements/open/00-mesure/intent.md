@@ -1,6 +1,6 @@
 # Sous-intent — Lot 0 : Mesure de référence
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
+- **Parent :** [ia-factory.md](../../../documents/ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** validé
 - **Validation :** —
 - **Dépend de :** —

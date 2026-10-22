@@ -21,7 +21,7 @@ Une fois un intent validé par le PO, rien ne déclenche la production de la sp�
 
 ## Pourquoi
 
-Le temps mort s'ajoute au délai PR → production, que l'IA Factory vise à diviser par deux (référence 10,7 jours, cible ≈ 5 jours, voir [ia-factory.md](../ia-factory.md)). Une spec sautée génère des reprises en revue.
+Le temps mort s'ajoute au délai PR → production, que l'IA Factory vise à diviser par deux (référence 10,7 jours, cible ≈ 5 jours, voir [ia-factory.md](../../../documents/ia-factory.md)). Une spec sautée génère des reprises en revue.
 
 ## Priorité
 
@@ -52,7 +52,7 @@ Quand un `intent.md` passe à `Statut : validé`, Claude reprend automatiquement
 - S'appuie sur le template et le skill de génération de spec du lot 3.
 - La spec produite automatiquement n'arrive jamais directement sur `main` : elle est proposée dans une PR, relue et validée par le tech lead (règle du lot 3), et reste en `draft` jusqu'à cette validation.
 - Aucune donnée sensible ni secret dans le contexte de l'agent, y compris dans la configuration du déclencheur.
-- Git reste la source de vérité des artefacts (voir [ia-factory.md](../ia-factory.md)).
+- Git reste la source de vérité des artefacts (voir [ia-factory.md](../../../documents/ia-factory.md)).
 
 ## Hors périmètre
 

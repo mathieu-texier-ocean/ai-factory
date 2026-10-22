@@ -51,4 +51,4 @@ Aucune contrainte fournie à ce stade (voir Questions ouvertes).
 - Contraintes : y en a-t-il (format, langue, longueur, emplacement de la doc par lot) ?
 - Échéance : confirmer qu'il n'y en a aucune.
 - Le README remplace-t-il l'actuel, centré sur le lot 2, ou le complète-t-il ?
-- Faut-il ajouter ce lot au tableau des sous-intents de `requirements/open/ia-factory.md` ?
+- Faut-il ajouter ce lot au tableau des sous-intents ? (sans objet : le tableau des sous-intents a été supprimé)

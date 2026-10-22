@@ -1,6 +1,6 @@
 # Sous-intent — Lot 13 : Contrôle credential en CI
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
+- **Parent :** [ia-factory.md](../../../documents/ia-factory.md)
 - **Auteur :** Khaled KORIFI · **Statut :** draft
 - **Suspendu :** tant qu'aucune CI n'existe sur `ai-factory` (décision PO, 2026-10-16)
 - **Date :** 2026-10-16

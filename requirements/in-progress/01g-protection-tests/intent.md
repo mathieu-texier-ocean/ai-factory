@@ -1,6 +1,6 @@
 # Sous-intent — Lot 1g : Protection des tests pendant un correctif
 
-- **Parent :** [ia-factory.md](../../open/ia-factory.md)
+- **Parent :** [ia-factory.md](../../../documents/ia-factory.md)
 - **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Date :** 2026-10-16
 - **Validation :** Tech lead

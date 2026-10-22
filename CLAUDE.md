@@ -55,5 +55,5 @@ Une erreur de l'agent constatée deux fois donne une ligne ici, ajoutée par PR 
 
 - Statut écrit `Validé`, `valide` ou `validée` → seul `validé` exact est reconnu par le hook.
 - Titre de section mal orthographié → compte comme manquant : recopier les titres du template.
-- Dossier de lot déplacé sans mettre à jour les liens (`Parent`, table de l'intent parent) → liens cassés.
+- Dossier de lot déplacé sans mettre à jour les liens (`Parent`, `Dépend de` des autres lots) → liens cassés.
 - Fichiers de `.claude/` non suivis à cause d'un `.gitignore` global `.*/` → `git add -f`.

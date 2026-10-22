@@ -1,6 +1,6 @@
 # Sous-intent — Lot 14 : Retrait du signal 7 du contrôle de taille
 
-- **Parent :** [ia-factory.md](../ia-factory.md)
+- **Parent :** [ia-factory.md](../../../documents/ia-factory.md)
 - **Auteur :** Mathieu TEXIER · **Statut :** draft
 - **Date :** 2026-10-16
 - **Validation :** PO

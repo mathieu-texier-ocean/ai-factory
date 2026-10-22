@@ -41,7 +41,7 @@ Ce README couvre les étapes **Intent** (lot 2), **Spec** (lot 3) et **Plan** (l
 
 Règle de base : **un lot = un sous-intent = une PR**.
 
-1. **Créer le dossier du lot** : `requirements/open/NN-nom-du-lot/` (numéro suivant, nom court en minuscules). Quand le lot démarre, le dossier est déplacé tel quel vers `requirements/in-progress/NN-nom-du-lot/`, et les liens qui le citent (par exemple dans l'intent parent) sont mis à jour.
+1. **Créer le dossier du lot** : `requirements/open/NN-nom-du-lot/` (numéro suivant, nom court en minuscules). Quand le lot démarre, le dossier est déplacé tel quel vers `requirements/in-progress/NN-nom-du-lot/`, et les liens qui le citent (par exemple dans le `Dépend de` d'un autre lot) sont mis à jour.
 2. **Rédiger l'intent** : dans Claude Code, demandez « rédiger un intent » (skill `redaction-intent`) en donnant votre besoin brut en texte libre et le dossier cible.
    - Le skill pose les questions manquantes, une série à la fois.
    - Il n'invente rien : ce que vous ne savez pas va dans « Questions ouvertes ».
