@@ -1,7 +1,7 @@
 # Spec — Lot 1g : Protection des tests pendant un correctif
 
 - **Intent :** [intent.md](intent.md)
-- **Auteur :** Mathieu TEXIER · **Statut :** draft
+- **Auteur :** Mathieu TEXIER · **Statut :** validé
 - **Validation :** Tech lead
 
 ## Périmètre
