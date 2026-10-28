@@ -16,7 +16,7 @@ Un hook Claude Code `PreToolUse`, déclaré dans `.claude/settings.json` à côt
 - **C2.** Un « test » est tout fichier dont le chemin, relatif à la racine du dépôt, contient un dossier `tests/` : scripts et fixtures.
 - **C3.** Outils d'édition : un appel Edit ou Write qui vise un fichier existant sous `tests/` déclenche une demande de confirmation à l'humain.
 - **C4.** Création : un appel Write qui vise un fichier qui n'existe pas encore sous `tests/` passe sans confirmation.
-- **C5.** Commandes Bash : une commande dont le texte écrit sous `tests/` (modification ou suppression d'un fichier existant) déclenche une demande de confirmation. La détection se fait sur le texte de la commande, comme au lot 1f.
+- **C5.** Commandes Bash : une commande dont le texte écrit sous `tests/` (modification ou suppression d'un fichier existant) déclenche une demande de confirmation. La détection se fait sur le texte de la commande, comme au lot 1f. Les chemins relatifs sont résolus à partir du champ `cwd` de l'entrée du hook, en suivant les `cd` de la commande, avant de tester s'ils sont sous `tests/`.
 - **C6.** La demande de confirmation donne la raison : branche de correctif, fichier de test visé, rappel « pendant un correctif, corriger le code, pas le test ; si le changement de test est volontaire, le confirmer ».
 - **C7.** Une modification hors de `tests/` passe sans confirmation, sur toute branche.
 - **C8.** Le hook ne fait que lire (branche, existence du fichier, entrée de l'outil) : il ne modifie ni le dépôt ni sa configuration.
@@ -36,11 +36,12 @@ Un hook Claude Code `PreToolUse`, déclaré dans `.claude/settings.json` à côt
 | L8 | Fichier sous un dossier nommé `tests/` hors de `requirements/` | Concerné : tout dossier `tests/` compte (C2) |
 | L9 | Commande Bash qui ne fait que lire sous `tests/` (`cat`, `bash run.sh`) | Voir « Points d'attention » |
 | L10 | Bash qui crée un nouveau fichier sous `tests/` (`cat > tests/…/nouveau`) | Voir « Points d'attention » |
+| L11 | Chemin relatif dans la commande Bash (`cd .claude/hooks/tests && sed -i … run.sh`, ou `cwd` déjà sous `tests/`) | Confirmation demandée : le chemin est résolu à partir de `cwd` et des `cd` (C5) |
 
 ## Contrats
 
 - **Déclaration :** `.claude/settings.json`, entrée `PreToolUse` avec un matcher sur les outils Edit, Write et Bash ; script dans `.claude/hooks/`.
-- **Entrée :** JSON de Claude Code sur stdin (nom de l'outil, chemin visé ou commande).
+- **Entrée :** JSON de Claude Code sur stdin (nom de l'outil, chemin visé ou commande, `cwd`).
 - **Branche :** nom de la branche courante du dépôt de session ; préfixe `bugfix/`.
 - **Sortie, confirmation demandée :** décision de permission « demander » renvoyée à Claude Code, avec la raison de C6 ; l'humain voit la demande dans la session.
 - **Sortie, rien à demander :** aucune sortie, code 0.
@@ -54,6 +55,10 @@ Un hook Claude Code `PreToolUse`, déclaré dans `.claude/settings.json` à côt
 | A3 | Création libre sur `bugfix/` | Une session sur une branche `bugfix/…` | L'agent crée un nouveau fichier sous `tests/` | Le fichier est créé sans confirmation | Manuel |
 | A4 | Hors `tests/` sur `bugfix/` | Une session sur une branche `bugfix/…` | L'agent modifie un fichier hors de `tests/` | La modification passe sans confirmation | Manuel |
 | A5 | Autre branche | Une session sur une branche qui ne commence pas par `bugfix/` | L'agent modifie un fichier existant sous `tests/` | La modification passe sans confirmation | Manuel |
+
+## Limites connues
+
+- **Hook chargé seulement depuis la racine du dépôt.** Claude Code ne lit `.claude/settings.json` que dans le dossier où la session est lancée (lot 1i). Une session lancée depuis un dossier parent, par exemple `/home/ocean/Projets`, ne charge pas le hook : sur une branche `bugfix/`, les tests restent modifiables sans confirmation. La levée de cette limite relève du lot 1i.
 
 ## Points d'attention
 
