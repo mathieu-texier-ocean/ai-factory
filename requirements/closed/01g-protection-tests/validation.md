@@ -17,17 +17,17 @@
 
 ## Recette en session réelle (A1 à A5, L7, P4)
 
-À faire par un humain, dans un clone jetable, Claude Code lancé depuis la racine, sur une branche `bugfix/recette` (sauf A5). Approuver les hooks du projet si Claude Code le demande.
+Faite par un humain le 2026-10-28, dans un clone jetable, Claude Code lancé depuis la racine, sur une branche `bugfix/recette` (sauf A5). Approuver les hooks du projet si Claude Code le demande.
 
 | # | Préparation | Action | Attendu | Observé |
 |---|---|---|---|---|
-| A1 | `bugfix/recette` | demander à l'agent de modifier `hooks/tests/hook-intent/run.sh` | confirmation demandée, avec la branche, le fichier et le rappel | |
-| A2 | idem | demander à l'agent de supprimer ce fichier avec `rm` | confirmation demandée | |
-| A3 | idem | demander à l'agent de créer `hooks/tests/nouveau/run.sh` avec Write | créé sans confirmation | |
-| A4 | idem | demander à l'agent de modifier `README.md` | modifié sans confirmation | |
-| A5 | `feat/recette` | refaire A1 | modifié sans confirmation | |
-| L7 | `bugfix/recette` | refaire A1 et refuser la confirmation | fichier inchangé ; l'agent rapporte le refus | |
-| P4 | idem | refaire A1 en mode auto, puis en `bypassPermissions` | noter si la demande apparaît ; sinon, limite à ajouter au README | |
+| A1 | `bugfix/recette` | demander à l'agent de modifier `hooks/tests/hook-intent/run.sh` | confirmation demandée, avec la branche, le fichier et le rappel | OK |
+| A2 | idem | demander à l'agent de supprimer ce fichier avec `rm` | confirmation demandée | OK |
+| A3 | idem | demander à l'agent de créer `hooks/tests/nouveau/run.sh` avec Write | créé sans confirmation | OK |
+| A4 | idem | demander à l'agent de modifier `README.md` | modifié sans confirmation | OK |
+| A5 | `feat/recette` | refaire A1 | modifié sans confirmation | OK |
+| L7 | `bugfix/recette` | refaire A1 et refuser la confirmation | fichier inchangé ; l'agent rapporte le refus | OK |
+| P4 | idem | refaire A1 en mode auto, puis en `bypassPermissions` | noter si la demande apparaît ; sinon, limite à ajouter au README | OK |
 
 ## Points à signaler en revue
 
