@@ -372,7 +372,7 @@ usage() {
 Usage : git sdlc <commande> [options]
 
 Suivi
-  status <id> [--porcelain] [--no-fetch]   étape, acteur, prochaine action, preuves
+  status [<id>] [--porcelain] [--no-fetch] étape, acteur, prochaine action, preuves
   board [--all] [--by-person] [--porcelain] [--no-fetch]
                                            tableau de bord de tous les besoins
 
@@ -385,7 +385,7 @@ Cycle d’un besoin (chaque étape = une PR vers $MAIN)
   merge [<id> [<étape>]]                   fusionne la PR (gate de l’étape), trailers compris
   reject [<id>] <raison>                   ferme les PR ouvertes avec l’étiquette sdlc:rejected
 
-  Sans id, ready, merge et reject visent la branche need/<id>/<étape> courante ;
+  Sans id, status, ready, merge et reject visent la branche need/<id>/<étape> courante ;
   avec l’id seul, l’étape est celle de l’unique PR ouverte du besoin.
   release [<YY.MM.DD>]                     release GitHub sur un tag YY.MM.DD[.V] (défaut : aujourd’hui)
 
@@ -395,7 +395,7 @@ EOF
 }
 
 cmd_status() {
-  local id="" porcelain=0 e p
+  local id="" porcelain=0 e p cur
   while [ $# -gt 0 ]; do
     case $1 in
       --porcelain) porcelain=1 ;;
@@ -405,7 +405,10 @@ cmd_status() {
     esac
     shift
   done
-  [ -n "$id" ] || die "usage : git sdlc status <id>"
+  if [ -z "$id" ]; then
+    cur=$(branch_need) || die "usage : git sdlc status [<id>] (sans id : depuis une branche need/<id>/<étape>)"
+    id=${cur%%$'\t'*}
+  fi
   do_fetch; load_prs
   compute "$id" || die "besoin « $id » introuvable (ni PR, ni branche need/$id/*, ni $IDIR/$id sur $MAIN)"
 

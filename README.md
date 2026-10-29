@@ -95,7 +95,7 @@ git sdlc board --all              # y compris livrés et rejetés
 
 `new`, `claim`, `ready`, `merge` et `reject` affichent ensuite la ligne de `git sdlc board` du besoin, relue sur GitHub.
 
-Depuis une branche `need/<id>/<étape>`, `ready`, `merge` et `reject` se lancent sans id : `git sdlc ready`, `git sdlc reject "<raison>"`. Avec l’id seul (`git sdlc merge <id>`), l’étape est celle de l’unique PR ouverte du besoin ; s’il y en a plusieurs, précisez-la. Le besoin et l’étape déduits sont affichés avant l’action.
+Depuis une branche `need/<id>/<étape>`, `status`, `ready`, `merge` et `reject` se lancent sans id : `git sdlc status`, `git sdlc ready`, `git sdlc reject "<raison>"`. Avec l’id seul (`git sdlc merge <id>`), l’étape est celle de l’unique PR ouverte du besoin ; s’il y en a plusieurs, précisez-la. Le besoin et l’étape déduits sont affichés avant l’action.
 
 Toutes ces actions restent possibles dans l’interface GitHub. `git sdlc` lit l’état réel des PR : une PR fusionnée dans le navigateur apparaît comme gate franchi dans `board`.
 
