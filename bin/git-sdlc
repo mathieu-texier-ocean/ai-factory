@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# git-sdlc (v2, GitHub) — pilote le SDLC fondé sur l’IA avec git et GitHub.
+# git-sdlc — pilote le SDLC fondé sur l’IA avec git et GitHub.
 #
 # Les revues et les gates passent par des pull requests GitHub :
 #   une PR par étape        need/<id>/intent | need/<id>/spec | need/<id>/build → main

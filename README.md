@@ -1,18 +1,6 @@
-# Kit SDLC git + GitHub (v2)
+# Kit SDLC git + GitHub
 
 Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitHub. Chaque étape d’un besoin est une pull request vers `main`, relue sur GitHub ; sa fusion franchit la gate. Il répond à deux questions : qui travaille sur quoi, et à quelle étape en est chaque besoin. L’étape se déduit de l’état réel des branches, des PR et des tags ; elle n’est jamais saisie à la main.
-
-## Ce qui change par rapport à la v1
-
-| v1 (git seul) | v2 (GitHub) |
-|---|---|
-| hook serveur `pre-receive` | ruleset `sdlc-main` + check CI `sdlc-conventions` |
-| `.sdlc/approvers` | droit d’écriture sur le dépôt (qui peut fusionner) |
-| merge local signé avec `Approved-by:` | fusion de la PR par rebase ; l’auteur de la fusion vient de GitHub |
-| notes `review` | revues et commentaires de PR |
-| notes `tests` | checks GitHub Actions affichés par `git sdlc status` |
-| tag annoté `release/*` | release GitHub sur un tag `YY.MM.DD[.V]` protégé |
-| tag `rejected/<id>` | PR fermée avec l’étiquette `sdlc:rejected` |
 
 ## Contenu
 
