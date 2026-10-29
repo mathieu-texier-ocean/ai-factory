@@ -1,0 +1,2 @@
+Valeur d'exemple annotée comme faux positif.
+password=fictif-0000-EXAMPLE  # credential-ok

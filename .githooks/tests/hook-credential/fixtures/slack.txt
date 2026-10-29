@@ -1,0 +1,2 @@
+Jeton Slack fictif.
+bot xoxb-0000000000-0000000000-fictifEXAMPLE

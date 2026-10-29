@@ -1,0 +1,2 @@
+Clé d'accès AWS fictive (exemple officiel de la documentation AWS).
+aws_access_key_id AKIAIOSFODNN7EXAMPLE

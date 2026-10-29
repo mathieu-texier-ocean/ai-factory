@@ -1,0 +1,2 @@
+Affectation d'une valeur littérale fictive.
+password=fictif-0000-EXAMPLE
