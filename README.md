@@ -116,6 +116,9 @@ Pour l’étape en cours, l’état de la PR détermine qui a la main :
 | brouillon | `<Étape> en cours` | assigné(e)s, à défaut l’auteur |
 | prête (hors brouillon) | `<Étape> en revue, à fusionner` | relecteurs sollicités, à défaut PO ou tech lead |
 | corrections demandées | `<Étape> : corrections demandées` | assigné(e)s, à défaut l’auteur |
+| fusionnée, étape suivante pas commencée | `Intent accepté…`, `Spec acceptée…`, `Prêt à livrer` | rôle qui doit agir : analyste, Dev, RM |
+
+L’auteur d’une fusion n’apparaît pas dans QUI : `git sdlc status` l’indique dans les preuves.
 
 L’ordre de priorité est le suivant :
 

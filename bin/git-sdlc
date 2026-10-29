@@ -206,11 +206,12 @@ open_state() {
   fi
 }
 
+# QUI = le rôle qui doit agir ; l’auteur de la fusion figure dans les preuves de status.
 accepted_state() {
-  local step=$1 code=$2 o=$3 label=$4 next=$5 mc
-  CODE=$code ORDER=$o STAGE=$label NEXT=$next
+  local step=$1 code=$2 o=$3 label=$4 next=$5 role=$6 mc
+  CODE=$code ORDER=$o STAGE=$label NEXT=$next WHO=$role
   if pr_merged "$ID" "$step"; then
-    WHO=$(at "$P_MERGEDBY"); WHEN=$(nd "$P_MERGEDAT")
+    WHEN=$(nd "$P_MERGEDAT")
   else
     mc=$(merge_of "$ID" "$(stage_of "$step")")
     [ -z "$mc" ] || WHEN=$(git log -1 --format=%cs "$mc")
@@ -263,16 +264,16 @@ compute() {
       fi
       NEXT="OPS : surveiller ; un incident ouvre un intent avec Parent: $ID"
     else
-      accepted_state build ready 40 "Prêt à livrer" "RM : git sdlc release"
+      accepted_state build ready 40 "Prêt à livrer" "RM : git sdlc release" RM
     fi
   elif pr_open "$ID" build; then open_state build 30
   elif br=$(branch_ref "$ID" build); then branch_state build 30 "$br"
   elif pr_merged "$ID" spec || on_main "$ID" spec.md; then
-    accepted_state spec spec-accepted 25 "Spec acceptée, build à démarrer" "Dev : git sdlc claim $ID build"
+    accepted_state spec spec-accepted 25 "Spec acceptée, build à démarrer" "Dev : git sdlc claim $ID build" Dev
   elif pr_open "$ID" spec; then open_state spec 20
   elif br=$(branch_ref "$ID" spec); then branch_state spec 20 "$br"
   elif pr_merged "$ID" intent || on_main "$ID" intent.md; then
-    accepted_state intent intent-accepted 15 "Intent accepté, spec à produire" "git sdlc claim $ID spec"
+    accepted_state intent intent-accepted 15 "Intent accepté, spec à produire" "analyste : git sdlc claim $ID spec" analyste
   elif pr_open "$ID" intent; then open_state intent 10
   elif br=$(branch_ref "$ID" intent); then branch_state intent 10 "$br"
   else
