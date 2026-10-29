@@ -31,6 +31,23 @@ Risk: standard
 
 Ce qu’on ne peut pas faire aujourd’hui, qui est touché, et ce que ça coûte.
 
+## Pour qui
+
+Qui exprime, valide et consomme ce besoin.
+
+## Pourquoi
+
+Le coût ou le risque si on ne fait rien.
+
+## Priorité
+
+<!-- Décision du product owner, jamais déduite. Niveau : Haute | Moyenne | Basse.
+     Justification en une phrase. Échéance seulement si elle est réelle, sinon « aucune ». -->
+
+- Niveau : à définir par le PO
+- Justification :
+- Échéance : aucune
+
 ## Résultat attendu
 
 À quoi ressemble « mieux », vu par l’utilisateur.
