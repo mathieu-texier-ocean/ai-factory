@@ -405,7 +405,17 @@ list_ids() {
 
 board_header() { printf 'BESOIN\tÉTAPE\tQUI\tDEPUIS\tPROCHAINE ACTION\n'; }
 
-# Ligne de board du besoin $1, relue après une action (claim, ready, merge).
+# GitHub peut mettre quelques secondes à exposer un changement d’état de PR :
+# attendre jusqu’à 10 s que la PR $1 soit dans l’état $2 (MERGED, CLOSED).
+wait_pr_state() {
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    [ "$(gh pr view "$1" --json state --jq .state 2>/dev/null)" != "$2" ] || return 0
+    sleep 1
+  done
+}
+
+# Ligne de board du besoin $1, relue après une action (new, claim, ready, merge, reject).
 # Dans un sous-shell : un échec de lecture n’annule pas l’action déjà faite.
 show_need() {
   (
@@ -544,12 +554,7 @@ cmd_merge() {
   local args
   read -r -a args <<<"$MERGE_ARGS"
   gh pr merge "$P_NUM" ${args[@]+"${args[@]}"}
-  # GitHub peut mettre quelques secondes à exposer la fusion : attendre jusqu’à 10 s.
-  local i
-  for i in 1 2 3 4 5 6 7 8 9 10; do
-    [ "$(gh pr view "$P_NUM" --json state --jq .state 2>/dev/null)" != MERGED ] || break
-    sleep 1
-  done
+  wait_pr_state "$P_NUM" MERGED
   do_fetch
   echo "Gate $step franchi pour $id (PR #$P_NUM)."
   show_need "$id"
@@ -565,6 +570,7 @@ cmd_reject() {
     gh pr close "$n" --comment "Rejet : $reason" --delete-branch
     count=$((count + 1))
   done
+  [ "$count" = 0 ] || wait_pr_state "$n" CLOSED
   if [ "$count" = 0 ]; then
     # Aucune PR ouverte (besoin déjà accepté, en attente) : la décision est tracée par un tag.
     git tag -a "rejected/$id" "$(main_ref)" -m "Rejet : $id" -m "$reason"
@@ -573,6 +579,7 @@ cmd_reject() {
   else
     echo "Besoin $id rejeté : $count PR fermée(s) avec l’étiquette sdlc:rejected."
   fi
+  show_need "$id"
 }
 
 cmd_release() {
