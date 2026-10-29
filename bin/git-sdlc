@@ -543,6 +543,12 @@ cmd_merge() {
   local args
   read -r -a args <<<"$MERGE_ARGS"
   gh pr merge "$P_NUM" ${args[@]+"${args[@]}"}
+  # GitHub peut mettre quelques secondes à exposer la fusion : attendre jusqu’à 10 s.
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    [ "$(gh pr view "$P_NUM" --json state --jq .state 2>/dev/null)" != MERGED ] || break
+    sleep 1
+  done
   do_fetch
   echo "Gate $step franchi pour $id (PR #$P_NUM)."
   show_need "$id"
