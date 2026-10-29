@@ -34,8 +34,9 @@ scan_credentials() {
     # Le "/" en tête couvre tests/ à la racine.
     case "/$chemin" in */tests/*/fixtures/*) continue ;; esac
     # Les deux chemins gardent le renommage apparié : seules les lignes ajoutées sont lues.
+    # « || true » : sans ligne restante, grep échoue, ce qui arrêterait un appelant en set -e.
     lignes=$(git diff -U0 -M --no-color --no-ext-diff "$@" -- "$ancien" "$chemin" \
-      | awk '/^@@/ { h = 1; next } h && /^\+/' | grep -vF credential-ok)
+      | awk '/^@@/ { h = 1; next } h && /^\+/' | grep -vF credential-ok) || true
     [ -n "$lignes" ] || continue
     for i in "${!CREDENTIAL_FAMILLES[@]}"; do
       if printf '%s\n' "$lignes" | grep -qE ${CREDENTIAL_CASSE[i]} -e "${CREDENTIAL_MOTIFS[i]}"; then
