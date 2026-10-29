@@ -333,9 +333,9 @@ pr_body() {
   printf 'Besoin : `%s` · étape : %s\nArtefact : `%s/%s/%s`\n\n' "$id" "$step" "$IDIR" "$id" "$(file_of "$step")"
   printf '### Avant de demander la revue (`git sdlc ready %s %s`)\n\n' "$id" "$step"
   case $step in
-    intent) printf -- '- [ ] Problème, résultat attendu et contraintes rédigés avec Claude, relus par l’auteur\n- [ ] Questions ouvertes listées\n' ;;
-    spec)   printf -- '- [ ] Spec produite avec les skills de l’organisation\n- [ ] Points d’attention signalés et arbitrés avec leurs propriétaires\n- [ ] Questions ouvertes de l’intent tranchées ou reportées\n' ;;
-    build)  printf -- '- [ ] plan.md produit en plan mode et validé avant le code\n- [ ] Tests verts en local et en CI\n- [ ] plan.md mis à jour si l’implémentation a divergé\n- [ ] Recette validée par <recetteur> ; refaite après toute modification de la branche\n' ;;
+    intent) printf -- '- [ ] Problème, résultat attendu et contraintes rédigés avec Claude (skill redaction-intent), relus par l’auteur\n- [ ] Priorité donnée par le PO, ou laissée à définir\n- [ ] Taille contrôlée (skill controle-taille-intent)\n- [ ] Questions ouvertes listées\n' ;;
+    spec)   printf -- '- [ ] Spec produite avec le skill generation-spec et les skills de l’organisation\n- [ ] Chaque critère de succès de l’intent a au moins un critère d’acceptation\n- [ ] Points d’attention signalés et arbitrés avec leurs propriétaires\n- [ ] Questions ouvertes de l’intent tranchées ou reportées\n' ;;
+    build)  printf -- '- [ ] plan.md produit en plan mode (skill generation-plan) et validé avant le code\n- [ ] Chaque numéro C, L, A de la spec couvert par une étape du plan\n- [ ] Tests verts en local et en CI\n- [ ] plan.md mis à jour si l’implémentation a divergé\n- [ ] Recette validée par <recetteur> ; refaite après toute modification de la branche\n' ;;
   esac
   printf '\nLa revue suit REVIEW.md.\n'
 }

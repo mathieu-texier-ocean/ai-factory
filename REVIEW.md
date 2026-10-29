@@ -12,9 +12,9 @@ Le check `sdlc-conventions` vérifie déjà les trailers, le périmètre des fic
 
 ## Selon l’étape
 
-**PR intent** (fusion : product owner). Le problème est compréhensible sans contexte, le résultat attendu est observable, les contraintes et le hors-périmètre sont explicites, les questions ouvertes sont listées.
+**PR intent** (fusion : product owner). Le problème est compréhensible sans contexte, le résultat attendu est observable, les contraintes et le hors-périmètre sont explicites, les questions ouvertes sont listées. La priorité vient du product owner, jamais déduite ; un intent qui juxtapose plusieurs problèmes indépendants est à découper (skill `controle-taille-intent`).
 
-**PR spec** (fusion : product owner). La spec répond à l’intent, les questions ouvertes sont tranchées ou reportées, les points d’attention signalés par Claude ont chacun été arbitrés avec le propriétaire de la politique concernée.
+**PR spec** (fusion : product owner). La spec répond à l’intent, les questions ouvertes sont tranchées ou reportées, les points d’attention signalés par Claude ont chacun été arbitrés avec le propriétaire de la politique concernée. Chaque critère de succès de l’intent a au moins un critère d’acceptation `A`, au résultat observable ; aucun critère n’a été inventé. Une révision ajoute des numéros C, L, A sans renuméroter.
 
 **PR build** (fusion : tech lead). Quatre passes, détaillées ci-dessous.
 
@@ -26,7 +26,7 @@ Le check `sdlc-conventions` vérifie déjà les trailers, le périmètre des fic
 
 **Sécurité** : injection, authentification ou autorisation manquante, données personnelles dans les logs ou les messages d’erreur, secrets dans le diff, dépendances ajoutées sans justification.
 
-**Conformité** : le diff réalise `spec.md` et respecte `plan.md`. Tout écart au plan est reflété dans `plan.md` dans la même PR.
+**Conformité** : le diff réalise `spec.md` et respecte `plan.md`. Chaque numéro C, L, A de la spec est couvert par une étape du plan. Tout écart au plan est reflété dans `plan.md` dans la même PR.
 
 **Preuve** : les tests couvrent les critères de succès de l’intent ; pour une correction de bug, le test qui reproduit le bug a été commité avant le correctif et n’a pas été modifié ensuite.
 
