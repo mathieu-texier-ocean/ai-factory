@@ -8,7 +8,7 @@
 
   N’ajoutez PAS de champ « Statut » : l’étape se déduit de git
   (`git sdlc status {{ID}}`) et des PR GitHub, elle ne peut donc pas diverger.
-  Les champs ci-dessous sont lus par git-sdlc : gardez « Clé: valeur » en début de ligne.
+  Product-Owner et Parent sont lus par git-sdlc : gardez « Clé: valeur » en début de ligne.
 -->
 
 Author: {{AUTHOR}}

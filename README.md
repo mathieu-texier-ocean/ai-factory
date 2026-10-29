@@ -116,11 +116,11 @@ L’auteur d’une fusion n’apparaît pas dans QUI : `git sdlc status` l’ind
 
 L’ordre de priorité est le suivant :
 
-1. PR fermée avec `sdlc:rejected` → **Rejeté**.
+1. PR fermée avec `sdlc:rejected`, ou tag `rejected/<id>` → **Rejeté**.
 2. PR build fusionnée dont le dernier commit est contenu dans un tag `YY.MM.DD[.V]` → **Livré** ; sinon **Prêt à livrer**.
-3. PR build ouverte → son état ci-dessus.
-4. PR spec fusionnée → **Spec acceptée** ; sinon PR spec ouverte.
-5. PR intent fusionnée → **Intent accepté** ; sinon PR intent ouverte.
+3. PR build ouverte → son état ci-dessus ; sinon branche build sans PR → **en cours (sans PR)**.
+4. PR spec fusionnée → **Spec acceptée** ; sinon PR spec ouverte, puis branche spec sans PR.
+5. PR intent fusionnée → **Intent accepté** ; sinon PR intent ouverte, puis branche intent sans PR.
 
 `status` affiche aussi les preuves : chaque gate franchi (date, PR, auteur de la fusion), l’état des checks, et les incidents enfants (`Parent: <id>`).
 
@@ -148,7 +148,7 @@ Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion
 ## Points d’attention
 
 - **Séparation des tâches.** Sans approbation requise, GitHub laisse toute personne ayant le droit d’écriture fusionner, y compris l’auteur de la PR. Le rôle (PO pour intent et spec, tech lead pour le build) et « l’auteur ne fusionne pas sa propre PR » sont des conventions : `status` les rend visibles, rien ne les impose. Réservez le droit d’écriture en conséquence.
-- **Hooks client.** `commit-msg` se contourne avec `--no-verify`. Le check `sdlc-conventions`, requis par le ruleset, refait les mêmes vérifications côté GitHub.
+- **Hooks client.** `commit-msg` se contourne avec `--no-verify`. Le check `sdlc-conventions`, requis par le ruleset, revérifie côté GitHub le trailer `Need:` et le périmètre des fichiers ; la valeur de `Stage:` n’est contrôlée que par le hook.
 - **Mode de fusion.** Seul le rebase garde les trailers `Need:`/`Stage:` sur chaque commit ; un squash les fusionnerait au gré du message. `setup` désactive squash et merge commit. `git sdlc merge` appelle `gh pr merge --rebase --delete-branch` (clé `mergeArgs` de `.sdlc/config`) : la branche distante et la branche locale sont supprimées. L’auteur de la fusion n’est connu que par l’API GitHub : sans elle (hors ligne, PR au-delà de `prLimit`), `status` retrouve l’étape par les trailers mais pas qui l’a fusionnée.
 - **Recette.** La checklist de la PR build demande une recette validée, refaite après toute modification. C’est déclaratif : rien ne la vérifie.
 - **Branches hors besoin.** `Need:` n’est exigé que sur `need/*` ; ailleurs le hook ajoute `Need: none` et le check vérifie seulement que `intent/` n’est pas touché.

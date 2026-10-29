@@ -26,23 +26,23 @@ IDIR=${SDLC_INTENT_DIR:-intent}
 errors=0
 err() { printf '::error::%s\n' "$*"; errors=$((errors + 1)); }
 ok()  { printf '✓ %s\n' "$*"; }
-trailer() { git log -1 --format="%(trailers:key=$2,valueonly,separator=%x2C)" "$1"; }
 
 base=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
-commits=$(git rev-list --no-merges "$base..$HEAD_SHA")
 files=$(git diff --name-only "$base" "$HEAD_SHA")
 
+# Un seul git log : hash court et valeur de Need: de chaque commit (hors merges).
 check_commits() {
-  local expected=$1 c need
-  for c in $commits; do
-    need=$(trailer "$c" Need)
+  local expected=$1 c need n=0
+  while IFS=$'\t' read -r c need; do
+    [ -n "$c" ] || continue
+    n=$((n + 1))
     if [ -z "$need" ]; then
-      err "commit $(git rev-parse --short "$c") : trailer Need: manquant"
-    elif [ -n "$expected" ] && [ "$need" != "$expected" ]; then
-      err "commit $(git rev-parse --short "$c") : Need: « $need » au lieu de « $expected »"
+      err "commit $c : trailer Need: manquant"
+    elif [ "$need" != "$expected" ]; then
+      err "commit $c : Need: « $need » au lieu de « $expected »"
     fi
-  done
-  [ "$errors" -gt 0 ] || ok "trailers Need: présents sur $(printf '%s\n' $commits | grep -c . || true) commit(s)"
+  done < <(git log --no-merges --format='%h%x09%(trailers:key=Need,valueonly,separator=%x2C)' "$base..$HEAD_SHA")
+  [ "$errors" -gt 0 ] || ok "trailers Need: présents sur $n commit(s)"
 }
 
 if [[ $HEAD_REF =~ ^need/([^/]+)/(intent|spec|build)$ ]]; then
@@ -55,10 +55,8 @@ if [[ $HEAD_REF =~ ^need/([^/]+)/(intent|spec|build)$ ]]; then
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case $step in
-      intent)
-        case $f in "$dir/intent.md"|"$dir/assets/"*) ;; *) err "PR intent : $f hors périmètre (seul $dir/intent.md)" ;; esac ;;
-      spec)
-        case $f in "$dir/spec.md"|"$dir/assets/"*) ;; *) err "PR spec : $f hors périmètre (seul $dir/spec.md)" ;; esac ;;
+      intent|spec)
+        case $f in "$dir/$step.md"|"$dir/assets/"*) ;; *) err "PR $step : $f hors périmètre (seul $dir/$step.md)" ;; esac ;;
       build)
         case $f in
           "$dir/intent.md"|"$dir/spec.md") err "PR build : $f ne change que par une PR intent/spec (fusion par le PO)" ;;

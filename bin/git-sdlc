@@ -30,8 +30,10 @@ IDIR=${SDLC_INTENT_DIR:-$(cfg intentDir intent)}
 PR_LIMIT=$(cfg prLimit 300)
 MERGE_ARGS=$(cfg mergeArgs "--rebase --delete-branch")
 FETCH=1
+RELEASE_META=1
 PRS=""
 ID=""
+MAIN_REF=""
 
 cleanup() { [ -z "$PRS" ] || rm -f "$PRS"; }
 trap cleanup EXIT
@@ -65,10 +67,15 @@ file_of() {
   case $1 in intent) echo intent.md ;; spec) echo spec.md ;; build) echo plan.md ;; esac
 }
 
+# Référence de main, résolue au démarrage puis après chaque fetch (resolve_main).
+resolve_main() {
+  MAIN_REF=""
+  if has_ref "refs/remotes/$REMOTE/$MAIN"; then MAIN_REF="refs/remotes/$REMOTE/$MAIN"
+  elif has_ref "refs/heads/$MAIN"; then MAIN_REF="refs/heads/$MAIN"; fi
+}
 main_ref() {
-  if has_ref "refs/remotes/$REMOTE/$MAIN"; then echo "refs/remotes/$REMOTE/$MAIN"
-  elif has_ref "refs/heads/$MAIN"; then echo "refs/heads/$MAIN"
-  else die "branche $MAIN introuvable (ni locale ni sur $REMOTE)"; fi
+  [ -n "$MAIN_REF" ] || die "branche $MAIN introuvable (ni locale ni sur $REMOTE)"
+  echo "$MAIN_REF"
 }
 
 branch_ref() {
@@ -80,8 +87,6 @@ branch_ref() {
 }
 
 on_main() { git cat-file -e "$(main_ref):$IDIR/$1/$2" 2>/dev/null; }
-
-trailer() { git log -1 --format="%(trailers:key=$2,valueonly,separator=%x2C )" "$1"; }
 
 # Repli git : dernier commit de main portant les trailers Need/Stage (fusion par rebase).
 merge_of() {
@@ -101,11 +106,13 @@ intent_field() {
 }
 
 children_of() {
-  local idr ref
+  local idr
   idr=$(re_escape "$1")
-  for ref in "$(main_ref)" $(git for-each-ref --format='%(refname)' "refs/remotes/$REMOTE/need/" | grep '/intent$' || true); do
-    git grep -l -E "^Parent:[[:space:]]*$idr[[:space:]]*\$" "$ref" -- "$IDIR/*/intent.md" 2>/dev/null || true
-  done | sed -E "s#^[^:]+:$IDIR/([^/]+)/intent\.md\$#\1#" | sort -u
+  # shellcheck disable=SC2046  # une référence par mot
+  { git grep -l -E "^Parent:[[:space:]]*$idr[[:space:]]*\$" "$(main_ref)" \
+      $(git for-each-ref --format='%(refname)' "refs/remotes/$REMOTE/need/" | grep '/intent$' || true) \
+      -- "$IDIR/*/intent.md" 2>/dev/null || true; } \
+    | sed -E "s#^[^:]+:$IDIR/([^/]+)/intent\.md\$#\1#" | sort -u
 }
 
 clean_tree() {
@@ -127,8 +134,8 @@ align() {
   fi
 }
 
-nd() { [ "$1" = - ] && printf '' || printf '%s' "$1"; }                # « - » → vide
-at() { [ -z "$1" ] || [ "$1" = - ] && printf '' || printf '@%s' "${1//,/, @}"; }
+nd() { [ "$1" = - ] || printf '%s' "$1"; }                # « - » → vide
+at() { [ -z "$1" ] || [ "$1" = - ] || printf '@%s' "${1//,/, @}"; }
 
 # ------------------------------------------------------------ données GitHub
 
@@ -158,8 +165,10 @@ def nz: if . == null or . == "" then "-" else tostring end;
 | map(nz) | @tsv'
 
 do_fetch() {
-  [ "$FETCH" = 1 ] && has_remote || return 0
-  git fetch -q --prune --tags "$REMOTE" 2>/dev/null || warn "fetch de $REMOTE impossible, état local utilisé"
+  if [ "$FETCH" = 1 ] && has_remote; then
+    git fetch -q --prune --tags "$REMOTE" 2>/dev/null || warn "fetch de $REMOTE impossible, état local utilisé"
+  fi
+  resolve_main
 }
 
 load_prs() {
@@ -171,14 +180,30 @@ load_prs() {
     || die "lecture des pull requests impossible (vérifiez gh auth status)"
 }
 
+# Fetch et lecture des PR en parallèle : load_prs ne lit que GitHub.
+refresh() {
+  local f
+  do_fetch & f=$!
+  load_prs
+  wait "$f"
+  resolve_main
+}
+
 # Charge dans P_* la PR la plus récente de need/<id>/<étape>.
 pr_get() {
-  local line
-  line=$(awk -F'\t' -v i="$1" -v s="$2" '$1 == i && $2 == s { l = $0 } END { print l }' "$PRS")
-  [ -n "$line" ] || return 1
-  IFS=$'\t' read -r _ _ P_NUM P_STATE P_DRAFT P_DEC P_AUTHOR P_ASSIGN P_REVREQ P_CHECKS \
-    P_UPD P_MERGEDAT P_MERGEDBY P_OID P_LABELS P_URL <<<"$line"
+  pr_parse "$(awk -F'\t' -v i="$1" -v s="$2" '$1 == i && $2 == s { l = $0 } END { print l }' "$PRS")"
 }
+# Charge dans P_* la PR fermée la plus récente du besoin $1 portant sdlc:rejected.
+pr_rejected() {
+  pr_parse "$(awk -F'\t' -v i="$1" '$1 == i && $4 == "CLOSED" && $15 ~ /(^|,)sdlc:rejected(,|$)/ { l = $0 } END { print l }' "$PRS")"
+}
+pr_parse() {
+  [ -n "$1" ] || return 1
+  IFS=$'\t' read -r _ _ P_NUM P_STATE P_DRAFT P_DEC P_AUTHOR P_ASSIGN P_REVREQ P_CHECKS \
+    P_UPD P_MERGEDAT P_MERGEDBY P_OID P_LABELS P_URL <<<"$1"
+}
+# Colonne $2 (2 = étape, 3 = numéro) des PR ouvertes du besoin $1.
+pr_open_field() { awk -F'\t' -v i="$1" -v c="$2" '$1 == i && $4 == "OPEN" { print $c }' "$PRS"; }
 pr_open()   { pr_get "$1" "$2" && [ "$P_STATE" = OPEN ]; }
 pr_merged() { pr_get "$1" "$2" && [ "$P_STATE" = MERGED ]; }
 pr_owner()  { if [ "$P_ASSIGN" != - ]; then at "$P_ASSIGN"; else at "$P_AUTHOR"; fi; }
@@ -206,61 +231,71 @@ open_state() {
   fi
 }
 
+# Fusion de l’étape $1 du besoin $ID : PR fusionnée, sinon commit portant les trailers.
+# Remplit M_OID, M_DATE et M_DESC ; échoue si l’étape n’est pas fusionnée.
+merge_info() {
+  M_OID="" M_DATE="" M_DESC=""
+  if pr_merged "$ID" "$1"; then
+    M_OID=$(nd "$P_OID") M_DATE=$(nd "$P_MERGEDAT") M_DESC="(PR #$P_NUM) · fusion $(at "$P_MERGEDBY")"
+  else
+    M_OID=$(merge_of "$ID" "$(stage_of "$1")")
+    [ -n "$M_OID" ] || return 1
+    IFS='|' read -r M_DATE M_DESC < <(git log -1 --format='%cs|(%h)' "$M_OID")
+  fi
+}
+
+# Auteur et date du tag $1 dans WHO et WHEN (vides pour un tag léger).
+tag_meta() {
+  IFS='|' read -r WHO WHEN < <(git for-each-ref --format='%(taggername)|%(taggerdate:short)' "refs/tags/$1") || true
+}
+
 # QUI = le rôle qui doit agir ; l’auteur de la fusion figure dans les preuves de status.
 accepted_state() {
-  local step=$1 code=$2 o=$3 label=$4 next=$5 role=$6 mc
+  local step=$1 code=$2 o=$3 label=$4 next=$5 role=$6
   CODE=$code ORDER=$o STAGE=$label NEXT=$next WHO=$role
-  if pr_merged "$ID" "$step"; then
-    WHEN=$(nd "$P_MERGEDAT")
-  else
-    mc=$(merge_of "$ID" "$(stage_of "$step")")
-    [ -z "$mc" ] || WHEN=$(git log -1 --format=%cs "$mc")
-  fi
+  if merge_info "$step"; then WHEN=$M_DATE; fi
 }
 
 branch_state() {
   local step=$1 o=$2 br=$3
   CODE=$step-nopr ORDER=$o STAGE="$(label_of "$step") en cours (sans PR)"
-  WHO=$(git log -1 --format=%an "$br"); WHEN=$(git log -1 --format=%cs "$br")
+  IFS='|' read -r WHO WHEN < <(git log -1 --format='%an|%cs' "$br")
   NEXT="$WHO : git sdlc claim $ID $step pour ouvrir la PR"
 }
 
 compute() {
   ID=$1
-  local mc rel br line
+  local rel br line
   CODE=unknown ORDER=99 STAGE="Inconnu" WHO="—" WHEN="—" NEXT="—"
   EVID=()
 
-  line=$(awk -F'\t' -v i="$ID" '$1 == i && $4 == "CLOSED" && $15 ~ /(^|,)sdlc:rejected(,|$)/ { l = $0 } END { print l }' "$PRS")
-  if [ -n "$line" ]; then
-    IFS=$'\t' read -r _ _ P_NUM _ _ _ P_AUTHOR _ _ _ P_UPD _ <<<"$line"
+  if pr_rejected "$ID"; then
     CODE=rejected ORDER=90 STAGE="Rejeté (PR #$P_NUM)" WHO=$(at "$P_AUTHOR") WHEN=$P_UPD
     return 0
   fi
   if has_tag "rejected/$ID"; then
     CODE=rejected ORDER=90 STAGE="Rejeté"
-    WHO=$(git for-each-ref --format='%(taggername)' "refs/tags/rejected/$ID")
-    WHEN=$(git for-each-ref --format='%(taggerdate:short)' "refs/tags/rejected/$ID")
+    tag_meta "rejected/$ID"
     WHO=${WHO:-—} WHEN=${WHEN:-—}
     return 0
   fi
 
   # Build fusionné : livré ou prêt à livrer.
-  mc=""
-  if pr_merged "$ID" build; then mc=$(nd "$P_OID"); else mc=$(merge_of "$ID" build); fi
-  if [ -n "$mc" ]; then
-    rel=$(git tag --contains "$mc" --list "${RELEASE_GLOBS[@]}" --sort=creatordate 2>/dev/null | head -n1)
+  merge_info build || true
+  if [ -n "$M_OID" ]; then
+    rel=$(git tag --contains "$M_OID" --list "${RELEASE_GLOBS[@]}" --sort=creatordate 2>/dev/null | head -n1)
     if [ -n "$rel" ]; then
       CODE=released ORDER=50 STAGE="Livré ($rel)"
       # GitHub crée des tags légers pour ses releases : l’auteur vient de la release.
-      line=$(gh release view "$rel" --json author,publishedAt \
+      # Le board sans --all écarte les besoins livrés : inutile d’interroger GitHub.
+      line=""
+      [ "$RELEASE_META" = 0 ] || line=$(gh release view "$rel" --json author,publishedAt \
                --jq '"@" + .author.login + "\t" + ((.publishedAt // "") | .[0:10])' 2>/dev/null || true)
       if [ -n "$line" ]; then
         WHO=${line%%$'\t'*} WHEN=${line#*$'\t'}
       else
-        WHO=$(git for-each-ref --format='%(taggername)' "refs/tags/$rel")
-        WHEN=$(git for-each-ref --format='%(taggerdate:short)' "refs/tags/$rel")
-        [ -n "$WHO" ] || { WHO=$(git log -1 --format=%cn "$rel"); WHEN=$(git log -1 --format=%cs "$rel"); }
+        tag_meta "$rel"
+        [ -n "$WHO" ] || IFS='|' read -r WHO WHEN < <(git log -1 --format='%cn|%cs' "$rel")
       fi
       NEXT="OPS : surveiller ; un incident ouvre un intent avec Parent: $ID"
     else
@@ -279,21 +314,15 @@ compute() {
   else
     return 1
   fi
-  WHO=$(printf '%s' "$WHO" | sed 's/[[:space:]]*<[^>]*>//')
   WHO=${WHO:-—} WHEN=${WHEN:-—}
   return 0
 }
 
 gate_evidence() {
-  local step mc lab
+  local step lab
   for step in intent spec build; do
     lab=$(printf '%-12s' "$(file_of "$step" | sed 's/plan.md/code/')")
-    if pr_merged "$ID" "$step"; then
-      EVID+=("$lab fusionné le $(nd "$P_MERGEDAT") (PR #$P_NUM) · fusion $(at "$P_MERGEDBY")")
-    else
-      mc=$(merge_of "$ID" "$(stage_of "$step")")
-      [ -z "$mc" ] || EVID+=("$lab fusionné le $(git log -1 --format='%cs (%h)' "$mc")")
-    fi
+    if merge_info "$step"; then EVID+=("$lab fusionné le $M_DATE $M_DESC"); fi
   done
 }
 
@@ -331,37 +360,52 @@ need_open_pr() {
   pr_open "$1" "$2" || die "aucune PR ouverte pour need/$1/$2"
 }
 
-# Besoin et étape de la branche courante need/<id>/<étape> (séparés par une tabulation).
+# Remplit B_ID et B_STEP depuis la branche courante need/<id>/<étape>.
 branch_need() {
   local b
   b=$(git symbolic-ref --short -q HEAD 2>/dev/null) || return 1
   [[ $b =~ ^need/([^/]+)/(intent|spec|build)$ ]] || return 1
-  printf '%s\t%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+  B_ID=${BASH_REMATCH[1]} B_STEP=${BASH_REMATCH[2]}
+}
+
+# Étape visée quand seul l’id $1 est donné : celle de l’unique PR ouverte du besoin.
+step_of_open_pr() {
+  local steps
+  steps=$(pr_open_field "$1" 2 | sort -u)
+  [ -n "$steps" ] || die "aucune PR ouverte pour $1"
+  [ "$(printf '%s\n' "$steps" | wc -l)" -eq 1 ] \
+    || die "plusieurs PR ouvertes pour $1 : précisez l’étape ($(printf '%s' "$steps" | tr '\n' ' '))"
+  echo "$steps"
+}
+
+# Pour claim : l’étape en cours du besoin $1, ou la suivante si la précédente est fusionnée.
+step_to_claim() {
+  compute "$1" || die "besoin « $1 » introuvable"
+  case $CODE in
+    intent-accepted) echo spec ;;
+    spec-accepted)   echo build ;;
+    intent-*|spec-*|build-*) echo "${CODE%%-*}" ;;
+    *) die "$1 : $STAGE, aucune étape à prendre en charge" ;;
+  esac
 }
 
 # Remplit T_ID et T_STEP à partir de [<id> [<étape>]] : sans argument, la branche
 # need/<id>/<étape> courante ; avec l’id seul, l’étape de la branche courante si
-# elle porte ce besoin, sinon celle de l’unique PR ouverte du besoin.
+# elle porte ce besoin, sinon celle que donne la fonction $2 (step_of_open_pr, step_to_claim).
 resolve_target() {
-  local cmd=$1 cur steps; shift
-  cur=$(branch_need || true)
+  local cmd=$1 fallback=$2; shift 2
+  local a
+  [ $# -le 2 ] || die "argument en trop : $3"
+  for a in "$@"; do case $a in -*) die "option inconnue : $a" ;; esac; done
   T_ID=${1:-} T_STEP=${2:-}
   if [ -z "$T_ID" ]; then
-    [ -n "$cur" ] || die "usage : git sdlc $cmd [<id> [<étape>]] (sans argument : depuis une branche need/<id>/<étape>)"
-    T_ID=${cur%%$'\t'*} T_STEP=${cur#*$'\t'}
+    branch_need || die "usage : git sdlc $cmd [<id> [<étape>]] (sans argument : depuis une branche need/<id>/<étape>)"
+    T_ID=$B_ID T_STEP=$B_STEP
   elif [ -z "$T_STEP" ]; then
-    if [ -n "$cur" ] && [ "${cur%%$'\t'*}" = "$T_ID" ]; then
-      T_STEP=${cur#*$'\t'}
-    else
-      load_prs
-      steps=$(awk -F'\t' -v i="$T_ID" '$1 == i && $4 == "OPEN" { print $2 }' "$PRS" | sort -u)
-      [ -n "$steps" ] || die "aucune PR ouverte pour $T_ID"
-      [ "$(printf '%s\n' "$steps" | wc -l)" -eq 1 ] \
-        || die "plusieurs PR ouvertes pour $T_ID : précisez l’étape ($(printf '%s' "$steps" | tr '\n' ' '))"
-      T_STEP=$steps
-    fi
+    if branch_need && [ "$B_ID" = "$T_ID" ]; then T_STEP=$B_STEP
+    else load_prs; T_STEP=$("$fallback" "$T_ID"); fi
   fi
-  stage_of "$T_STEP" >/dev/null || die "étape inconnue : $T_STEP"
+  stage_of "$T_STEP" >/dev/null || die "étape inconnue : $T_STEP (intent, spec ou build)"
   [ $# -ge 2 ] || echo "Besoin $T_ID, étape $T_STEP."
 }
 
@@ -397,7 +441,7 @@ EOF
 }
 
 cmd_status() {
-  local id="" porcelain=0 e p cur
+  local id="" porcelain=0 e p
   while [ $# -gt 0 ]; do
     case $1 in
       --porcelain) porcelain=1 ;;
@@ -408,10 +452,10 @@ cmd_status() {
     shift
   done
   if [ -z "$id" ]; then
-    cur=$(branch_need) || die "usage : git sdlc status [<id>] (sans id : depuis une branche need/<id>/<étape>)"
-    id=${cur%%$'\t'*}
+    branch_need || die "usage : git sdlc status [<id>] (sans id : depuis une branche need/<id>/<étape>)"
+    id=$B_ID
   fi
-  do_fetch; load_prs
+  refresh
   compute "$id" || die "besoin « $id » introuvable (ni PR, ni branche need/$id/*, ni $IDIR/$id sur $MAIN)"
 
   if [ "$porcelain" = 1 ]; then
@@ -462,8 +506,7 @@ wait_pr_state() {
 show_need() {
   (
     trap cleanup EXIT
-    [ -z "$PRS" ] || rm -f "$PRS"
-    PRS=""
+    cleanup; PRS=""
     load_prs
     compute "$1" || exit 0
     echo
@@ -472,7 +515,7 @@ show_need() {
 }
 
 cmd_board() {
-  local all=0 byperson=0 porcelain=0 id rows="" key sortkey
+  local all=0 byperson=0 porcelain=0 id rows="" key
   while [ $# -gt 0 ]; do
     case $1 in
       --all)       all=1 ;;
@@ -483,7 +526,8 @@ cmd_board() {
     esac
     shift
   done
-  do_fetch; load_prs
+  [ "$all" = 1 ] || RELEASE_META=0
+  refresh
   for id in $(list_ids); do
     compute "$id" || continue
     if [ "$all" = 0 ] && { [ "$CODE" = released ] || [ "$CODE" = rejected ]; }; then continue; fi
@@ -491,19 +535,16 @@ cmd_board() {
     rows+="$key"$'\t'"$id"$'\t'"$CODE"$'\t'"$STAGE"$'\t'"$WHO"$'\t'"$WHEN"$'\t'"$NEXT"$'\n'
   done
   if [ -z "$rows" ]; then echo "Aucun besoin en cours."; return 0; fi
-  sortkey=(-t "$(printf '\t')" -k1,1 -k2,2)
+  rows=$(printf '%s' "$rows" | sort -t $'\t' -k1,1 -k2,2)
   if [ "$porcelain" = 1 ]; then
-    printf '%s' "$rows" | sort "${sortkey[@]}" | cut -f2,3,5,6,7
-    return 0
+    cut -f2,3,5,6,7 <<<"$rows"
+  else
+    { board_header; cut -f2,4,5,6,7 <<<"$rows"; } | align
   fi
-  {
-    board_header
-    printf '%s' "$rows" | sort "${sortkey[@]}" | cut -f2,4,5,6,7
-  } | align
 }
 
 cmd_new() {
-  local slug="" id="" parent="—" origin="idée" author tpl file
+  local slug="" id="" parent="—" origin="idée" today author tpl file
   while [ $# -gt 0 ]; do
     case $1 in
       --id)     id=$2; shift ;;
@@ -515,9 +556,10 @@ cmd_new() {
     shift
   done
   [ -n "$slug" ] || [ -n "$id" ] || die "usage : git sdlc new <slug> [--id <id>] [--parent <id>]"
-  id=${id:-$(date +%Y-%m-%d)-$slug}
+  today=$(date +%Y-%m-%d)
+  id=${id:-$today-$slug}
   valid_id "$id" || die "identifiant invalide : $id (lettres, chiffres, . _ -)"
-  do_fetch; load_prs
+  refresh
   if branch_ref "$id" intent >/dev/null || on_main "$id" intent.md || pr_get "$id" intent; then
     die "le besoin $id existe déjà"
   fi
@@ -531,7 +573,7 @@ cmd_new() {
   if [ -f "$tpl" ]; then
     sed -e "s/{{ID}}/$(sed_escape "$id")/g" \
         -e "s/{{AUTHOR}}/$(sed_escape "$author")/g" \
-        -e "s/{{DATE}}/$(date +%Y-%m-%d)/g" \
+        -e "s/{{DATE}}/$today/g" \
         -e "s/{{PARENT}}/$(sed_escape "$parent")/g" \
         -e "s/{{ORIGIN}}/$(sed_escape "$origin")/g" "$tpl" > "$file"
   else
@@ -549,38 +591,19 @@ cmd_new() {
 }
 
 cmd_claim() {
-  local id="" step="" push=1 st br cur
+  local push=1 pos=() id step st br
   while [ $# -gt 0 ]; do
     case $1 in
       --no-push) push=0 ;;
       -*) die "option inconnue : $1" ;;
-      *) if [ -z "$id" ]; then id=$1; elif [ -z "$step" ]; then step=$1; else die "argument en trop : $1"; fi ;;
+      *) pos+=("$1") ;;
     esac
     shift
   done
-  do_fetch; load_prs
-  # Sans id : la branche need/<id>/<étape> courante. Avec l’id seul : l’étape de la
-  # branche courante si elle porte ce besoin, sinon l’étape en cours ou la suivante.
-  cur=$(branch_need || true)
-  if [ -z "$id" ]; then
-    [ -n "$cur" ] || die "usage : git sdlc claim [<id> [<intent|spec|build>]] [--no-push] (sans id : depuis une branche need/<id>/<étape>)"
-    id=${cur%%$'\t'*} step=${cur#*$'\t'}
-    echo "Besoin $id, étape $step."
-  elif [ -z "$step" ]; then
-    if [ -n "$cur" ] && [ "${cur%%$'\t'*}" = "$id" ]; then
-      step=${cur#*$'\t'}
-    else
-      compute "$id" || die "besoin « $id » introuvable"
-      case $CODE in
-        intent-accepted) step=spec ;;
-        spec-accepted)   step=build ;;
-        intent-*|spec-*|build-*) step=${CODE%%-*} ;;
-        *) die "$id : $STAGE, aucune étape à prendre en charge" ;;
-      esac
-    fi
-    echo "Besoin $id, étape $step."
-  fi
-  st=$(stage_of "$step") || die "étape inconnue : $step (intent, spec ou build)"
+  refresh
+  resolve_target claim step_to_claim ${pos[@]+"${pos[@]}"}
+  id=$T_ID step=$T_STEP
+  st=$(stage_of "$step")
   valid_id "$id" || die "identifiant invalide : $id"
   case $step in
     spec)  on_main "$id" intent.md || warn "intent.md de $id pas encore fusionné sur $MAIN" ;;
@@ -604,7 +627,7 @@ cmd_claim() {
 }
 
 cmd_ready() {
-  resolve_target ready "$@"
+  resolve_target ready step_of_open_pr "$@"
   need_open_pr "$T_ID" "$T_STEP"
   gh pr ready "$P_NUM"
   echo "PR #$P_NUM en revue : $(merger_of "$T_STEP") relit et fusionne."
@@ -621,7 +644,7 @@ cmd_merge() {
     esac
     shift
   done
-  resolve_target merge ${pos[@]+"${pos[@]}"}
+  resolve_target merge step_of_open_pr ${pos[@]+"${pos[@]}"}
   local id=$T_ID step=$T_STEP
   need_open_pr "$id" "$step"
   [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
@@ -648,33 +671,33 @@ cmd_merge() {
 }
 
 cmd_reject() {
-  local id="" n count=0 cur reason
+  local id="" n count=0 reason
   [ $# -ge 1 ] || die "usage : git sdlc reject [<id>] <raison>"
-  do_fetch; load_prs
+  refresh
   # Le premier argument est l’id s’il désigne un besoin connu ; sinon le besoin
   # vient de la branche need/<id>/<étape> courante et tout est la raison.
   if list_ids | grep -qxF -- "$1"; then
     [ $# -ge 2 ] || die "raison manquante : git sdlc reject $1 <raison>"
     id=$1; shift
-  elif cur=$(branch_need); then
-    id=${cur%%$'\t'*}
+  elif branch_need; then
+    id=$B_ID
     echo "Besoin $id."
   else
     die "usage : git sdlc reject [<id>] <raison> (sans id : depuis une branche need/<id>/<étape>)"
   fi
   reason="$*"
-  for n in $(awk -F'\t' -v i="$id" '$1 == i && $4 == "OPEN" { print $3 }' "$PRS"); do
+  for n in $(pr_open_field "$id" 3); do
     gh pr edit "$n" --add-label sdlc:rejected >/dev/null
     gh pr close "$n" --comment "Rejet : $reason" --delete-branch
     count=$((count + 1))
   done
-  [ "$count" = 0 ] || wait_pr_state "$n" CLOSED
   if [ "$count" = 0 ]; then
     # Aucune PR ouverte (besoin déjà accepté, en attente) : la décision est tracée par un tag.
     git tag -a "rejected/$id" "$(main_ref)" -m "Rejet : $id" -m "$reason"
     git push -q "$REMOTE" "rejected/$id"
     echo "Aucune PR ouverte : rejet tracé par le tag rejected/$id."
   else
+    wait_pr_state "$n" CLOSED
     echo "Besoin $id rejeté : $count PR fermée(s) avec l’étiquette sdlc:rejected."
   fi
   show_need "$id"
@@ -780,6 +803,7 @@ JSON
 
 # ------------------------------------------------------------------ entrée
 
+resolve_main
 cmd=${1:-help}
 [ $# -gt 0 ] && shift
 case $cmd in
