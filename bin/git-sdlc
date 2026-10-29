@@ -403,6 +403,22 @@ list_ids() {
   } | sort -u
 }
 
+board_header() { printf 'BESOIN\tÉTAPE\tQUI\tDEPUIS\tPROCHAINE ACTION\n'; }
+
+# Ligne de board du besoin $1, relue après une action (claim, ready, merge).
+# Dans un sous-shell : un échec de lecture n’annule pas l’action déjà faite.
+show_need() {
+  (
+    trap cleanup EXIT
+    [ -z "$PRS" ] || rm -f "$PRS"
+    PRS=""
+    load_prs
+    compute "$1" || exit 0
+    echo
+    { board_header; printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$STAGE" "$WHO" "$WHEN" "$NEXT"; } | align
+  ) || warn "état de $1 illisible : git sdlc status $1"
+}
+
 cmd_board() {
   local all=0 byperson=0 porcelain=0 id rows="" key sortkey
   while [ $# -gt 0 ]; do
@@ -429,7 +445,7 @@ cmd_board() {
     return 0
   fi
   {
-    printf 'BESOIN\tÉTAPE\tQUI\tDEPUIS\tPROCHAINE ACTION\n'
+    board_header
     printf '%s' "$rows" | sort "${sortkey[@]}" | cut -f2,4,5,6,7
   } | align
 }
@@ -500,10 +516,12 @@ cmd_claim() {
   fi
   if [ "$push" = 0 ]; then
     echo "$br pris en charge localement ; git sdlc claim $id $step publiera la branche et la PR."
+    show_need "$id"
     return 0
   fi
   git push -q -u "$REMOTE" HEAD
   open_pr "$id" "$step"
+  show_need "$id"
 }
 
 cmd_ready() {
@@ -511,6 +529,7 @@ cmd_ready() {
   need_open_pr "$1" "$2"
   gh pr ready "$P_NUM"
   echo "PR #$P_NUM en revue : $(merger_of "$2") relit et fusionne."
+  show_need "$1"
 }
 
 cmd_merge() {
@@ -526,6 +545,7 @@ cmd_merge() {
   gh pr merge "$P_NUM" ${args[@]+"${args[@]}"}
   do_fetch
   echo "Gate $step franchi pour $id (PR #$P_NUM)."
+  show_need "$id"
 }
 
 cmd_reject() {
