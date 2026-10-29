@@ -382,7 +382,8 @@ Cycle d’un besoin (chaque étape = une PR vers $MAIN)
   claim [<id> [<intent|spec|build>]] [--no-push]
                                            prend une étape : branche, PR brouillon, assignation
   ready [<id> [<étape>]]                   sort la PR du brouillon : revue demandée
-  merge [<id> [<étape>]]                   fusionne la PR (gate de l’étape), trailers compris
+  merge [--ready] [<id> [<étape>]]         fusionne la PR (gate de l’étape), trailers compris ;
+                                           --ready sort d’abord la PR du brouillon
   reject [<id>] <raison>                   ferme les PR ouvertes avec l’étiquette sdlc:rejected
   release [<YY.MM.DD>]                     release GitHub sur un tag YY.MM.DD[.V] (défaut : aujourd’hui)
 
@@ -611,12 +612,32 @@ cmd_ready() {
 }
 
 cmd_merge() {
-  resolve_target merge "$@"
+  local ready=0 pos=() ans
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --ready) ready=1 ;;
+      -*) die "option inconnue : $1" ;;
+      *) pos+=("$1") ;;
+    esac
+    shift
+  done
+  resolve_target merge ${pos[@]+"${pos[@]}"}
   local id=$T_ID step=$T_STEP
   need_open_pr "$id" "$step"
-  [ "$P_DRAFT" != draft ] || die "PR #$P_NUM encore en brouillon : git sdlc ready $id $step d’abord"
   [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
   [ "$P_CHECKS" != rouges ] || die "PR #$P_NUM : checks rouges"
+  if [ "$P_DRAFT" = draft ]; then
+    if [ "$ready" = 0 ]; then
+      [ -t 0 ] || die "PR #$P_NUM encore en brouillon : git sdlc merge --ready $id $step, ou git sdlc ready $id $step d’abord"
+      read -r -p "PR #$P_NUM encore en brouillon : la sortir du brouillon et fusionner ? [o/N] " ans
+      case $ans in [oOyY]*) ;; *) die "fusion annulée" ;; esac
+    fi
+    gh pr ready "$P_NUM"
+    # La sortie du brouillon relance les checks : la fusion attend les checks requis.
+    sleep 5
+    gh pr checks "$P_NUM" --watch --required --fail-fast -i 5 \
+      || warn "checks requis en échec ou absents : GitHub décidera si la fusion est possible"
+  fi
   local args
   read -r -a args <<<"$MERGE_ARGS"
   gh pr merge "$P_NUM" ${args[@]+"${args[@]}"}

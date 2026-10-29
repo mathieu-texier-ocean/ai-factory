@@ -97,6 +97,8 @@ git sdlc board --all              # y compris livrés et rejetés
 
 Depuis une branche `need/<id>/<étape>`, `status`, `claim`, `ready`, `merge` et `reject` se lancent sans id : `git sdlc status`, `git sdlc ready`, `git sdlc reject "<raison>"`. Avec l’id seul (`git sdlc merge <id>`), l’étape est celle de l’unique PR ouverte du besoin ; s’il y en a plusieurs, précisez-la. `git sdlc claim <id>` prend l’étape en cours du besoin, ou la suivante si la précédente est fusionnée (spec après l’intent, build après la spec). Le besoin et l’étape déduits sont affichés avant l’action.
 
+`merge` refuse une PR encore en brouillon. En terminal, il propose de la sortir du brouillon puis de fusionner ; `git sdlc merge --ready` le fait sans question. La sortie du brouillon relance le check `sdlc-conventions` : la fusion attend les checks requis.
+
 Toutes ces actions restent possibles dans l’interface GitHub. `git sdlc` lit l’état réel des PR : une PR fusionnée dans le navigateur apparaît comme gate franchi dans `board`.
 
 ## Branches et trailer `Stage:`
