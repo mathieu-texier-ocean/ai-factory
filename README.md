@@ -22,7 +22,7 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `.github/workflows/sdlc.yml` | lance le check requis `sdlc-conventions` sur chaque PR |
 | `.github/scripts/sdlc-check.sh` | règles du check : trailers, périmètre par étape, artefacts présents |
 | `.githooks/commit-msg` | ajoute `Need:` et `Stage:` sur les branches `need/*`, `Need: none` ailleurs |
-| `.sdlc/config` | réglages partagés (branche principale, équipe release…) |
+| `.sdlc/config` | réglages partagés (branche principale, équipe release, arguments de fusion…) |
 | `intent/_template/intent.md` | gabarit copié par `git sdlc new` |
 | `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
 
@@ -140,7 +140,7 @@ Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion
 
 - **Séparation des tâches.** Sans approbation requise, GitHub laisse toute personne ayant le droit d’écriture fusionner, y compris l’auteur de la PR. Le rôle (PO pour intent et spec, tech lead pour le build) et « l’auteur ne fusionne pas sa propre PR » sont des conventions : `status` les rend visibles, rien ne les impose. Réservez le droit d’écriture en conséquence.
 - **Hooks client.** `commit-msg` se contourne avec `--no-verify`. Le check `sdlc-conventions`, requis par le ruleset, refait les mêmes vérifications côté GitHub.
-- **Mode de fusion.** Seul le rebase garde les trailers `Need:`/`Stage:` sur chaque commit ; un squash les fusionnerait au gré du message. `setup` désactive squash et merge commit. L’auteur de la fusion n’est connu que par l’API GitHub : sans elle (hors ligne, PR au-delà de `prLimit`), `status` retrouve l’étape par les trailers mais pas qui l’a fusionnée.
+- **Mode de fusion.** Seul le rebase garde les trailers `Need:`/`Stage:` sur chaque commit ; un squash les fusionnerait au gré du message. `setup` désactive squash et merge commit. `git sdlc merge` appelle `gh pr merge --rebase --delete-branch` (clé `mergeArgs` de `.sdlc/config`) : la branche distante et la branche locale sont supprimées. L’auteur de la fusion n’est connu que par l’API GitHub : sans elle (hors ligne, PR au-delà de `prLimit`), `status` retrouve l’étape par les trailers mais pas qui l’a fusionnée.
 - **Recette.** La checklist de la PR build demande une recette validée, refaite après toute modification. C’est déclaratif : rien ne la vérifie.
 - **Branches hors besoin.** `Need:` n’est exigé que sur `need/*` ; ailleurs le hook ajoute `Need: none` et le check vérifie seulement que `intent/` n’est pas touché.
 - **Volume.** `status` et `board` lisent les `prLimit` (300) PR les plus récentes ciblant `main`. Augmentez la valeur dans `.sdlc/config` si besoin.

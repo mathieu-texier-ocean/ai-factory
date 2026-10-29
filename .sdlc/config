@@ -9,3 +9,6 @@
 	releaseTeam = release-managers
 	# Nombre maximal de PR lues par status et board.
 	prLimit = 300
+	# Arguments de gh pr merge pour git sdlc merge. Garder --rebase : seul le rebase
+	# conserve les trailers Need:/Stage: sur chaque commit.
+	mergeArgs = --rebase --delete-branch

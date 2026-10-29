@@ -28,6 +28,7 @@ REMOTE=${SDLC_REMOTE:-$(cfg remote origin)}
 MAIN=${SDLC_MAIN:-$(cfg main main)}
 IDIR=${SDLC_INTENT_DIR:-$(cfg intentDir intent)}
 PR_LIMIT=$(cfg prLimit 300)
+MERGE_ARGS=$(cfg mergeArgs "--rebase --delete-branch")
 FETCH=1
 PRS=""
 ID=""
@@ -519,7 +520,9 @@ cmd_merge() {
   [ "$P_DRAFT" != draft ] || die "PR #$P_NUM encore en brouillon : git sdlc ready $id $step d’abord"
   [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
   [ "$P_CHECKS" != rouges ] || die "PR #$P_NUM : checks rouges"
-  gh pr merge "$P_NUM" --rebase
+  local args
+  read -r -a args <<<"$MERGE_ARGS"
+  gh pr merge "$P_NUM" ${args[@]+"${args[@]}"}
   do_fetch
   echo "Gate $step franchi pour $id (PR #$P_NUM)."
 }
