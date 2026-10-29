@@ -634,6 +634,28 @@ cmd_ready() {
   show_need "$T_ID"
 }
 
+# Avant la fusion, la branche locale need/$1/$2 est supprimée (--delete-branch) :
+# signale les commits non poussés et, si c’est la branche courante, les modifications
+# non commitées, puis demande confirmation.
+local_work_check() {
+  local br="need/$1/$2" n=0 ans m msgs=()
+  has_ref "refs/heads/$br" || return 0
+  if has_ref "refs/remotes/$REMOTE/$br"; then
+    n=$(git rev-list --count "refs/remotes/$REMOTE/$br..refs/heads/$br")
+  fi
+  [ "$n" = 0 ] || msgs+=("$n commit(s) de $br non poussé(s)")
+  if [ "$(git symbolic-ref -q --short HEAD || true)" = "$br" ] \
+     && ! { git diff-files --quiet && git diff-index --quiet --cached HEAD; }; then
+    msgs+=("modifications non commitées sur $br")
+  fi
+  [ ${#msgs[@]} -gt 0 ] || return 0
+  for m in "${msgs[@]}"; do warn "attention : $m"; done
+  warn "la PR #$P_NUM sera fusionnée sans eux ; la branche locale sera supprimée"
+  [ -t 0 ] || die "fusion annulée : poussez ou commitez d’abord"
+  read -r -p "Fusionner quand même ? [o/N] " ans
+  case $ans in [oOyY]*) ;; *) die "fusion annulée" ;; esac
+}
+
 cmd_merge() {
   local ready=0 pos=() ans
   while [ $# -gt 0 ]; do
@@ -649,6 +671,7 @@ cmd_merge() {
   need_open_pr "$id" "$step"
   [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
   [ "$P_CHECKS" != rouges ] || die "PR #$P_NUM : checks rouges"
+  local_work_check "$id" "$step"
   if [ "$P_DRAFT" = draft ]; then
     if [ "$ready" = 0 ]; then
       [ -t 0 ] || die "PR #$P_NUM encore en brouillon : git sdlc merge --ready $id $step, ou git sdlc ready $id $step d’abord"

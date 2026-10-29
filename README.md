@@ -87,6 +87,8 @@ Depuis une branche `need/<id>/<étape>`, `status`, `claim`, `ready`, `merge` et 
 
 `merge` refuse une PR encore en brouillon. En terminal, il propose de la sortir du brouillon puis de fusionner ; `git sdlc merge --ready` le fait sans question. La sortie du brouillon relance le check `sdlc-conventions` : la fusion attend les checks requis.
 
+Avant de fusionner, `merge` signale les commits de la branche locale `need/<id>/<étape>` absents de la branche distante, et les modifications non commitées si c’est la branche courante : la fusion porte sur la PR telle qu’elle est sur GitHub, et `--delete-branch` supprime la branche locale. En terminal, il demande confirmation ; sans terminal, il refuse.
+
 Toutes ces actions restent possibles dans l’interface GitHub. `git sdlc` lit l’état réel des PR : une PR fusionnée dans le navigateur apparaît comme gate franchi dans `board`.
 
 ## Branches et trailer `Stage:`
