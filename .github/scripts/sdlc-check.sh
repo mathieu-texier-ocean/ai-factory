@@ -14,6 +14,8 @@
 #                     spec.md déjà sur main ; ne touche aucun autre besoin
 #   chaque commit (hors merges) porte Need: <id>
 #   autre branche     ne touche pas intent/<id>/ (trailers non exigés)
+#   toute branche     aucune ligne ajoutée ne contient de credential en clair
+#                     (.githooks/lib/credential.sh, partagé avec le pre-commit)
 #
 # Testable en local :
 #   BASE_SHA=$(git rev-parse main) HEAD_SHA=$(git rev-parse HEAD) \
@@ -28,7 +30,11 @@ err() { printf '::error::%s\n' "$*"; errors=$((errors + 1)); }
 ok()  { printf '✓ %s\n' "$*"; }
 
 base=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
-files=$(git diff --name-only "$base" "$HEAD_SHA")
+# -z : chemins bruts, sans les guillemets de core.quotePath qui les sortiraient des motifs.
+# --no-renames : un renommage compte comme suppression + ajout, les deux chemins sont vérifiés.
+files=()
+while IFS= read -r -d '' f; do files+=("$f"); done \
+  < <(git diff --name-only -z --no-renames "$base" "$HEAD_SHA")
 
 # Un seul git log : hash court et valeur de Need: de chaque commit (hors merges).
 check_commits() {
@@ -52,8 +58,7 @@ if [[ $HEAD_REF =~ ^need/([^/]+)/(intent|spec|build)$ ]]; then
   echo "Besoin $id · étape $step"
   check_commits "$id"
 
-  while IFS= read -r f; do
-    [ -n "$f" ] || continue
+  for f in ${files[@]+"${files[@]}"}; do
     case $step in
       intent|spec)
         case $f in "$dir/$step.md"|"$dir/assets/"*) ;; *) err "PR $step : $f hors périmètre (seul $dir/$step.md)" ;; esac ;;
@@ -64,7 +69,7 @@ if [[ $HEAD_REF =~ ^need/([^/]+)/(intent|spec|build)$ ]]; then
           "$IDIR/"*) err "PR build : $f appartient à un autre besoin" ;;
         esac ;;
     esac
-  done <<<"$files"
+  done
 
   case $step in
     intent)
@@ -80,12 +85,22 @@ elif [[ $HEAD_REF == need/* ]]; then
   err "branche $HEAD_REF : nom attendu need/<id>/intent, need/<id>/spec ou need/<id>/build"
 else
   echo "Branche hors besoin : $HEAD_REF"
-  while IFS= read -r f; do
+  for f in ${files[@]+"${files[@]}"}; do
     case $f in
       "$IDIR/_template/"*) ;;
       "$IDIR/"*) err "$f : un artefact de besoin ne change que sur une branche need/<id>/…" ;;
     esac
-  done <<<"$files"
+  done
+fi
+
+lib="$(git rev-parse --show-toplevel)/.githooks/lib/credential.sh"
+if [ -f "$lib" ]; then
+  . "$lib"
+  n=$errors
+  while IFS= read -r m; do err "$m"; done < <(scan_credentials "$base" "$HEAD_SHA")
+  [ "$errors" -gt "$n" ] || ok "aucun credential en clair dans les lignes ajoutées"
+else
+  err "${lib#"$(git rev-parse --show-toplevel)/"} absent : détection des credentials impossible"
 fi
 
 if [ "$errors" -gt 0 ]; then
