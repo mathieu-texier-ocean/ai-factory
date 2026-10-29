@@ -617,11 +617,14 @@ JSON
 
   echo "4/4 Ruleset sdlc-release-tags : tags release/* réservés, immuables"
   team=$(cfg releaseTeam "")
+  bypass=""
   if [ -n "$team" ] && [ "$dry" = 0 ]; then
-    bypass=$(gh api "orgs/$owner/teams/$team" --jq .id 2>/dev/null || true)
+    # en 404, gh api écrit le corps d'erreur sur stdout : ne garder qu'un id numérique
+    bypass=$(gh api "orgs/$owner/teams/$team" --jq .id 2>/dev/null) || bypass=""
+    [[ $bypass =~ ^[0-9]+$ ]] || bypass=""
     [ -n "$bypass" ] || warn "équipe $owner/$team introuvable : seuls les admins du dépôt pourront livrer"
   fi
-  if [ -n "${bypass:-}" ]; then
+  if [ -n "$bypass" ]; then
     bypass="{ \"actor_id\": $bypass, \"actor_type\": \"Team\", \"bypass_mode\": \"always\" }"
   else
     bypass='{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }'
