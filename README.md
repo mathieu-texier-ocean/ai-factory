@@ -95,6 +95,18 @@ git sdlc board --all              # y compris livrés et rejetés
 
 Toutes ces actions restent possibles dans l’interface GitHub. `git sdlc` lit l’état réel des PR : une PR fusionnée dans le navigateur apparaît comme gate franchi dans `board`.
 
+## Branches et trailer `Stage:`
+
+Le trailer `Stage:` porte l’étape du cycle du playbook, pas le nom de la branche. Le hook `commit-msg` et `git sdlc` appliquent cette correspondance :
+
+| Branche | Fichier produit | `Stage:` |
+|---|---|---|
+| `need/<id>/intent` | `intent/<id>/intent.md` | `plan` |
+| `need/<id>/spec` | `intent/<id>/spec.md` | `design` |
+| `need/<id>/build` | `intent/<id>/plan.md`, puis le code | `build` |
+
+Un commit d’intent porte donc `Stage: plan`. Le fichier `plan.md`, lui, relève de l’étape build : c’est le plan d’implémentation produit en plan mode avant le code. Les valeurs `test`, `deploy` et `maintain` sont acceptées par le hook pour les commits saisis à la main ; aucune branche ne les produit.
+
 ## Comment l’étape et « qui » sont calculés
 
 Pour l’étape en cours, l’état de la PR détermine qui a la main :
@@ -129,7 +141,7 @@ Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion
 ```markdown
 ## SDLC
 - Travaille uniquement sur la branche need/<id>/<étape> en cours ; jamais sur main.
-- Chaque commit se termine par les trailers `Need: <id>` et `Stage: <étape>`.
+- Chaque commit se termine par les trailers `Need: <id>` et `Stage: <étape>` (intent → plan, spec → design, build → build).
 - En build, commence par intent/<id>/plan.md (plan mode) ; s’il change, mets-le à jour dans la même PR.
 - Ne modifie pas intent.md ni spec.md dans une PR build : ils ont leurs propres PR.
 - N’exécute jamais git sdlc merge, gh pr merge ni git sdlc release : ce sont des gates humains.
