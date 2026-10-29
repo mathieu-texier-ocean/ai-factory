@@ -8,10 +8,10 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 |---|---|
 | hook serveur `pre-receive` | ruleset `sdlc-main` + check CI `sdlc-conventions` |
 | `.sdlc/approvers` | droit d’écriture sur le dépôt (qui peut fusionner) |
-| merge local signé avec `Approved-by:` | fusion de la PR, avec les trailers et `Merged-by:` |
+| merge local signé avec `Approved-by:` | fusion de la PR par rebase ; l’auteur de la fusion vient de GitHub |
 | notes `review` | revues et commentaires de PR |
 | notes `tests` | checks GitHub Actions affichés par `git sdlc status` |
-| tag annoté `release/*` | release GitHub sur un tag `release/*` protégé |
+| tag annoté `release/*` | release GitHub sur un tag `YY.MM.DD[.V]` protégé |
 | tag `rejected/<id>` | PR fermée avec l’étiquette `sdlc:rejected` |
 
 ## Contenu
@@ -21,7 +21,7 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `bin/git-sdlc` | à placer dans le `PATH` de chaque poste : `git sdlc …` |
 | `.github/workflows/sdlc.yml` | lance le check requis `sdlc-conventions` sur chaque PR |
 | `.github/scripts/sdlc-check.sh` | règles du check : trailers, périmètre par étape, artefacts présents |
-| `.githooks/commit-msg` | ajoute `Need:` et `Stage:` automatiquement sur les branches `need/*` |
+| `.githooks/commit-msg` | ajoute `Need:` et `Stage:` sur les branches `need/*`, `Need: none` ailleurs |
 | `.sdlc/config` | réglages partagés (branche principale, équipe release…) |
 | `intent/_template/intent.md` | gabarit copié par `git sdlc new` |
 | `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
@@ -35,21 +35,22 @@ Prérequis : git 2.30+, bash 3.2+ (celui de macOS convient), GitHub CLI `gh` ins
 ```sh
 cp -r .github .githooks .sdlc intent REVIEW.md /chemin/du/depot/
 # Éditez .sdlc/config (releaseTeam), puis :
-git add -A && git commit -m "Initialisation du SDLC" -m "Need: none" && git push
+git add -A && git commit -m "Initialisation du SDLC" && git push
 git sdlc setup --dry-run    # affiche ce qui va être configuré
 git sdlc setup              # applique
 ```
 
 `git sdlc setup` configure quatre choses :
 
-- **Fusion** : par merge commit uniquement. Le corps de la PR, qui contient les trailers, devient le message de fusion. Les branches sont supprimées après fusion.
+- **Fusion** : par rebase uniquement (« Rebase and merge »), conformément à la méthode Kraken. Les commits de la PR sont rejoués sur `main` avec leurs trailers ; GitHub n’a pas de vrai fast-forward, les SHA changent. Les branches sont supprimées après fusion.
 - **Étiquettes** : `sdlc:intent`, `sdlc:spec`, `sdlc:build`, `sdlc:incident` et `sdlc:rejected`.
 - **Ruleset `sdlc-main`** :
   - PR obligatoire, sans approbation requise : la fusion est la gate ;
   - fils de discussion résolus ;
+  - historique linéaire ;
   - check `sdlc-conventions` vert ;
   - ni push forcé ni suppression.
-- **Ruleset `sdlc-release-tags`** : seuls l’équipe `releaseTeam` (à défaut, les admins) peuvent créer des tags `release/*`, et personne ne peut les modifier ni les supprimer.
+- **Ruleset `sdlc-release-tags`** : seuls l’équipe `releaseTeam` (à défaut, les admins) peuvent créer des tags de livraison `YY.MM.DD[.V]`, et personne ne peut les modifier ni les supprimer.
 
 **2. Sur chaque poste** :
 
@@ -82,7 +83,8 @@ git sdlc claim 2026-10-28-claims-status build
 git sdlc merge 2026-10-28-claims-status build
 
 # Release manager (Rémi)
-git sdlc release                  # release GitHub sur release/<date du jour>
+git sdlc release                  # release GitHub sur le tag YY.MM.DD du jour (.2, .3… si déjà livré)
+git sdlc release 26.11.04         # ou à la date de mise en production prévue
 
 # Tout le monde
 git sdlc status 2026-10-28-claims-status
@@ -106,7 +108,7 @@ Pour l’étape en cours, l’état de la PR détermine qui a la main :
 L’ordre de priorité est le suivant :
 
 1. PR fermée avec `sdlc:rejected` → **Rejeté**.
-2. PR build fusionnée dont le commit est contenu dans un tag `release/*` → **Livré** ; sinon **Prêt à livrer**.
+2. PR build fusionnée dont le dernier commit est contenu dans un tag `YY.MM.DD[.V]` → **Livré** ; sinon **Prêt à livrer**.
 3. PR build ouverte → son état ci-dessus.
 4. PR spec fusionnée → **Spec acceptée** ; sinon PR spec ouverte.
 5. PR intent fusionnée → **Intent accepté** ; sinon PR intent ouverte.
@@ -136,8 +138,10 @@ Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion
 
 ## Points d’attention
 
-- **Séparation des tâches.** Sans approbation requise, GitHub laisse toute personne ayant le droit d’écriture fusionner, y compris l’auteur de la PR. Le rôle (PO pour intent et spec, tech lead pour le build) et « l’auteur ne fusionne pas sa propre PR » sont des conventions : `Merged-by:` et `status` les rendent visibles, rien ne les impose. Réservez le droit d’écriture en conséquence.
+- **Séparation des tâches.** Sans approbation requise, GitHub laisse toute personne ayant le droit d’écriture fusionner, y compris l’auteur de la PR. Le rôle (PO pour intent et spec, tech lead pour le build) et « l’auteur ne fusionne pas sa propre PR » sont des conventions : `status` les rend visibles, rien ne les impose. Réservez le droit d’écriture en conséquence.
 - **Hooks client.** `commit-msg` se contourne avec `--no-verify`. Le check `sdlc-conventions`, requis par le ruleset, refait les mêmes vérifications côté GitHub.
-- **Mode de fusion.** Les fusions par squash ou rebase effaceraient les trailers. `setup` les désactive ; ne les réactivez pas.
+- **Mode de fusion.** Seul le rebase garde les trailers `Need:`/`Stage:` sur chaque commit ; un squash les fusionnerait au gré du message. `setup` désactive squash et merge commit. L’auteur de la fusion n’est connu que par l’API GitHub : sans elle (hors ligne, PR au-delà de `prLimit`), `status` retrouve l’étape par les trailers mais pas qui l’a fusionnée.
+- **Recette.** La checklist de la PR build demande une recette validée, refaite après toute modification. C’est déclaratif : rien ne la vérifie.
+- **Branches hors besoin.** `Need:` n’est exigé que sur `need/*` ; ailleurs le hook ajoute `Need: none` et le check vérifie seulement que `intent/` n’est pas touché.
 - **Volume.** `status` et `board` lisent les `prLimit` (300) PR les plus récentes ciblant `main`. Augmentez la valeur dans `.sdlc/config` si besoin.
 - **Validation.** Le kit a été testé de bout en bout contre un GitHub simulé (PR, revues, fusions, releases, check CI réellement exécuté). Lancez `git sdlc setup --dry-run` puis vérifiez les rulesets créés dans *Settings → Rules* lors de la première installation.

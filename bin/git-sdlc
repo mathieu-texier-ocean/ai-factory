@@ -5,7 +5,8 @@
 #   une PR par étape        need/<id>/intent | need/<id>/spec | need/<id>/build → main
 #   gate = fusion           la fusion de la PR franchit l’étape (ruleset « sdlc-main »)
 #   conventions vérifiées   check CI « sdlc-conventions »
-#   livraison               release GitHub sur un tag release/* protégé
+#   fusion                  par rebase uniquement : historique linéaire, trailers sur chaque commit
+#   livraison               release GitHub sur un tag YY.MM.DD[.V] protégé
 #
 # Prérequis : git 2.30+, bash 3.2+, gh authentifié (gh auth login).
 # Installation : placer ce fichier dans le PATH → `git sdlc <commande>`.
@@ -38,6 +39,8 @@ trap cleanup EXIT
 
 has_ref()    { git rev-parse -q --verify "$1^{commit}" >/dev/null 2>&1; }
 has_tag()    { git rev-parse -q --verify "refs/tags/$1" >/dev/null 2>&1; }
+# Tags de livraison (méthode Kraken) : YY.MM.DD, puis YY.MM.DD.2, .3… le même jour.
+RELEASE_GLOBS=('[0-9][0-9].[0-9][0-9].[0-9][0-9]' '[0-9][0-9].[0-9][0-9].[0-9][0-9].*')
 has_remote() { git remote | grep -qx "$REMOTE"; }
 valid_id()   { [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; }
 re_escape()  { printf '%s' "$1" | sed 's#[]\\/.*^$[]#\\&#g'; }
@@ -79,11 +82,11 @@ on_main() { git cat-file -e "$(main_ref):$IDIR/$1/$2" 2>/dev/null; }
 
 trailer() { git log -1 --format="%(trailers:key=$2,valueonly,separator=%x2C )" "$1"; }
 
-# Repli git : merge sur main portant les trailers Need/Stage (corps de PR ou git sdlc merge).
+# Repli git : dernier commit de main portant les trailers Need/Stage (fusion par rebase).
 merge_of() {
   local idr
   idr=$(re_escape "$1")
-  git log "$(main_ref)" --first-parent --merges -1 --format=%H --all-match \
+  git log "$(main_ref)" --first-parent -1 --format=%H --all-match \
     --grep="^Need: $idr\$" --grep="^Stage: $2\$"
 }
 
@@ -209,7 +212,7 @@ accepted_state() {
     WHO=$(at "$P_MERGEDBY"); WHEN=$(nd "$P_MERGEDAT")
   else
     mc=$(merge_of "$ID" "$(stage_of "$step")")
-    if [ -n "$mc" ]; then WHO=$(trailer "$mc" Merged-by); WHEN=$(git log -1 --format=%cs "$mc"); fi
+    [ -z "$mc" ] || WHEN=$(git log -1 --format=%cs "$mc")
   fi
 }
 
@@ -244,7 +247,7 @@ compute() {
   mc=""
   if pr_merged "$ID" build; then mc=$(nd "$P_OID"); else mc=$(merge_of "$ID" build); fi
   if [ -n "$mc" ]; then
-    rel=$(git tag --contains "$mc" --list 'release/*' --sort=creatordate 2>/dev/null | head -n1)
+    rel=$(git tag --contains "$mc" --list "${RELEASE_GLOBS[@]}" --sort=creatordate 2>/dev/null | head -n1)
     if [ -n "$rel" ]; then
       CODE=released ORDER=50 STAGE="Livré ($rel)"
       # GitHub crée des tags légers pour ses releases : l’auteur vient de la release.
@@ -287,7 +290,7 @@ gate_evidence() {
       EVID+=("$lab fusionné le $(nd "$P_MERGEDAT") (PR #$P_NUM) · fusion $(at "$P_MERGEDBY")")
     else
       mc=$(merge_of "$ID" "$(stage_of "$step")")
-      [ -z "$mc" ] || EVID+=("$lab fusionné le $(git log -1 --format='%cs (%h)' "$mc") · fusion $(trailer "$mc" Merged-by)")
+      [ -z "$mc" ] || EVID+=("$lab fusionné le $(git log -1 --format='%cs (%h)' "$mc")")
     fi
   done
 }
@@ -295,27 +298,25 @@ gate_evidence() {
 # -------------------------------------------------------- pull requests
 
 pr_body() {
-  local id=$1 step=$2 st=$3
+  local id=$1 step=$2
   printf 'Besoin : `%s` · étape : %s\nArtefact : `%s/%s/%s`\n\n' "$id" "$step" "$IDIR" "$id" "$(file_of "$step")"
   printf '### Avant de demander la revue (`git sdlc ready %s %s`)\n\n' "$id" "$step"
   case $step in
     intent) printf -- '- [ ] Problème, résultat attendu et contraintes rédigés avec Claude, relus par l’auteur\n- [ ] Questions ouvertes listées\n' ;;
     spec)   printf -- '- [ ] Spec produite avec les skills de l’organisation\n- [ ] Points d’attention signalés et arbitrés avec leurs propriétaires\n- [ ] Questions ouvertes de l’intent tranchées ou reportées\n' ;;
-    build)  printf -- '- [ ] plan.md produit en plan mode et validé avant le code\n- [ ] Tests verts en local et en CI\n- [ ] plan.md mis à jour si l’implémentation a divergé\n' ;;
+    build)  printf -- '- [ ] plan.md produit en plan mode et validé avant le code\n- [ ] Tests verts en local et en CI\n- [ ] plan.md mis à jour si l’implémentation a divergé\n- [ ] Recette validée par <recetteur> ; refaite après toute modification de la branche\n' ;;
   esac
-  printf '\nLa revue suit REVIEW.md. Les trailers ci-dessous sont repris dans le commit de fusion.\n\n'
-  printf 'Need: %s\nStage: %s\n' "$id" "$st"
+  printf '\nLa revue suit REVIEW.md.\n'
 }
 
 open_pr() {
-  local id=$1 step=$2 st body
-  st=$(stage_of "$step")
+  local id=$1 step=$2 body
   if pr_open "$id" "$step"; then
     gh pr edit "$P_NUM" --add-assignee @me >/dev/null
     echo "PR #$P_NUM existante : vous y êtes assigné(e)."
     return 0
   fi
-  body=$(pr_body "$id" "$step" "$st")
+  body=$(pr_body "$id" "$step")
   local args=(--base "$MAIN" --head "need/$id/$step" --title "$(label_of "$step") : $id" --body "$body" --assignee @me)
   if ! gh pr create --draft --label "sdlc:$step" "${args[@]}"; then
     warn "PR brouillon ou étiquette impossible (git sdlc setup lancé ? plan GitHub ?) : PR simple"
@@ -347,7 +348,7 @@ Cycle d’un besoin (chaque étape = une PR vers $MAIN)
   ready <id> <étape>                       sort la PR du brouillon : revue demandée
   merge <id> <étape>                       fusionne la PR (gate de l’étape), trailers compris
   reject <id> <raison>                     ferme les PR ouvertes avec l’étiquette sdlc:rejected
-  release [<nom>]                          release GitHub sur un tag release/<date>
+  release [<YY.MM.DD>]                     release GitHub sur un tag YY.MM.DD[.V] (défaut : aujourd’hui)
 
 Administration
   setup [--dry-run]                        réglages du dépôt, étiquettes, rulesets
@@ -512,16 +513,13 @@ cmd_ready() {
 
 cmd_merge() {
   [ $# -ge 2 ] || die "usage : git sdlc merge <id> <étape>"
-  local id=$1 step=$2 st me
-  st=$(stage_of "$step") || die "étape inconnue : $step"
+  local id=$1 step=$2
+  stage_of "$step" >/dev/null || die "étape inconnue : $step"
   need_open_pr "$id" "$step"
   [ "$P_DRAFT" != draft ] || die "PR #$P_NUM encore en brouillon : git sdlc ready $id $step d’abord"
   [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
   [ "$P_CHECKS" != rouges ] || die "PR #$P_NUM : checks rouges"
-  me=$(gh api user --jq .login) || die "utilisateur GitHub inconnu (vérifiez gh auth status)"
-  gh pr merge "$P_NUM" --merge \
-    --subject "Gate $step : $id (#$P_NUM)" \
-    --body "$(printf 'Need: %s\nStage: %s\nMerged-by: @%s' "$id" "$st" "$me")"
+  gh pr merge "$P_NUM" --rebase
   do_fetch
   echo "Gate $step franchi pour $id (PR #$P_NUM)."
 }
@@ -547,13 +545,16 @@ cmd_reject() {
 }
 
 cmd_release() {
-  local name=${1:-release/$(date +%Y-%m-%d)}
-  [[ $name == release/* ]] || name="release/$name"
+  local day=${1:-$(date +%y.%m.%d)} name v=1
+  [[ $day =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]] || die "date de livraison attendue au format YY.MM.DD : $day"
+  do_fetch
+  name=$day
+  while has_tag "$name"; do v=$((v + 1)); name="$day.$v"; done
   gh release create "$name" --target "$MAIN" --title "$name" --generate-notes
   do_fetch
 }
 
-# Réglages GitHub : fusion par merge commit (garde les trailers), étiquettes, rulesets.
+# Réglages GitHub : fusion par rebase (historique linéaire), étiquettes, rulesets.
 upsert_ruleset() {
   local repo=$1 name=$2 json=$3 dry=$4 id
   if [ "$dry" = 1 ]; then printf '%s\n' "$json"; return 0; fi
@@ -576,10 +577,10 @@ cmd_setup() {
   owner=${repo%%/*}
   run() { if [ "$dry" = 1 ]; then printf '  %s\n' "$*"; else "$@"; fi; }
 
-  echo "1/4 Fusion par merge commit uniquement (titre et corps de la PR → trailers conservés)"
+  echo "1/4 Fusion par rebase uniquement (historique linéaire, trailers portés par chaque commit)"
   run gh api -X PATCH "repos/$repo" --silent \
-    -F allow_merge_commit=true -F allow_squash_merge=false -F allow_rebase_merge=false \
-    -F delete_branch_on_merge=true -f merge_commit_title=PR_TITLE -f merge_commit_message=PR_BODY
+    -F allow_merge_commit=false -F allow_squash_merge=false -F allow_rebase_merge=true \
+    -F delete_branch_on_merge=true
 
   echo "2/4 Étiquettes"
   for l in "sdlc:intent|5319e7|Étape Plan : intent.md" \
@@ -591,7 +592,7 @@ cmd_setup() {
     run gh label create "$n" --color "$c" --description "$d" --force
   done
 
-  echo "3/4 Ruleset sdlc-main : PR obligatoire, check sdlc-conventions"
+  echo "3/4 Ruleset sdlc-main : PR obligatoire, historique linéaire, check sdlc-conventions"
   upsert_ruleset "$repo" sdlc-main "$(cat <<'JSON'
 {
   "name": "sdlc-main",
@@ -601,6 +602,7 @@ cmd_setup() {
   "rules": [
     { "type": "deletion" },
     { "type": "non_fast_forward" },
+    { "type": "required_linear_history" },
     { "type": "pull_request", "parameters": {
         "required_approving_review_count": 0,
         "dismiss_stale_reviews_on_push": false,
@@ -615,7 +617,7 @@ cmd_setup() {
 JSON
 )" "$dry"
 
-  echo "4/4 Ruleset sdlc-release-tags : tags release/* réservés, immuables"
+  echo "4/4 Ruleset sdlc-release-tags : tags YY.MM.DD[.V] réservés, immuables"
   team=$(cfg releaseTeam "")
   bypass=""
   if [ -n "$team" ] && [ "$dry" = 0 ]; then
@@ -633,7 +635,7 @@ JSON
   \"name\": \"sdlc-release-tags\",
   \"target\": \"tag\",
   \"enforcement\": \"active\",
-  \"conditions\": { \"ref_name\": { \"include\": [\"refs/tags/release/*\"], \"exclude\": [] } },
+  \"conditions\": { \"ref_name\": { \"include\": [\"refs/tags/${RELEASE_GLOBS[0]}\", \"refs/tags/${RELEASE_GLOBS[1]}\"], \"exclude\": [] } },
   \"rules\": [ { \"type\": \"creation\" }, { \"type\": \"update\" }, { \"type\": \"deletion\" } ],
   \"bypass_actors\": [ $bypass ]
 }" "$dry"
