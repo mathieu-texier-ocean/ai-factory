@@ -656,8 +656,21 @@ local_work_check() {
   case $ans in [oOyY]*) ;; *) die "fusion annulée" ;; esac
 }
 
+# Attend les checks requis de la PR $1 : juste après un push, GitHub met quelques
+# secondes à les déclarer, et le ruleset refuse la fusion tant qu'ils tournent.
+wait_checks() {
+  local i
+  echo "PR #$1 : attente des checks requis…"
+  for i in 1 2 3 4 5 6; do
+    [ "$(gh pr view "$1" --json statusCheckRollup --jq '.statusCheckRollup | length' 2>/dev/null)" = 0 ] || break
+    sleep 5
+  done
+  gh pr checks "$1" --watch --required --fail-fast -i 5 \
+    || warn "checks requis en échec ou absents : GitHub décidera si la fusion est possible"
+}
+
 cmd_merge() {
-  local ready=0 pos=() ans
+  local ready=0 wait=0 pos=() ans
   while [ $# -gt 0 ]; do
     case $1 in
       --ready) ready=1 ;;
@@ -679,11 +692,12 @@ cmd_merge() {
       case $ans in [oOyY]*) ;; *) die "fusion annulée" ;; esac
     fi
     gh pr ready "$P_NUM"
-    # La sortie du brouillon relance les checks : la fusion attend les checks requis.
+    # La sortie du brouillon relance les checks : laisser GitHub les redéclarer.
     sleep 5
-    gh pr checks "$P_NUM" --watch --required --fail-fast -i 5 \
-      || warn "checks requis en échec ou absents : GitHub décidera si la fusion est possible"
+    wait=1
   fi
+  case $P_CHECKS in "en cours"|aucun) wait=1 ;; esac
+  [ "$wait" = 0 ] || wait_checks "$P_NUM"
   local args
   read -r -a args <<<"$MERGE_ARGS"
   gh pr merge "$P_NUM" ${args[@]+"${args[@]}"}
