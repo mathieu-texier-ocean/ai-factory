@@ -331,6 +331,40 @@ need_open_pr() {
   pr_open "$1" "$2" || die "aucune PR ouverte pour need/$1/$2"
 }
 
+# Besoin et étape de la branche courante need/<id>/<étape> (séparés par une tabulation).
+branch_need() {
+  local b
+  b=$(git symbolic-ref --short -q HEAD 2>/dev/null) || return 1
+  [[ $b =~ ^need/([^/]+)/(intent|spec|build)$ ]] || return 1
+  printf '%s\t%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+}
+
+# Remplit T_ID et T_STEP à partir de [<id> [<étape>]] : sans argument, la branche
+# need/<id>/<étape> courante ; avec l’id seul, l’étape de la branche courante si
+# elle porte ce besoin, sinon celle de l’unique PR ouverte du besoin.
+resolve_target() {
+  local cmd=$1 cur steps; shift
+  cur=$(branch_need || true)
+  T_ID=${1:-} T_STEP=${2:-}
+  if [ -z "$T_ID" ]; then
+    [ -n "$cur" ] || die "usage : git sdlc $cmd [<id> [<étape>]] (sans argument : depuis une branche need/<id>/<étape>)"
+    T_ID=${cur%%$'\t'*} T_STEP=${cur#*$'\t'}
+  elif [ -z "$T_STEP" ]; then
+    if [ -n "$cur" ] && [ "${cur%%$'\t'*}" = "$T_ID" ]; then
+      T_STEP=${cur#*$'\t'}
+    else
+      load_prs
+      steps=$(awk -F'\t' -v i="$T_ID" '$1 == i && $4 == "OPEN" { print $2 }' "$PRS" | sort -u)
+      [ -n "$steps" ] || die "aucune PR ouverte pour $T_ID"
+      [ "$(printf '%s\n' "$steps" | wc -l)" -eq 1 ] \
+        || die "plusieurs PR ouvertes pour $T_ID : précisez l’étape ($(printf '%s' "$steps" | tr '\n' ' '))"
+      T_STEP=$steps
+    fi
+  fi
+  stage_of "$T_STEP" >/dev/null || die "étape inconnue : $T_STEP"
+  [ $# -ge 2 ] || echo "Besoin $T_ID, étape $T_STEP."
+}
+
 # -------------------------------------------------------------- commandes
 
 usage() {
@@ -347,9 +381,12 @@ Cycle d’un besoin (chaque étape = une PR vers $MAIN)
                                            branche need/<date>-<slug>/intent + PR brouillon
   claim <id> <intent|spec|build> [--no-push]
                                            prend une étape : branche, PR brouillon, assignation
-  ready <id> <étape>                       sort la PR du brouillon : revue demandée
-  merge <id> <étape>                       fusionne la PR (gate de l’étape), trailers compris
-  reject <id> <raison>                     ferme les PR ouvertes avec l’étiquette sdlc:rejected
+  ready [<id> [<étape>]]                   sort la PR du brouillon : revue demandée
+  merge [<id> [<étape>]]                   fusionne la PR (gate de l’étape), trailers compris
+  reject [<id>] <raison>                   ferme les PR ouvertes avec l’étiquette sdlc:rejected
+
+  Sans id, ready, merge et reject visent la branche need/<id>/<étape> courante ;
+  avec l’id seul, l’étape est celle de l’unique PR ouverte du besoin.
   release [<YY.MM.DD>]                     release GitHub sur un tag YY.MM.DD[.V] (défaut : aujourd’hui)
 
 Administration
@@ -536,17 +573,16 @@ cmd_claim() {
 }
 
 cmd_ready() {
-  [ $# -ge 2 ] || die "usage : git sdlc ready <id> <étape>"
-  need_open_pr "$1" "$2"
+  resolve_target ready "$@"
+  need_open_pr "$T_ID" "$T_STEP"
   gh pr ready "$P_NUM"
-  echo "PR #$P_NUM en revue : $(merger_of "$2") relit et fusionne."
-  show_need "$1"
+  echo "PR #$P_NUM en revue : $(merger_of "$T_STEP") relit et fusionne."
+  show_need "$T_ID"
 }
 
 cmd_merge() {
-  [ $# -ge 2 ] || die "usage : git sdlc merge <id> <étape>"
-  local id=$1 step=$2
-  stage_of "$step" >/dev/null || die "étape inconnue : $step"
+  resolve_target merge "$@"
+  local id=$T_ID step=$T_STEP
   need_open_pr "$id" "$step"
   [ "$P_DRAFT" != draft ] || die "PR #$P_NUM encore en brouillon : git sdlc ready $id $step d’abord"
   [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
@@ -561,10 +597,21 @@ cmd_merge() {
 }
 
 cmd_reject() {
-  [ $# -ge 2 ] || die "usage : git sdlc reject <id> <raison>"
-  local id=$1 n count=0; shift
-  local reason="$*"
+  local id="" n count=0 cur reason
+  [ $# -ge 1 ] || die "usage : git sdlc reject [<id>] <raison>"
   do_fetch; load_prs
+  # Le premier argument est l’id s’il désigne un besoin connu ; sinon le besoin
+  # vient de la branche need/<id>/<étape> courante et tout est la raison.
+  if list_ids | grep -qxF -- "$1"; then
+    [ $# -ge 2 ] || die "raison manquante : git sdlc reject $1 <raison>"
+    id=$1; shift
+  elif cur=$(branch_need); then
+    id=${cur%%$'\t'*}
+    echo "Besoin $id."
+  else
+    die "usage : git sdlc reject [<id>] <raison> (sans id : depuis une branche need/<id>/<étape>)"
+  fi
+  reason="$*"
   for n in $(awk -F'\t' -v i="$id" '$1 == i && $4 == "OPEN" { print $3 }' "$PRS"); do
     gh pr edit "$n" --add-label sdlc:rejected >/dev/null
     gh pr close "$n" --comment "Rejet : $reason" --delete-branch
