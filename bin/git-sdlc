@@ -379,15 +379,16 @@ Suivi
 Cycle d’un besoin (chaque étape = une PR vers $MAIN)
   new <slug> [--id <id>] [--parent <id>] [--origin <origine>]
                                            branche need/<date>-<slug>/intent + PR brouillon
-  claim <id> <intent|spec|build> [--no-push]
+  claim [<id> [<intent|spec|build>]] [--no-push]
                                            prend une étape : branche, PR brouillon, assignation
   ready [<id> [<étape>]]                   sort la PR du brouillon : revue demandée
   merge [<id> [<étape>]]                   fusionne la PR (gate de l’étape), trailers compris
   reject [<id>] <raison>                   ferme les PR ouvertes avec l’étiquette sdlc:rejected
-
-  Sans id, status, ready, merge et reject visent la branche need/<id>/<étape> courante ;
-  avec l’id seul, l’étape est celle de l’unique PR ouverte du besoin.
   release [<YY.MM.DD>]                     release GitHub sur un tag YY.MM.DD[.V] (défaut : aujourd’hui)
+
+  Sans id, status, claim, ready, merge et reject visent la branche need/<id>/<étape>
+  courante ; avec l’id seul, l’étape est celle de l’unique PR ouverte du besoin
+  (claim : l’étape en cours, ou la suivante si la précédente est fusionnée).
 
 Administration
   setup [--dry-run]                        réglages du dépôt, étiquettes, rulesets
@@ -547,13 +548,39 @@ cmd_new() {
 }
 
 cmd_claim() {
-  local id=${1:-} step=${2:-} push=1 st br
-  [ $# -ge 2 ] || die "usage : git sdlc claim <id> <intent|spec|build> [--no-push]"
-  shift 2
-  [ "${1:-}" = --no-push ] && push=0
+  local id="" step="" push=1 st br cur
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --no-push) push=0 ;;
+      -*) die "option inconnue : $1" ;;
+      *) if [ -z "$id" ]; then id=$1; elif [ -z "$step" ]; then step=$1; else die "argument en trop : $1"; fi ;;
+    esac
+    shift
+  done
+  do_fetch; load_prs
+  # Sans id : la branche need/<id>/<étape> courante. Avec l’id seul : l’étape de la
+  # branche courante si elle porte ce besoin, sinon l’étape en cours ou la suivante.
+  cur=$(branch_need || true)
+  if [ -z "$id" ]; then
+    [ -n "$cur" ] || die "usage : git sdlc claim [<id> [<intent|spec|build>]] [--no-push] (sans id : depuis une branche need/<id>/<étape>)"
+    id=${cur%%$'\t'*} step=${cur#*$'\t'}
+    echo "Besoin $id, étape $step."
+  elif [ -z "$step" ]; then
+    if [ -n "$cur" ] && [ "${cur%%$'\t'*}" = "$id" ]; then
+      step=${cur#*$'\t'}
+    else
+      compute "$id" || die "besoin « $id » introuvable"
+      case $CODE in
+        intent-accepted) step=spec ;;
+        spec-accepted)   step=build ;;
+        intent-*|spec-*|build-*) step=${CODE%%-*} ;;
+        *) die "$id : $STAGE, aucune étape à prendre en charge" ;;
+      esac
+    fi
+    echo "Besoin $id, étape $step."
+  fi
   st=$(stage_of "$step") || die "étape inconnue : $step (intent, spec ou build)"
   valid_id "$id" || die "identifiant invalide : $id"
-  do_fetch; load_prs
   case $step in
     spec)  on_main "$id" intent.md || warn "intent.md de $id pas encore fusionné sur $MAIN" ;;
     build) on_main "$id" spec.md   || warn "spec.md de $id pas encore fusionnée sur $MAIN" ;;
