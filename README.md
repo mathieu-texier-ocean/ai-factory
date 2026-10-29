@@ -93,7 +93,7 @@ git sdlc board --by-person        # regroupés par personne ou équipe
 git sdlc board --all              # y compris livrés et rejetés
 ```
 
-`claim`, `ready` et `merge` affichent ensuite la ligne de `git sdlc board` du besoin, relue sur GitHub.
+`new`, `claim`, `ready` et `merge` affichent ensuite la ligne de `git sdlc board` du besoin, relue sur GitHub.
 
 Toutes ces actions restent possibles dans l’interface GitHub. `git sdlc` lit l’état réel des PR : une PR fusionnée dans le navigateur apparaît comme gate franchi dans `board`.
 

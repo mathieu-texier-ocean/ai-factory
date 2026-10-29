@@ -493,6 +493,7 @@ cmd_new() {
   open_pr "$id" intent
   [ "$origin" != incident ] || gh pr edit "need/$id/intent" --add-label sdlc:incident >/dev/null 2>&1 || true
   echo "Rédigez $file avec Claude, poussez, puis : git sdlc ready $id intent"
+  show_need "$id"
 }
 
 cmd_claim() {
