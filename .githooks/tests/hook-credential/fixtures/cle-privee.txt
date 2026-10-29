@@ -1,0 +1,4 @@
+Clé privée fictive, pour les tests du hook pre-commit.
+-----BEGIN RSA PRIVATE KEY-----
+ZmljdGlmLWZpY3RpZi1maWN0aWYtZmljdGlmLWZpY3RpZi1maWN0aWYtZmljdGlm
+-----END RSA PRIVATE KEY-----

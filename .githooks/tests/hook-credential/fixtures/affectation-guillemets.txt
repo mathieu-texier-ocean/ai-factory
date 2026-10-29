@@ -1,0 +1,3 @@
+Affectation d'une valeur littérale fictive entre guillemets.
+password="fictif-0000-EXAMPLE"
+secret='fictif-0000-EXAMPLE'
