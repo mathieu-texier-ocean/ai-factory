@@ -13,7 +13,7 @@
 #   need/<id>/build   contient intent/<id>/plan.md ; ne modifie ni intent.md ni spec.md ;
 #                     spec.md déjà sur main ; ne touche aucun autre besoin
 #   chaque commit (hors merges) porte Need: <id>
-#   autre branche     commits avec Need: (none accepté) ; ne touche pas intent/<id>/
+#   autre branche     ne touche pas intent/<id>/ (trailers non exigés)
 #
 # Testable en local :
 #   BASE_SHA=$(git rev-parse main) HEAD_SHA=$(git rev-parse HEAD) \
@@ -82,7 +82,6 @@ elif [[ $HEAD_REF == need/* ]]; then
   err "branche $HEAD_REF : nom attendu need/<id>/intent, need/<id>/spec ou need/<id>/build"
 else
   echo "Branche hors besoin : $HEAD_REF"
-  check_commits ""
   while IFS= read -r f; do
     case $f in
       "$IDIR/_template/"*) ;;

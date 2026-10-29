@@ -2,8 +2,7 @@
 # commit-msg — impose les trailers du SDLC git.
 #
 # Sur une branche need/<id>/<étape>, ajoute automatiquement « Need: <id> » et
-# « Stage: plan|design|build » s’ils manquent. Ailleurs, refuse un commit sans
-# « Need: <id> » (utilisez « Need: none » pour l’outillage hors besoin).
+# « Stage: plan|design|build » s’ils manquent. Ailleurs, ajoute « Need: none ».
 #
 # Activation (une fois par clone) : git config core.hooksPath .githooks
 # Rappel : un hook client se contourne avec --no-verify ; le contrôle qui fait
@@ -32,6 +31,8 @@ if [[ $branch =~ ^need/([^/]+)/(intent|spec|build)$ ]]; then
   esac
   git interpret-trailers --in-place --if-exists doNothing \
     --trailer "Need: $id" --trailer "Stage: $st" "$MSG"
+else
+  git interpret-trailers --in-place --if-exists doNothing --trailer "Need: none" "$MSG"
 fi
 
 trailers=$(git interpret-trailers --parse "$MSG")
