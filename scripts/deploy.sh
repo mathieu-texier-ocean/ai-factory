@@ -8,7 +8,7 @@ set -u
 # (tests du kit) sont toujours exclus.
 LISTE_BLANCHE=(.claude .github .githooks .sdlc templates REVIEW.md)
 EXCLUS=(templates/projet)
-MODELES=(CLAUDE.md)
+MODELES=(CLAUDE.md README.md)
 MANIFESTE=.sdlc/manifeste
 
 erreur() { echo "scripts/deploy.sh : $*" >&2; }
@@ -237,7 +237,7 @@ cmd_install() {
 Marche à suivre (non exécutée) :
   cd $cible
   git init                              # si ce n'est pas encore un dépôt
-  # fusionner puis supprimer les .nouveau ; compléter CLAUDE.md
+  # fusionner puis supprimer les .nouveau ; compléter CLAUDE.md et README.md
   git config core.hooksPath .githooks
   git add -A && git commit -m "Initialisation du SDLC" && git push
   cp $SOURCE/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # si absent, tout dossier du PATH

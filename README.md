@@ -18,7 +18,7 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `.claude/skills/` | skills Claude Code des étapes (voir « Les skills de Claude ») |
 | `.claude/settings.json`, `.claude/hooks/` | hooks Claude Code : signalent à l’ouverture de session, et bloquent les `git commit` de Claude, tant que `core.hooksPath` ne vaut pas `.githooks` |
 | `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
-| `templates/projet/CLAUDE.md` | modèle du `CLAUDE.md` du dépôt produit, rempli par `scripts/deploy.sh` ; non copié tel quel |
+| `templates/projet/CLAUDE.md`, `README.md` | modèles du `CLAUDE.md` et du `README.md` du dépôt produit, remplis par `scripts/deploy.sh` ; non copiés tels quels |
 | `scripts/deploy.sh` | installe le kit dans un dépôt produit, puis y répercute ses évolutions ; reste dans le dépôt du kit |
 | `scripts/verify.sh` | lance tous les tests du kit (`<livrable>/tests/<nom>/run.sh`) ; reste dans le dépôt du kit |
 
@@ -31,7 +31,7 @@ Prérequis : git 2.30+, bash 3.2+ (celui de macOS convient), GitHub CLI `gh` ins
 ```sh
 <clone du kit>/scripts/deploy.sh install /chemin/du/depot [<nom du projet>]
 cd /chemin/du/depot
-# Fusionnez puis supprimez les .nouveau listés, complétez CLAUDE.md, puis :
+# Fusionnez puis supprimez les .nouveau listés, complétez CLAUDE.md et README.md, puis :
 git config core.hooksPath .githooks
 git add -A && git commit -m "Initialisation du SDLC" && git push
 cp <clone du kit>/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # si absent : setup en a besoin (étape 2)
@@ -39,7 +39,7 @@ git sdlc setup --dry-run    # affiche ce qui va être configuré
 git sdlc setup              # applique
 ```
 
-Le dépôt peut être existant ou vide ; un dossier absent est créé. Le script ne fait aucune opération Git dans le dépôt et lit le kit au commit `HEAD` du clone (les modifications non commitées sont ignorées et signalées). Il copie `.claude/`, `.github/`, `.githooks/`, `.sdlc/`, `templates/` et `REVIEW.md`, sans les dossiers `tests/` du kit ni `templates/projet/`, et produit `CLAUDE.md` depuis `templates/projet/CLAUDE.md` (nom du projet par défaut : celui du dossier). Un fichier déjà présent avec un autre contenu, par exemple un `.claude/settings.json` ou un `CLAUDE.md` existant, est conservé : la version du kit est écrite à côté en `<fichier>.nouveau`, à fusionner à la main puis supprimer. Pour `settings.json`, ajoutez les entrées `SessionStart` et `PreToolUse` du kit.
+Le dépôt peut être existant ou vide ; un dossier absent est créé. Le script ne fait aucune opération Git dans le dépôt et lit le kit au commit `HEAD` du clone (les modifications non commitées sont ignorées et signalées). Il copie `.claude/`, `.github/`, `.githooks/`, `.sdlc/`, `templates/` et `REVIEW.md`, sans les dossiers `tests/` du kit ni `templates/projet/`, et produit `CLAUDE.md` et `README.md` depuis `templates/projet/` (nom du projet par défaut : celui du dossier). Un fichier déjà présent avec un autre contenu, par exemple un `.claude/settings.json`, un `CLAUDE.md` ou un `README.md` existant, est conservé : la version du kit est écrite à côté en `<fichier>.nouveau`, à fusionner à la main puis supprimer. Pour `settings.json`, ajoutez les entrées `SessionStart` et `PreToolUse` du kit.
 
 Le script écrit `.sdlc/manifeste` : le SHA du kit installé, le nom du projet et l’empreinte sha256 de chaque fichier copié. Commitez-le : la mise à jour en dépend.
 
@@ -159,9 +159,11 @@ L’ordre de priorité est le suivant :
 
 Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion, faite par un humain.
 
-## CLAUDE.md du dépôt produit
+## CLAUDE.md et README.md du dépôt produit
 
 `scripts/deploy.sh install` produit le `CLAUDE.md` du dépôt depuis `templates/projet/CLAUDE.md` : section SDLC remplie (branches, trailers, gates humains, skills, vérification, secrets), sections du projet à compléter. Si le dépôt a déjà un `CLAUDE.md`, le modèle arrive en `CLAUDE.md.nouveau` : reportez-en la section SDLC.
+
+Il produit de même le `README.md` depuis `templates/projet/README.md` : mode d’emploi du SDLC pour l’équipe (mise en route d’un poste, cycle d’un besoin avec `git sdlc`, suivi, règles, mise à jour du kit), présentation, contenu et architecture du projet à compléter. Un `README.md` existant est conservé et le modèle arrive en `README.md.nouveau` : reportez-en les sections SDLC.
 
 ## Points d’attention
 

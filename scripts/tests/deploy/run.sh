@@ -31,6 +31,8 @@ ecrire .sdlc/config '[sdlc]'
 ecrire templates/intent.md 'gabarit'
 ecrire templates/projet/CLAUDE.md '# {{nom-projet}}
 modèle v1'
+ecrire templates/projet/README.md '# {{nom-projet}}
+readme modèle v1'
 ecrire REVIEW.md 'revue'
 ecrire README.md 'readme du kit'
 ecrire scripts/verify.sh 'exit 0'
@@ -52,7 +54,8 @@ out=$("$D" install "$tmp/neuf" demo 2>&1); rc=$?
 P=$tmp/neuf
 verif "install : code 0" [ $rc -eq 0 ]
 verif "install : liste blanche copiée" [ -f "$P/.claude/skills/demo/SKILL.md" -a -f "$P/.githooks/lib/a.sh" -a -f "$P/.github/workflows/sdlc.yml" -a -f "$P/.sdlc/config" -a -f "$P/templates/intent.md" -a -f "$P/REVIEW.md" ]
-verif "install : README, bin, scripts du kit non copiés" [ ! -e "$P/README.md" -a ! -e "$P/bin" -a ! -e "$P/scripts" ]
+verif "install : bin, scripts du kit non copiés" [ ! -e "$P/bin" -a ! -e "$P/scripts" ]
+verif "install : README.md produit depuis le modèle, pas celui du kit" [ "$(cat "$P/README.md")" = "$(printf '# demo\nreadme modèle v1')" ]
 verif "install : tests et templates/projet exclus" [ ! -e "$P/.claude/hooks/tests" -a ! -e "$P/templates/projet" ]
 verif "install : bit exécutable repris" [ -x "$P/.githooks/pre-commit" -a ! -x "$P/REVIEW.md" ]
 verif "install : CLAUDE.md produit avec le nom" [ "$(head -1 "$P/CLAUDE.md")" = "# demo" ]
@@ -202,12 +205,12 @@ verif "update : fichier modifié, droits non touchés" [ ! -x "$P/.githooks/lib/
 R=$tmp/reel
 mkdir -p "$R" && cd "$repo_root" && git ls-files -z -- bin scripts .claude .github .githooks .sdlc templates REVIEW.md \
   | while IFS= read -r -d '' f; do [ -e "$f" ] && mkdir -p "$R/$(dirname "$f")" && cp -p "$f" "$R/$f"; done
-mkdir -p "$R/templates/projet" "$R/scripts" && cp "$repo_root/templates/projet/CLAUDE.md" "$R/templates/projet/" && cp -p "$repo_root/scripts/deploy.sh" "$R/scripts/"
+mkdir -p "$R/templates/projet" "$R/scripts" && cp "$repo_root/templates/projet/CLAUDE.md" "$repo_root/templates/projet/README.md" "$R/templates/projet/" && cp -p "$repo_root/scripts/deploy.sh" "$R/scripts/"
 cd "$R" && git init -q . && git add -A && git -c user.email=t@t -c user.name=t -c core.hooksPath=/dev/null commit -qm kit
 Q=$tmp/produit
 mkdir -p "$Q" && git -C "$Q" init -q && ecrire "$Q/src/app.c" 'int main;'
 "$R/scripts/deploy.sh" install "$Q" produit > /dev/null 2>&1
 cd "$Q" && git config user.email t@t && git config user.name t && git config core.hooksPath .githooks
 verif "bout en bout : commit accepté par les hooks du kit installé" sh -c 'git add -A && git commit -qm init && git log -1 --format=%B | grep -qx "Need: none"'
-verif "bout en bout : CLAUDE.md produit, sans tests du kit" [ "$(head -1 "$Q/CLAUDE.md")" = "# produit" -a -z "$(git -C "$Q" ls-files '*/tests/*')" ]
+verif "bout en bout : CLAUDE.md et README.md produits, sans tests du kit" [ "$(head -1 "$Q/CLAUDE.md")" = "# produit" -a "$(head -1 "$Q/README.md")" = "# produit" -a -z "$(git -C "$Q" ls-files '*/tests/*')" ]
 exit $fail

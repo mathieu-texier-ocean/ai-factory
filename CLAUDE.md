@@ -45,7 +45,7 @@ OK .claude/hooks/tests/hook-activation/run.sh
 - `.github/scripts/sdlc-check.sh` : check CI requis `sdlc-conventions` (trailers, périmètre, amont fusionné, credentials).
 - `.githooks/` : `commit-msg` (trailers), `pre-commit` (sections d'intent, credentials) ; `lib/credential.sh` partagé avec le check CI.
 - `.claude/skills/` : `redaction-intent`, `controle-taille-intent`, `generation-spec`, `generation-plan` ; gabarits dans `templates/`.
-- `scripts/deploy.sh` : installe le kit dans un dépôt produit et le met à jour, avec `.sdlc/manifeste` ; liste blanche en tête du script, `CLAUDE.md` produit depuis `templates/projet/`.
+- `scripts/deploy.sh` : installe le kit dans un dépôt produit et le met à jour, avec `.sdlc/manifeste` ; liste blanche en tête du script, `CLAUDE.md` et `README.md` produits depuis `templates/projet/`.
 - `.claude/hooks/`, déclarés dans `.claude/settings.json` : signalent et bloquent les commits de Claude tant que `core.hooksPath` n'est pas `.githooks`.
 - Détail : `README.md`. Ce fichier résume, il ne recopie pas.
 
