@@ -1,22 +1,27 @@
-# Plan : <titre>
+# Plan : {{ID}}
 
-<!-- Un lot = un plan = une PR ; une étape = un commit. Le plan est accepté avant tout code. S'il est modifié une fois validé, il repasse en draft. -->
+<!--
+  Gabarit copié par `git sdlc claim {{ID}} build`, puis rempli par le skill
+  generation-plan, en plan mode, sur la branche need/{{ID}}/build, une fois spec.md
+  fusionnée sur main. Commitez le plan rempli seul, avant tout code ; une étape = un
+  commit. Si l’implémentation diverge, mettez le plan à jour dans la même PR. Pas de
+  champ « Statut » : la fusion de la PR fait foi.
+-->
 
-- **Spec :** [spec.md](spec.md) · **Intent :** [intent.md](intent.md)
-- **Auteur :** <nom> · **Statut :** draft
-- **À risque :** <oui | non>
-- **Validation :** <développeur, ou tech lead si à risque>
-- **Base :** <branche et commit de départ>
+- Spec : [spec.md](spec.md) · Intent : [intent.md](intent.md)
+- Auteur : {{AUTHOR}}
+- À risque : <oui | non>
+- Base : <commit de main au départ>
 
-<!-- Sans spec, retirer le lien Spec. « À risque » est renseigné par le développeur d'après ce que le changement peut casser : oui → validation par le tech lead, non → par le développeur. -->
+<!-- « À risque » : oui si l’intent porte « Risk: élevé » ou si le développeur l’estime d’après ce que le changement peut casser. Oui → avis d’un tech lead sur le plan avant le code. -->
 
 ## Prérequis
 
-<!-- Amont validé et commité (spec, sinon intent), une seule PR pour le lot, base de départ, lots dont celui-ci dépend. -->
+<!-- Intent et spec fusionnés sur main, besoins dont celui-ci dépend, base de départ. -->
 
 ## Fichiers touchés
 
-<!-- Nature : nouveau | modifié | supprimé. Étape : numéro de l'étape qui touche le fichier. -->
+<!-- Nature : nouveau | modifié | supprimé. Étape : numéro de l’étape qui touche le fichier. -->
 
 | Fichier | Nature | Étape |
 |---|---|---|
@@ -24,7 +29,7 @@
 
 ## Étapes
 
-<!-- Numérotées dans l'ordre d'exécution. Une étape = un commit. Chaque étape cite les numéros C, L et A de la spec qu'elle couvre. Au-delà de 7 étapes, ou avec des étapes indépendantes, l'intent est peut-être à découper. -->
+<!-- Numérotées dans l’ordre d’exécution. Une étape = un commit. Chaque étape cite les numéros C, L et A de la spec qu’elle couvre. Au-delà de 7 étapes, ou avec des étapes indépendantes, l’intent est peut-être à découper. -->
 
 ### 1. <titre>
 
@@ -36,7 +41,7 @@ Couvre : <C, L, A>.
 
 ## Couverture de la spec
 
-<!-- Chaque numéro C, L et A de la spec rattaché à au moins une étape. « Sans objet » s'il n'y a pas de spec. -->
+<!-- Chaque numéro C, L et A de la spec rattaché à au moins une étape. -->
 
 | Réf. | Étape |
 |---|---|
@@ -44,7 +49,7 @@ Couvre : <C, L, A>.
 
 ## Risques
 
-<!-- Ce que le changement peut casser, l'étape la plus risquée, et la parade prévue. Une question restée sans réponse reste visible ici. Puis les options écartées. -->
+<!-- Ce que le changement peut casser, l’étape la plus risquée, et la parade prévue. Une question restée sans réponse reste visible ici. Puis les options écartées. -->
 
 ## Hors périmètre
 

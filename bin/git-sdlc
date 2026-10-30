@@ -1,0 +1,886 @@
+#!/usr/bin/env bash
+# git-sdlc — pilote le SDLC fondé sur l’IA avec git et GitHub.
+#
+# Les revues et les gates passent par des pull requests GitHub :
+#   une PR par étape        need/<id>/intent | need/<id>/spec | need/<id>/build → main
+#   gate = fusion           la fusion de la PR franchit l’étape (ruleset « sdlc-main »)
+#   conventions vérifiées   check CI « sdlc-conventions »
+#   fusion                  par rebase uniquement : historique linéaire, trailers sur chaque commit
+#   livraison               release GitHub sur un tag YY.MM.DD[.V] protégé
+#
+# Prérequis : git 2.30+, bash 3.2+, gh authentifié (gh auth login).
+# Installation : placer ce fichier dans le PATH → `git sdlc <commande>`.
+set -euo pipefail
+
+die()  { printf 'git-sdlc : %s\n' "$*" >&2; exit 1; }
+warn() { printf 'git-sdlc : %s\n' "$*" >&2; }
+
+git rev-parse --git-dir >/dev/null 2>&1 || die "à lancer dans un dépôt git"
+command -v gh >/dev/null 2>&1 || die "gh introuvable : installez GitHub CLI (https://cli.github.com)"
+
+ROOT=$(git rev-parse --show-toplevel)
+# Les chemins écrits (<intentDir>/<id>/…, templates/…) sont relatifs à la racine du dépôt.
+cd "$ROOT"
+cfg() {
+  git config --get "sdlc.$1" 2>/dev/null \
+    || git config -f "$ROOT/.sdlc/config" --get "sdlc.$1" 2>/dev/null \
+    || printf '%s' "$2"
+}
+REMOTE=${SDLC_REMOTE:-$(cfg remote origin)}
+MAIN=${SDLC_MAIN:-$(cfg main main)}
+IDIR=${SDLC_INTENT_DIR:-$(cfg intentDir requirements)}
+PR_LIMIT=$(cfg prLimit 300)
+MERGE_ARGS=$(cfg mergeArgs "--rebase --delete-branch")
+FETCH=1
+RELEASE_META=1
+PRS=""
+ID=""
+MAIN_REF=""
+
+cleanup() { [ -z "$PRS" ] || rm -f "$PRS"; }
+trap cleanup EXIT
+
+# ---------------------------------------------------------------- utilitaires git
+
+has_ref()    { git rev-parse -q --verify "$1^{commit}" >/dev/null 2>&1; }
+has_tag()    { git rev-parse -q --verify "refs/tags/$1" >/dev/null 2>&1; }
+# Tags de livraison (méthode Kraken) : YY.MM.DD, puis YY.MM.DD.2, .3… le même jour.
+RELEASE_GLOBS=('[0-9][0-9].[0-9][0-9].[0-9][0-9]' '[0-9][0-9].[0-9][0-9].[0-9][0-9].*')
+has_remote() { git remote | grep -qx "$REMOTE"; }
+valid_id()   { [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; }
+re_escape()  { printf '%s' "$1" | sed 's#[]\\/.*^$[]#\\&#g'; }
+sed_escape() { printf '%s' "$1" | sed 's#[&/\\]#\\&#g'; }
+
+stage_of() {
+  case $1 in
+    intent) echo plan ;;
+    spec)   echo design ;;
+    build)  echo build ;;
+    *) return 1 ;;
+  esac
+}
+label_of() {
+  case $1 in intent) echo Intent ;; spec) echo Spec ;; build) echo Build ;; esac
+}
+merger_of() {
+  case $1 in intent|spec) echo PO ;; build) echo "tech lead" ;; esac
+}
+file_of() {
+  case $1 in intent) echo intent.md ;; spec) echo spec.md ;; build) echo plan.md ;; esac
+}
+
+# Référence de main, résolue au démarrage puis après chaque fetch (resolve_main).
+resolve_main() {
+  MAIN_REF=""
+  if has_ref "refs/remotes/$REMOTE/$MAIN"; then MAIN_REF="refs/remotes/$REMOTE/$MAIN"
+  elif has_ref "refs/heads/$MAIN"; then MAIN_REF="refs/heads/$MAIN"; fi
+}
+main_ref() {
+  [ -n "$MAIN_REF" ] || die "branche $MAIN introuvable (ni locale ni sur $REMOTE)"
+  echo "$MAIN_REF"
+}
+
+branch_ref() {
+  local r
+  for r in "refs/remotes/$REMOTE/need/$1/$2" "refs/heads/need/$1/$2"; do
+    if has_ref "$r"; then echo "$r"; return 0; fi
+  done
+  return 1
+}
+
+on_main() { git cat-file -e "$(main_ref):$IDIR/$1/$2" 2>/dev/null; }
+
+# Repli git : dernier commit de main portant les trailers Need/Stage (fusion par rebase).
+merge_of() {
+  local idr
+  idr=$(re_escape "$1")
+  git log "$(main_ref)" --first-parent -1 --format=%H --all-match \
+    --grep="^Need: $idr\$" --grep="^Stage: $2\$"
+}
+
+intent_field() {
+  local id=$1 field=$2 ref
+  if on_main "$id" intent.md; then ref=$(main_ref)
+  elif ref=$(branch_ref "$id" intent); then :
+  else return 0; fi
+  git show "$ref:$IDIR/$id/intent.md" 2>/dev/null \
+    | sed -n "s/^$field:[[:space:]]*//p" | head -n1
+}
+
+children_of() {
+  local idr
+  idr=$(re_escape "$1")
+  # shellcheck disable=SC2046  # une référence par mot
+  { git grep -l -E "^Parent:[[:space:]]*$idr[[:space:]]*\$" "$(main_ref)" \
+      $(git for-each-ref --format='%(refname)' "refs/remotes/$REMOTE/need/" | grep '/intent$' || true) \
+      -- "$IDIR/*/intent.md" 2>/dev/null || true; } \
+    | sed -E "s#^[^:]+:$IDIR/([^/]+)/intent\.md\$#\1#" | sort -u
+}
+
+clean_tree() {
+  git diff --quiet && git diff --cached --quiet \
+    || die "copie de travail modifiée : commitez ou remisez (git stash) d’abord"
+}
+
+align() {
+  if command -v column >/dev/null 2>&1; then
+    column -t -s "$(printf '\t')"
+  else
+    LC_ALL=C awk -F'\t' '
+      function dlen(s,  t) { t = s; return length(s) - gsub(/[\200-\277]/, "", t) }
+      { for (i = 1; i <= NF; i++) { c[NR,i] = $i; l = dlen($i); if (l > w[i]) w[i] = l } if (NF > n) n = NF }
+      END { for (r = 1; r <= NR; r++) { line = ""
+              for (i = 1; i <= n; i++) { line = line c[r,i]
+                if (i < n) { pad = w[i] + 2 - dlen(c[r,i]); while (pad-- > 0) line = line " " } }
+              print line } }'
+  fi
+}
+
+nd() { [ "$1" = - ] || printf '%s' "$1"; }                # « - » → vide
+at() { [ -z "$1" ] || [ "$1" = - ] || printf '@%s' "${1//,/, @}"; }
+
+# ------------------------------------------------------------ données GitHub
+
+# Une ligne TSV par PR de need/<id>/<étape> vers main, de la plus ancienne à la plus récente.
+# Colonnes : id étape numéro état brouillon décision auteur assignés relecteurs checks
+#            maj fusionnée_le fusionnée_par commit_de_fusion étiquettes url
+JQ_PRS='
+def nz: if . == null or . == "" then "-" else tostring end;
+[ .[] | select(.headRefName | test("^need/[^/]+/(intent|spec|build)$")) ] | sort_by(.number) | .[]
+| (.headRefName | split("/")) as $p
+| [ .statusCheckRollup[]? | (.conclusion // .state // .status // "PENDING") ] as $c
+| [ $p[1], $p[2], .number, .state,
+    (if .isDraft then "draft" else "ready" end),
+    .reviewDecision, .author.login,
+    ([ .assignees[]?.login ] | join(",")),
+    ([ .reviewRequests[]? | (.login // .slug // .name) ] | join(",")),
+    (if ($c | length) == 0 then "aucun"
+     elif any($c[]; IN("FAILURE","ERROR","CANCELLED","TIMED_OUT","ACTION_REQUIRED","STARTUP_FAILURE")) then "rouges"
+     elif any($c[]; IN("SUCCESS","NEUTRAL","SKIPPED") | not) then "en cours"
+     else "verts" end),
+    ((.updatedAt // "") | .[0:16] | sub("T"; " ")),
+    ((.mergedAt // "") | .[0:10]),
+    (.mergedBy.login // ""),
+    (.mergeCommit.oid // ""),
+    ([ .labels[]?.name ] | join(",")),
+    .url ]
+| map(nz) | @tsv'
+
+do_fetch() {
+  if [ "$FETCH" = 1 ] && has_remote; then
+    git fetch -q --prune --tags "$REMOTE" 2>/dev/null || warn "fetch de $REMOTE impossible, état local utilisé"
+  fi
+  resolve_main
+}
+
+load_prs() {
+  [ -z "$PRS" ] || return 0
+  PRS=$(mktemp)
+  gh pr list --state all --base "$MAIN" --limit "$PR_LIMIT" \
+    --json number,headRefName,state,isDraft,reviewDecision,author,assignees,reviewRequests,statusCheckRollup,updatedAt,mergedAt,mergedBy,mergeCommit,labels,url \
+    --jq "$JQ_PRS" > "$PRS" \
+    || die "lecture des pull requests impossible (vérifiez gh auth status)"
+}
+
+# Fetch et lecture des PR en parallèle : load_prs ne lit que GitHub.
+refresh() {
+  local f
+  do_fetch & f=$!
+  load_prs
+  wait "$f"
+  resolve_main
+}
+
+# Charge dans P_* la PR la plus récente de need/<id>/<étape>.
+pr_get() {
+  pr_parse "$(awk -F'\t' -v i="$1" -v s="$2" '$1 == i && $2 == s { l = $0 } END { print l }' "$PRS")"
+}
+# Charge dans P_* la PR fermée la plus récente du besoin $1 portant sdlc:rejected.
+pr_rejected() {
+  pr_parse "$(awk -F'\t' -v i="$1" '$1 == i && $4 == "CLOSED" && $15 ~ /(^|,)sdlc:rejected(,|$)/ { l = $0 } END { print l }' "$PRS")"
+}
+pr_parse() {
+  [ -n "$1" ] || return 1
+  IFS=$'\t' read -r _ _ P_NUM P_STATE P_DRAFT P_DEC P_AUTHOR P_ASSIGN P_REVREQ P_CHECKS \
+    P_UPD P_MERGEDAT P_MERGEDBY P_OID P_LABELS P_URL <<<"$1"
+}
+# Colonne $2 (2 = étape, 3 = numéro) des PR ouvertes du besoin $1.
+pr_open_field() { awk -F'\t' -v i="$1" -v c="$2" '$1 == i && $4 == "OPEN" { print $c }' "$PRS"; }
+pr_open()   { pr_get "$1" "$2" && [ "$P_STATE" = OPEN ]; }
+pr_merged() { pr_get "$1" "$2" && [ "$P_STATE" = MERGED ]; }
+pr_owner()  { if [ "$P_ASSIGN" != - ]; then at "$P_ASSIGN"; else at "$P_AUTHOR"; fi; }
+
+# ----------------------------------------------------- calcul de l’étape
+
+# Remplit CODE, ORDER, STAGE, WHO, WHEN, NEXT et EVID pour le besoin $ID.
+open_state() {
+  local step=$1 lab o=$2 r
+  lab=$(label_of "$step")
+  EVID+=("PR           #$P_NUM  $(nd "$P_URL")")
+  EVID+=("checks       $P_CHECKS")
+  WHEN=$(nd "$P_UPD")
+  if [ "$P_DRAFT" = draft ]; then
+    CODE=$step-draft ORDER=$o STAGE="$lab en cours (PR #$P_NUM, brouillon)"
+    WHO=$(pr_owner); NEXT="$WHO : terminer, puis git sdlc ready $ID $step"
+  elif [ "$P_DEC" = CHANGES_REQUESTED ]; then
+    CODE=$step-changes ORDER=$((o + 1)) STAGE="$lab : corrections demandées (PR #$P_NUM)"
+    WHO=$(pr_owner); NEXT="$WHO : corriger, pousser, puis redemander la revue"
+  else
+    CODE=$step-review ORDER=$((o + 2)) STAGE="$lab en revue, à fusionner (PR #$P_NUM)"
+    r=$(at "$P_REVREQ"); WHO=${r:-$(merger_of "$step")}
+    NEXT="$WHO : relire, puis git sdlc merge $ID $step"
+    [ "$P_CHECKS" != rouges ] || NEXT="checks rouges : à corriger avant la fusion"
+  fi
+}
+
+# Fusion de l’étape $1 du besoin $ID : PR fusionnée, sinon commit portant les trailers.
+# Remplit M_OID, M_DATE et M_DESC ; échoue si l’étape n’est pas fusionnée.
+merge_info() {
+  M_OID="" M_DATE="" M_DESC=""
+  if pr_merged "$ID" "$1"; then
+    M_OID=$(nd "$P_OID") M_DATE=$(nd "$P_MERGEDAT") M_DESC="(PR #$P_NUM) · fusion $(at "$P_MERGEDBY")"
+  else
+    M_OID=$(merge_of "$ID" "$(stage_of "$1")")
+    [ -n "$M_OID" ] || return 1
+    IFS='|' read -r M_DATE M_DESC < <(git log -1 --format='%cs|(%h)' "$M_OID")
+  fi
+}
+
+# Auteur et date du tag $1 dans WHO et WHEN (vides pour un tag léger).
+tag_meta() {
+  IFS='|' read -r WHO WHEN < <(git for-each-ref --format='%(taggername)|%(taggerdate:short)' "refs/tags/$1") || true
+}
+
+# QUI = le rôle qui doit agir ; l’auteur de la fusion figure dans les preuves de status.
+accepted_state() {
+  local step=$1 code=$2 o=$3 label=$4 next=$5 role=$6
+  CODE=$code ORDER=$o STAGE=$label NEXT=$next WHO=$role
+  if merge_info "$step"; then WHEN=$M_DATE; fi
+}
+
+branch_state() {
+  local step=$1 o=$2 br=$3
+  CODE=$step-nopr ORDER=$o STAGE="$(label_of "$step") en cours (sans PR)"
+  IFS='|' read -r WHO WHEN < <(git log -1 --format='%an|%cs' "$br")
+  NEXT="$WHO : git sdlc claim $ID $step pour ouvrir la PR"
+}
+
+compute() {
+  ID=$1
+  local rel br line
+  CODE=unknown ORDER=99 STAGE="Inconnu" WHO="—" WHEN="—" NEXT="—"
+  EVID=()
+
+  if pr_rejected "$ID"; then
+    CODE=rejected ORDER=90 STAGE="Rejeté (PR #$P_NUM)" WHO=$(at "$P_AUTHOR") WHEN=$P_UPD
+    return 0
+  fi
+  if has_tag "rejected/$ID"; then
+    CODE=rejected ORDER=90 STAGE="Rejeté"
+    tag_meta "rejected/$ID"
+    WHO=${WHO:-—} WHEN=${WHEN:-—}
+    return 0
+  fi
+
+  # Build fusionné : livré ou prêt à livrer.
+  merge_info build || true
+  if [ -n "$M_OID" ]; then
+    rel=$(git tag --contains "$M_OID" --list "${RELEASE_GLOBS[@]}" --sort=creatordate 2>/dev/null | head -n1)
+    if [ -n "$rel" ]; then
+      CODE=released ORDER=50 STAGE="Livré ($rel)"
+      # GitHub crée des tags légers pour ses releases : l’auteur vient de la release.
+      # Le board sans --all écarte les besoins livrés : inutile d’interroger GitHub.
+      line=""
+      [ "$RELEASE_META" = 0 ] || line=$(gh release view "$rel" --json author,publishedAt \
+               --jq '"@" + .author.login + "\t" + ((.publishedAt // "") | .[0:10])' 2>/dev/null || true)
+      if [ -n "$line" ]; then
+        WHO=${line%%$'\t'*} WHEN=${line#*$'\t'}
+      else
+        tag_meta "$rel"
+        [ -n "$WHO" ] || IFS='|' read -r WHO WHEN < <(git log -1 --format='%cn|%cs' "$rel")
+      fi
+      NEXT="OPS : surveiller ; un incident ouvre un intent avec Parent: $ID"
+    else
+      accepted_state build ready 40 "Prêt à livrer" "RM : git sdlc release" RM
+    fi
+  elif pr_open "$ID" build; then open_state build 30
+  elif br=$(branch_ref "$ID" build); then branch_state build 30 "$br"
+  elif pr_merged "$ID" spec || on_main "$ID" spec.md; then
+    accepted_state spec spec-accepted 25 "Spec acceptée, build à démarrer" "Dev : git sdlc claim $ID build" Dev
+  elif pr_open "$ID" spec; then open_state spec 20
+  elif br=$(branch_ref "$ID" spec); then branch_state spec 20 "$br"
+  elif pr_merged "$ID" intent || on_main "$ID" intent.md; then
+    accepted_state intent intent-accepted 15 "Intent accepté, spec à produire" "analyste : git sdlc claim $ID spec" analyste
+  elif pr_open "$ID" intent; then open_state intent 10
+  elif br=$(branch_ref "$ID" intent); then branch_state intent 10 "$br"
+  else
+    return 1
+  fi
+  WHO=${WHO:-—} WHEN=${WHEN:-—}
+  return 0
+}
+
+gate_evidence() {
+  local step lab
+  for step in intent spec build; do
+    lab=$(printf '%-12s' "$(file_of "$step" | sed 's/plan.md/code/')")
+    if merge_info "$step"; then EVID+=("$lab fusionné le $M_DATE $M_DESC"); fi
+  done
+}
+
+# -------------------------------------------------------- pull requests
+
+pr_body() {
+  local id=$1 step=$2
+  printf 'Besoin : `%s` · étape : %s\nArtefact : `%s/%s/%s`\n\n' "$id" "$step" "$IDIR" "$id" "$(file_of "$step")"
+  printf '### Avant de demander la revue (`git sdlc ready %s %s`)\n\n' "$id" "$step"
+  case $step in
+    intent) printf -- '- [ ] Problème, résultat attendu et contraintes rédigés avec Claude (skill redaction-intent), relus par l’auteur\n- [ ] Priorité donnée par le PO, ou laissée à définir\n- [ ] Taille contrôlée (skill controle-taille-intent)\n- [ ] Questions ouvertes listées\n' ;;
+    spec)   printf -- '- [ ] Spec produite avec le skill generation-spec et les skills de l’organisation\n- [ ] Chaque critère de succès de l’intent a au moins un critère d’acceptation\n- [ ] Points d’attention signalés et arbitrés avec leurs propriétaires\n- [ ] Questions ouvertes de l’intent tranchées ou reportées\n' ;;
+    build)  printf -- '- [ ] plan.md produit en plan mode (skill generation-plan) et validé avant le code\n- [ ] Chaque numéro C, L, A de la spec couvert par une étape du plan\n- [ ] Tests verts en local et en CI\n- [ ] plan.md mis à jour si l’implémentation a divergé\n- [ ] Recette validée par <recetteur> ; refaite après toute modification de la branche\n' ;;
+  esac
+  printf '\nLa revue suit REVIEW.md.\n'
+}
+
+open_pr() {
+  local id=$1 step=$2 body
+  if pr_open "$id" "$step"; then
+    gh pr edit "$P_NUM" --add-assignee @me >/dev/null
+    echo "PR #$P_NUM existante : vous y êtes assigné(e)."
+    return 0
+  fi
+  body=$(pr_body "$id" "$step")
+  local args=(--base "$MAIN" --head "need/$id/$step" --title "$(label_of "$step") : $id" --body "$body" --assignee @me)
+  if ! gh pr create --draft --label "sdlc:$step" "${args[@]}"; then
+    warn "PR brouillon ou étiquette impossible (git sdlc setup lancé ? plan GitHub ?) : PR simple"
+    gh pr create "${args[@]}"
+  fi
+}
+
+need_open_pr() {
+  load_prs
+  pr_open "$1" "$2" || die "aucune PR ouverte pour need/$1/$2"
+}
+
+# Remplit B_ID et B_STEP depuis la branche courante need/<id>/<étape>.
+branch_need() {
+  local b
+  b=$(git symbolic-ref --short -q HEAD 2>/dev/null) || return 1
+  [[ $b =~ ^need/([^/]+)/(intent|spec|build)$ ]] || return 1
+  B_ID=${BASH_REMATCH[1]} B_STEP=${BASH_REMATCH[2]}
+}
+
+# Étape visée quand seul l’id $1 est donné : celle de l’unique PR ouverte du besoin.
+step_of_open_pr() {
+  local steps
+  steps=$(pr_open_field "$1" 2 | sort -u)
+  [ -n "$steps" ] || die "aucune PR ouverte pour $1"
+  [ "$(printf '%s\n' "$steps" | wc -l)" -eq 1 ] \
+    || die "plusieurs PR ouvertes pour $1 : précisez l’étape ($(printf '%s' "$steps" | tr '\n' ' '))"
+  echo "$steps"
+}
+
+# Pour claim : l’étape en cours du besoin $1, ou la suivante si la précédente est fusionnée.
+step_to_claim() {
+  compute "$1" || die "besoin « $1 » introuvable"
+  case $CODE in
+    intent-accepted) echo spec ;;
+    spec-accepted)   echo build ;;
+    intent-*|spec-*|build-*) echo "${CODE%%-*}" ;;
+    *) die "$1 : $STAGE, aucune étape à prendre en charge" ;;
+  esac
+}
+
+# Remplit T_ID et T_STEP à partir de [<id> [<étape>]] : sans argument, la branche
+# need/<id>/<étape> courante ; avec l’id seul, l’étape de la branche courante si
+# elle porte ce besoin, sinon celle que donne la fonction $2 (step_of_open_pr, step_to_claim).
+resolve_target() {
+  local cmd=$1 fallback=$2; shift 2
+  local a
+  [ $# -le 2 ] || die "argument en trop : $3"
+  for a in "$@"; do case $a in -*) die "option inconnue : $a" ;; esac; done
+  T_ID=${1:-} T_STEP=${2:-}
+  if [ -z "$T_ID" ]; then
+    branch_need || die "usage : git sdlc $cmd [<id> [<étape>]] (sans argument : depuis une branche need/<id>/<étape>)"
+    T_ID=$B_ID T_STEP=$B_STEP
+  elif [ -z "$T_STEP" ]; then
+    if branch_need && [ "$B_ID" = "$T_ID" ]; then T_STEP=$B_STEP
+    else load_prs; T_STEP=$("$fallback" "$T_ID"); fi
+  fi
+  stage_of "$T_STEP" >/dev/null || die "étape inconnue : $T_STEP (intent, spec ou build)"
+  [ $# -ge 2 ] || echo "Besoin $T_ID, étape $T_STEP."
+}
+
+# -------------------------------------------------------------- commandes
+
+usage() {
+  cat <<EOF
+Usage : git sdlc <commande> [options]
+
+Suivi
+  status [<id>] [--porcelain] [--no-fetch] étape, acteur, prochaine action, preuves
+  board [--all] [--by-person] [--porcelain] [--no-fetch]
+                                           tableau de bord de tous les besoins
+
+Cycle d’un besoin (chaque étape = une PR vers $MAIN)
+  new <slug> [--id <id>] [--parent <id>] [--origin <origine>]
+                                           branche need/<date>-<slug>/intent + PR brouillon
+  claim [<id> [<intent|spec|build>]] [--no-push]
+                                           prend une étape : branche, PR brouillon, assignation
+  ready [<id> [<étape>]]                   sort la PR du brouillon : revue demandée
+  merge [--ready] [<id> [<étape>]]         fusionne la PR (gate de l’étape), trailers compris ;
+                                           --ready sort d’abord la PR du brouillon
+  reject [<id>] <raison>                   ferme les PR ouvertes avec l’étiquette sdlc:rejected
+  release [<YY.MM.DD>]                     release GitHub sur un tag YY.MM.DD[.V] (défaut : aujourd’hui)
+
+  Sans id, status, claim, ready, merge et reject visent la branche need/<id>/<étape>
+  courante ; avec l’id seul, l’étape est celle de l’unique PR ouverte du besoin
+  (claim : l’étape en cours, ou la suivante si la précédente est fusionnée).
+
+Administration
+  setup [--dry-run]                        réglages du dépôt, étiquettes, rulesets
+EOF
+}
+
+cmd_status() {
+  local id="" porcelain=0 e p
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --porcelain) porcelain=1 ;;
+      --no-fetch)  FETCH=0 ;;
+      -*) die "option inconnue : $1" ;;
+      *)  id=$1 ;;
+    esac
+    shift
+  done
+  if [ -z "$id" ]; then
+    branch_need || die "usage : git sdlc status [<id>] (sans id : depuis une branche need/<id>/<étape>)"
+    id=$B_ID
+  fi
+  refresh
+  compute "$id" || die "besoin « $id » introuvable (ni PR, ni branche need/$id/*, ni $IDIR/$id sur $MAIN)"
+
+  if [ "$porcelain" = 1 ]; then
+    printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$CODE" "$WHO" "$WHEN" "$NEXT"
+    return 0
+  fi
+  gate_evidence
+  printf 'Besoin    %s\n' "$id"
+  p=$(intent_field "$id" Product-Owner)
+  case $p in ""|"<"*) ;; *) printf 'PO        %s\n' "$p" ;; esac
+  printf 'Étape     %s  [%s]\n' "$STAGE" "$CODE"
+  printf 'Qui       %s (%s)\n' "$WHO" "$WHEN"
+  printf 'Suite     %s\n' "$NEXT"
+  if [ ${#EVID[@]} -gt 0 ]; then
+    printf 'Preuves\n'
+    for e in ${EVID[@]+"${EVID[@]}"}; do printf '  %s\n' "$e"; done
+  fi
+  p=$(intent_field "$id" Parent)
+  case $p in ""|—|-|"{{PARENT}}") ;; *) printf 'Parent    %s\n' "$p" ;; esac
+  e=$(children_of "$id" | tr '\n' ' ')
+  [ -z "${e// /}" ] || printf 'Enfants   %s(boucle Maintain)\n' "$e"
+}
+
+list_ids() {
+  {
+    cut -f1 "$PRS"
+    git for-each-ref --format='%(refname)' "refs/remotes/$REMOTE/need/" "refs/heads/need/" \
+      | sed -nE 's#^refs/(remotes/[^/]+|heads)/need/([^/]+)/[^/]+$#\2#p'
+    git ls-tree -d --name-only "$(main_ref):$IDIR" 2>/dev/null | grep -v '^_' || true
+    git for-each-ref --format='%(refname:lstrip=3)' refs/tags/rejected/
+  } | sort -u
+}
+
+board_header() { printf 'BESOIN\tÉTAPE\tQUI\tDEPUIS\tPROCHAINE ACTION\n'; }
+
+# GitHub peut mettre quelques secondes à exposer un changement d’état de PR :
+# attendre jusqu’à 10 s que la PR $1 soit dans l’état $2 (MERGED, CLOSED).
+wait_pr_state() {
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    [ "$(gh pr view "$1" --json state --jq .state 2>/dev/null)" != "$2" ] || return 0
+    sleep 1
+  done
+}
+
+# Ligne de board du besoin $1, relue après une action (new, claim, ready, merge, reject).
+# Dans un sous-shell : un échec de lecture n’annule pas l’action déjà faite.
+show_need() {
+  (
+    trap cleanup EXIT
+    cleanup; PRS=""
+    load_prs
+    compute "$1" || exit 0
+    echo
+    { board_header; printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$STAGE" "$WHO" "$WHEN" "$NEXT"; } | align
+  ) || warn "état de $1 illisible : git sdlc status $1"
+}
+
+cmd_board() {
+  local all=0 byperson=0 porcelain=0 id rows="" key
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --all)       all=1 ;;
+      --by-person) byperson=1 ;;
+      --porcelain) porcelain=1 ;;
+      --no-fetch)  FETCH=0 ;;
+      *) die "option inconnue : $1" ;;
+    esac
+    shift
+  done
+  [ "$all" = 1 ] || RELEASE_META=0
+  refresh
+  for id in $(list_ids); do
+    compute "$id" || continue
+    if [ "$all" = 0 ] && { [ "$CODE" = released ] || [ "$CODE" = rejected ]; }; then continue; fi
+    if [ "$byperson" = 1 ]; then key=$WHO; else key=$(printf '%02d' "$ORDER"); fi
+    rows+="$key"$'\t'"$id"$'\t'"$CODE"$'\t'"$STAGE"$'\t'"$WHO"$'\t'"$WHEN"$'\t'"$NEXT"$'\n'
+  done
+  if [ -z "$rows" ]; then echo "Aucun besoin en cours."; return 0; fi
+  rows=$(printf '%s' "$rows" | sort -t $'\t' -k1,1 -k2,2)
+  if [ "$porcelain" = 1 ]; then
+    cut -f2,3,5,6,7 <<<"$rows"
+  else
+    { board_header; cut -f2,4,5,6,7 <<<"$rows"; } | align
+  fi
+}
+
+# render_template <gabarit> <id> [parent] [origin] : le gabarit, champs {{…}} remplis.
+render_template() {
+  local author
+  author="$(git config user.name || echo '?')"
+  sed -e "s/{{ID}}/$(sed_escape "$2")/g" \
+      -e "s/{{AUTHOR}}/$(sed_escape "$author")/g" \
+      -e "s/{{DATE}}/$(date +%Y-%m-%d)/g" \
+      -e "s/{{PARENT}}/$(sed_escape "${3:-}")/g" \
+      -e "s/{{ORIGIN}}/$(sed_escape "${4:-}")/g" "$1"
+}
+
+cmd_new() {
+  local slug="" id="" parent="—" origin="idée" today author tpl file
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --id)     id=$2; shift ;;
+      --parent) parent=$2; origin=incident; shift ;;
+      --origin) origin=$2; shift ;;
+      -*) die "option inconnue : $1" ;;
+      *)  slug=$1 ;;
+    esac
+    shift
+  done
+  [ -n "$slug" ] || [ -n "$id" ] || die "usage : git sdlc new <slug> [--id <id>] [--parent <id>]"
+  today=$(date +%Y-%m-%d)
+  id=${id:-$today-$slug}
+  valid_id "$id" || die "identifiant invalide : $id (lettres, chiffres, . _ -)"
+  refresh
+  if branch_ref "$id" intent >/dev/null || on_main "$id" intent.md || pr_get "$id" intent; then
+    die "le besoin $id existe déjà"
+  fi
+  clean_tree
+
+  git switch -q --no-track -c "need/$id/intent" "$(main_ref)"
+  mkdir -p "$IDIR/$id"
+  file="$IDIR/$id/intent.md"
+  tpl="templates/intent.md"
+  author="$(git config user.name || echo '?')"
+  if [ -f "$tpl" ]; then
+    render_template "$tpl" "$id" "$parent" "$origin" > "$file"
+  else
+    warn "gabarit $tpl absent : squelette minimal utilisé"
+    printf '# Intent : %s\n\nAuthor: %s\nProduct-Owner: \nOrigin: %s\nParent: %s\n\n## Problème\n\n## Résultat attendu\n\n## Contraintes\n\n## Questions ouvertes\n' \
+      "$id" "$author" "$origin" "$parent" > "$file"
+  fi
+  git add "$file"
+  git commit -q -m "Intent : $id (brouillon)" -m "$(printf 'Need: %s\nStage: plan' "$id")"
+  git push -q -u "$REMOTE" HEAD
+  open_pr "$id" intent
+  [ "$origin" != incident ] || gh pr edit "need/$id/intent" --add-label sdlc:incident >/dev/null 2>&1 || true
+  echo "Rédigez $file avec Claude, poussez, puis : git sdlc ready $id intent"
+  show_need "$id"
+}
+
+cmd_claim() {
+  local push=1 pos=() id step st br file tpl
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --no-push) push=0 ;;
+      -*) die "option inconnue : $1" ;;
+      *) pos+=("$1") ;;
+    esac
+    shift
+  done
+  refresh
+  resolve_target claim step_to_claim ${pos[@]+"${pos[@]}"}
+  id=$T_ID step=$T_STEP
+  st=$(stage_of "$step")
+  valid_id "$id" || die "identifiant invalide : $id"
+  case $step in
+    spec)  on_main "$id" intent.md || warn "intent.md de $id pas encore fusionné sur $MAIN" ;;
+    build) on_main "$id" spec.md   || warn "spec.md de $id pas encore fusionnée sur $MAIN" ;;
+  esac
+  br="need/$id/$step"
+  if has_ref "refs/heads/$br"; then git switch -q "$br"
+  elif has_ref "refs/remotes/$REMOTE/$br"; then git switch -q --track -c "$br" "$REMOTE/$br"
+  else git switch -q --no-track -c "$br" "$(main_ref)"; fi
+  if ! pr_open "$id" "$step"; then
+    file="$IDIR/$id/$(file_of "$step")"
+    tpl="templates/$(file_of "$step")"
+    if [ ! -e "$file" ] && [ -f "$tpl" ]; then
+      mkdir -p "$IDIR/$id"
+      render_template "$tpl" "$id" > "$file"
+      git add -- "$file"
+      git commit -q -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")" -- "$file"
+    else
+      [ -e "$file" ] || warn "gabarit $tpl absent : $file à créer"
+      # --only : commit vide, même si l’index contient des modifications, qui y restent.
+      git commit -q --allow-empty --only -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")"
+    fi
+  fi
+  if [ "$push" = 0 ]; then
+    echo "$br pris en charge localement ; git sdlc claim $id $step publiera la branche et la PR."
+    show_need "$id"
+    return 0
+  fi
+  git push -q -u "$REMOTE" HEAD
+  open_pr "$id" "$step"
+  show_need "$id"
+}
+
+cmd_ready() {
+  resolve_target ready step_of_open_pr "$@"
+  need_open_pr "$T_ID" "$T_STEP"
+  gh pr ready "$P_NUM"
+  echo "PR #$P_NUM en revue : $(merger_of "$T_STEP") relit et fusionne."
+  show_need "$T_ID"
+}
+
+# Avant la fusion, la branche locale need/$1/$2 est supprimée (--delete-branch) :
+# signale les commits non poussés et, si c’est la branche courante, les modifications
+# non commitées, puis demande confirmation.
+local_work_check() {
+  local br="need/$1/$2" n=0 ans m msgs=()
+  has_ref "refs/heads/$br" || return 0
+  if has_ref "refs/remotes/$REMOTE/$br"; then
+    n=$(git rev-list --count "refs/remotes/$REMOTE/$br..refs/heads/$br")
+  fi
+  [ "$n" = 0 ] || msgs+=("$n commit(s) de $br non poussé(s)")
+  if [ "$(git symbolic-ref -q --short HEAD || true)" = "$br" ] \
+     && ! { git diff-files --quiet && git diff-index --quiet --cached HEAD; }; then
+    msgs+=("modifications non commitées sur $br")
+  fi
+  [ ${#msgs[@]} -gt 0 ] || return 0
+  for m in "${msgs[@]}"; do warn "attention : $m"; done
+  warn "la PR #$P_NUM sera fusionnée sans eux ; la branche locale sera supprimée"
+  [ -t 0 ] || die "fusion annulée : poussez ou commitez d’abord"
+  read -r -p "Fusionner quand même ? [o/N] " ans
+  case $ans in [oOyY]*) ;; *) die "fusion annulée" ;; esac
+}
+
+# Attend les checks requis de la PR $1 : juste après un push, GitHub met quelques
+# secondes à les déclarer, et le ruleset refuse la fusion tant qu'ils tournent.
+wait_checks() {
+  local i
+  echo "PR #$1 : attente des checks requis…"
+  for i in 1 2 3 4 5 6; do
+    [ "$(gh pr view "$1" --json statusCheckRollup --jq '.statusCheckRollup | length' 2>/dev/null)" = 0 ] || break
+    sleep 5
+  done
+  gh pr checks "$1" --watch --required --fail-fast -i 5 \
+    || warn "checks requis en échec ou absents : GitHub décidera si la fusion est possible"
+}
+
+cmd_merge() {
+  local ready=0 wait=0 pos=() ans
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --ready) ready=1 ;;
+      -*) die "option inconnue : $1" ;;
+      *) pos+=("$1") ;;
+    esac
+    shift
+  done
+  resolve_target merge step_of_open_pr ${pos[@]+"${pos[@]}"}
+  local id=$T_ID step=$T_STEP
+  need_open_pr "$id" "$step"
+  [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
+  [ "$P_CHECKS" != rouges ] || die "PR #$P_NUM : checks rouges"
+  local_work_check "$id" "$step"
+  if [ "$P_DRAFT" = draft ]; then
+    if [ "$ready" = 0 ]; then
+      [ -t 0 ] || die "PR #$P_NUM encore en brouillon : git sdlc merge --ready $id $step, ou git sdlc ready $id $step d’abord"
+      read -r -p "PR #$P_NUM encore en brouillon : la sortir du brouillon et fusionner ? [o/N] " ans
+      case $ans in [oOyY]*) ;; *) die "fusion annulée" ;; esac
+    fi
+    gh pr ready "$P_NUM"
+    # La sortie du brouillon relance les checks : laisser GitHub les redéclarer.
+    sleep 5
+    wait=1
+  fi
+  case $P_CHECKS in "en cours"|aucun) wait=1 ;; esac
+  [ "$wait" = 0 ] || wait_checks "$P_NUM"
+  local args
+  read -r -a args <<<"$MERGE_ARGS"
+  gh pr merge "$P_NUM" ${args[@]+"${args[@]}"}
+  wait_pr_state "$P_NUM" MERGED
+  do_fetch
+  echo "Gate $step franchi pour $id (PR #$P_NUM)."
+  show_need "$id"
+}
+
+cmd_reject() {
+  local id="" n count=0 reason prs ans
+  [ $# -ge 1 ] || die "usage : git sdlc reject [<id>] <raison>"
+  refresh
+  # Le premier argument est l’id s’il désigne un besoin connu ; sinon le besoin
+  # vient de la branche need/<id>/<étape> courante et tout est la raison.
+  if list_ids | grep -qxF -- "$1"; then
+    [ $# -ge 2 ] || die "raison manquante : git sdlc reject $1 <raison>"
+    id=$1; shift
+    reason="$*"
+  elif branch_need; then
+    # Un id mal saisi passerait pour le début de la raison et rejetterait le besoin
+    # de la branche courante : le rejet est irréversible, il se confirme.
+    id=$B_ID
+    reason="$*"
+    prs=$(pr_open_field "$id" 3 | sed 's/^/#/' | tr '\n' ' ')
+    warn "« $1 » n’est pas un besoin connu : rejet du besoin de la branche courante."
+    warn "besoin $id, raison « $reason », PR fermées : ${prs:-aucune (tag rejected/$id)}"
+    [ -t 0 ] || die "rejet annulé : sans terminal, précisez l’id : git sdlc reject $id <raison>"
+    read -r -p "Rejeter $id ? [o/N] " ans
+    case $ans in [oOyY]*) ;; *) die "rejet annulé" ;; esac
+  else
+    die "« $1 » n’est pas un besoin connu (git sdlc board --all) ; sans id, lancez depuis une branche need/<id>/<étape>"
+  fi
+  for n in $(pr_open_field "$id" 3); do
+    gh pr edit "$n" --add-label sdlc:rejected >/dev/null
+    gh pr close "$n" --comment "Rejet : $reason" --delete-branch
+    count=$((count + 1))
+  done
+  if [ "$count" = 0 ]; then
+    # Aucune PR ouverte (besoin déjà accepté, en attente) : la décision est tracée par un tag.
+    git tag -a "rejected/$id" "$(main_ref)" -m "Rejet : $id" -m "$reason"
+    git push -q "$REMOTE" "rejected/$id"
+    echo "Aucune PR ouverte : rejet tracé par le tag rejected/$id."
+  else
+    wait_pr_state "$n" CLOSED
+    echo "Besoin $id rejeté : $count PR fermée(s) avec l’étiquette sdlc:rejected."
+  fi
+  show_need "$id"
+}
+
+cmd_release() {
+  local day=${1:-$(date +%y.%m.%d)} name v=1
+  [[ $day =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]] || die "date de livraison attendue au format YY.MM.DD : $day"
+  do_fetch
+  name=$day
+  while has_tag "$name"; do v=$((v + 1)); name="$day.$v"; done
+  gh release create "$name" --target "$MAIN" --title "$name" --generate-notes
+  do_fetch
+}
+
+# Réglages GitHub : fusion par rebase (historique linéaire), étiquettes, rulesets.
+upsert_ruleset() {
+  local repo=$1 name=$2 json=$3 dry=$4 id
+  if [ "$dry" = 1 ]; then printf '%s\n' "$json"; return 0; fi
+  id=$(gh api "repos/$repo/rulesets" --jq ".[] | select(.name == \"$name\") | .id" 2>/dev/null) \
+    || die "rulesets inaccessibles sur $repo (dépôt privé sans GitHub Pro/Team ?)"
+  id=$(printf '%s' "$id" | head -n1)
+  if [ -n "$id" ]; then
+    printf '%s' "$json" | gh api -X PUT "repos/$repo/rulesets/$id" --input - --silent
+    echo "  ruleset $name mis à jour"
+  else
+    printf '%s' "$json" | gh api -X POST "repos/$repo/rulesets" --input - --silent
+    echo "  ruleset $name créé"
+  fi
+}
+
+cmd_setup() {
+  local dry=0 repo owner team bypass l n c d
+  [ "${1:-}" = --dry-run ] && dry=1
+  repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner) || die "dépôt GitHub introuvable"
+  owner=${repo%%/*}
+  run() { if [ "$dry" = 1 ]; then printf '  %s\n' "$*"; else "$@"; fi; }
+
+  echo "1/4 Fusion par rebase uniquement (historique linéaire, trailers portés par chaque commit)"
+  run gh api -X PATCH "repos/$repo" --silent \
+    -F allow_merge_commit=false -F allow_squash_merge=false -F allow_rebase_merge=true \
+    -F delete_branch_on_merge=true
+
+  echo "2/4 Étiquettes"
+  for l in "sdlc:intent|5319e7|Étape Plan : intent.md" \
+           "sdlc:spec|1d76db|Étape Design : spec.md" \
+           "sdlc:build|fbca04|Étape Build : plan.md et code" \
+           "sdlc:incident|d93f0b|Intent né d’un incident (boucle Maintain)" \
+           "sdlc:rejected|b60205|Besoin rejeté"; do
+    IFS='|' read -r n c d <<<"$l"
+    run gh label create "$n" --color "$c" --description "$d" --force
+  done
+
+  echo "3/4 Ruleset sdlc-main : PR obligatoire, historique linéaire, check sdlc-conventions"
+  upsert_ruleset "$repo" sdlc-main "$(cat <<'JSON'
+{
+  "name": "sdlc-main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    { "type": "required_linear_history" },
+    { "type": "pull_request", "parameters": {
+        "required_approving_review_count": 0,
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": true } },
+    { "type": "required_status_checks", "parameters": {
+        "strict_required_status_checks_policy": false,
+        "required_status_checks": [ { "context": "sdlc-conventions" } ] } }
+  ]
+}
+JSON
+)" "$dry"
+
+  echo "4/4 Ruleset sdlc-release-tags : tags YY.MM.DD[.V] réservés, immuables"
+  team=$(cfg releaseTeam "")
+  bypass=""
+  if [ -n "$team" ] && [ "$dry" = 0 ]; then
+    # en 404, gh api écrit le corps d'erreur sur stdout : ne garder qu'un id numérique
+    bypass=$(gh api "orgs/$owner/teams/$team" --jq .id 2>/dev/null) || bypass=""
+    [[ $bypass =~ ^[0-9]+$ ]] || bypass=""
+    [ -n "$bypass" ] || warn "équipe $owner/$team introuvable : seuls les admins du dépôt pourront livrer"
+  fi
+  if [ -n "$bypass" ]; then
+    bypass="{ \"actor_id\": $bypass, \"actor_type\": \"Team\", \"bypass_mode\": \"always\" }"
+  else
+    bypass='{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }'
+  fi
+  upsert_ruleset "$repo" sdlc-release-tags "{
+  \"name\": \"sdlc-release-tags\",
+  \"target\": \"tag\",
+  \"enforcement\": \"active\",
+  \"conditions\": { \"ref_name\": { \"include\": [\"refs/tags/${RELEASE_GLOBS[0]}\", \"refs/tags/${RELEASE_GLOBS[1]}\"], \"exclude\": [] } },
+  \"rules\": [ { \"type\": \"creation\" }, { \"type\": \"update\" }, { \"type\": \"deletion\" } ],
+  \"bypass_actors\": [ $bypass ]
+}" "$dry"
+  echo "Terminé. La fusion est la gate : réservez le droit d’écriture à ceux qui la franchissent."
+}
+
+# ------------------------------------------------------------------ entrée
+
+resolve_main
+cmd=${1:-help}
+[ $# -gt 0 ] && shift
+case $cmd in
+  status)  cmd_status "$@" ;;
+  board)   cmd_board "$@" ;;
+  new)     cmd_new "$@" ;;
+  claim)   cmd_claim "$@" ;;
+  ready)   cmd_ready "$@" ;;
+  merge)   cmd_merge "$@" ;;
+  reject)  cmd_reject "$@" ;;
+  release) cmd_release "$@" ;;
+  setup)   cmd_setup "$@" ;;
+  help|-h|--help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac

@@ -8,5 +8,5 @@ case $entree in
   *) exit 0 ;;
 esac
 hooks_git_actifs && exit 0
-echo 'Commit refusé : les hooks git ne sont pas actifs, ce commit ne serait pas contrôlé. Demandez à l'"'"'humain de lancer `git config core.hooksPath hooks`.' >&2
+echo 'Commit refusé : les hooks git ne sont pas actifs, ce commit ne serait pas contrôlé. Demandez à l'"'"'humain de lancer `git config core.hooksPath .githooks`.' >&2
 exit 2

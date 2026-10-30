@@ -1,151 +1,177 @@
 # ai-factory
 
-Outillage du SDLC natif IA : chaque étape produit un artefact versionné dans Git que l'étape suivante lit.
+Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitHub. Chaque étape d’un besoin est une pull request vers `main`, relue sur GitHub ; sa fusion franchit la gate. Il répond à deux questions : qui travaille sur quoi, et à quelle étape en est chaque besoin. L’étape se déduit de l’état réel des branches, des PR et des tags ; elle n’est jamais saisie à la main.
 
-`intent.md` → `spec.md` → `plan.md` → diff + tests → PR revue → production
+## Contenu
 
-Ce README couvre les étapes **Intent** (lot 2), **Spec** (lot 3) et **Plan** (lot 4a).
-
-## Ce que contient le dépôt
-
-| Chemin | Rôle |
+| Fichier | Rôle |
 |---|---|
-| `CLAUDE.md` | Contexte lu par l'agent à chaque session |
-| `requirements/open/NN-lot/` | Un dossier par lot non démarré, avec son `intent.md` |
-| `requirements/in-progress/NN-lot/` | Le même dossier une fois le lot en cours (convention confirmée par le PO) |
-| `requirements/closed/NN-lot/` | Le même dossier une fois le lot terminé |
-| `templates/intent.md` | Modèle d'intent à remplir |
-| `templates/spec.md` | Modèle de spec |
-| `templates/plan.md` | Modèle de plan |
-| `.claude/skills/redaction-intent` | Rédige un intent depuis un besoin brut |
-| `.claude/skills/controle-taille-intent` | Dit si un intent doit être découpé |
-| `.claude/skills/generation-spec` | Génère `spec.md` depuis un intent validé |
-| `.claude/skills/generation-plan` | Conduit la séance de plan et écrit `plan.md` sur un amont validé |
-| `hooks/pre-commit` | Refuse un `intent.md` auquel il manque une section obligatoire, un nouveau `spec.md` dont l'intent n'est pas validé, un nouveau `plan.md` dont l'amont n'est pas validé, et un credential en clair dans une ligne ajoutée |
-| `hooks/tests/` | Tests des hooks git : sections de l'intent (`hook-intent`), intent validé (`hook-spec`), amont du plan validé (`hook-plan`), credential en clair (`hook-credential`) |
-| `.claude/settings.json` | Déclare les hooks Claude Code de `.claude/hooks/` |
-| `.claude/hooks/` | Hooks Claude Code : signalent à l'ouverture de session, et bloquent les `git commit` de l'agent, tant que les hooks git ne sont pas actifs ; sur une branche `bugfix/`, demandent confirmation avant que l'agent modifie ou supprime un test existant |
-| `.claude/hooks/tests/` | Tests des hooks Claude Code : activation des hooks git (`hook-activation`), protection des tests (`protection-tests`) |
-| `scripts/verifier.sh` | Lance tous les `run.sh` du dépôt ; sort en erreur si l'un échoue |
-| `scripts/ai-factory.sh` | Crée un nouveau projet équipé de l'outillage (`create`), puis y répercute les évolutions d'ai-factory (`update`) |
-| `templates/projet/` | Modèles du `CLAUDE.md` et du `README.md` d'un nouveau projet ; non copiés tels quels |
-| `scripts/tests/ai-factory/` | Tests de `scripts/ai-factory.sh` sur un faux clone d'ai-factory |
+| `bin/git-sdlc` | à placer dans le `PATH` de chaque poste : `git sdlc …` |
+| `.github/workflows/sdlc.yml` | lance le check requis `sdlc-conventions` sur chaque PR |
+| `.github/scripts/sdlc-check.sh` | règles du check : trailers, périmètre par étape, artefacts présents, credentials en clair |
+| `.githooks/commit-msg` | ajoute `Need:` et `Stage:` sur les branches `need/*`, `Need: none` ailleurs |
+| `.githooks/pre-commit` | refuse un `intent.md` auquel il manque une section du gabarit, et un credential en clair dans une ligne ajoutée |
+| `.githooks/lib/credential.sh` | détection des credentials, partagée par le pre-commit et le check CI |
+| `.sdlc/config` | réglages partagés (branche principale, arguments de fusion, équipe release facultative…) |
+| `templates/intent.md` | gabarit copié par `git sdlc new` |
+| `templates/spec.md`, `plan.md` | gabarits copiés par `git sdlc claim` (étapes spec et build), remplis par les skills de spec et de plan |
+| `.claude/skills/` | skills Claude Code des étapes (voir « Les skills de Claude ») |
+| `.claude/settings.json`, `.claude/hooks/` | hooks Claude Code : signalent à l’ouverture de session, et bloquent les `git commit` de Claude, tant que `core.hooksPath` ne vaut pas `.githooks` |
+| `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
+| `templates/projet/CLAUDE.md`, `README.md` | modèles du `CLAUDE.md` et du `README.md` du dépôt produit, remplis par `scripts/deploy.sh` ; non copiés tels quels |
+| `scripts/deploy.sh` | installe le kit dans un dépôt produit, puis y répercute ses évolutions ; reste dans le dépôt du kit |
+| `scripts/verify.sh` | lance tous les tests du kit (`<livrable>/tests/<nom>/run.sh`) ; reste dans le dépôt du kit |
 
-## Mise en route (une fois)
+Prérequis : git 2.30+, bash 3.2+ (celui de macOS convient), GitHub CLI `gh` installé et authentifié (`gh auth login`) sur chaque poste. Les rulesets et les PR brouillon sur un dépôt privé dépendent de votre offre GitHub. Sans PR brouillon, le script se rabat sur une PR simple.
 
-1. Activer le hook : `git config core.hooksPath hooks`. Tant que ce n'est pas fait, Claude Code le signale à l'ouverture de chaque session et refuse les `git commit` de l'agent. Claude Code peut demander d'approuver les hooks de `.claude/settings.json` à leur première apparition : sans approbation, ni signalement ni blocage. Lancez Claude Code depuis la racine du dépôt : lancé depuis un dossier parent, il ne lit pas `.claude/settings.json` et aucun de ces hooks ne joue.
-2. Vérifier que `.claude/` est suivi par git. Si votre `.gitignore` global ignore les dossiers cachés (règle `.*/`), les modifications de `.claude/` (skills, hooks, `settings.json`) demandent `git add -f`. Un script de `.claude/hooks/` non suivi fait échouer son hook sans rien bloquer.
-3. Vérifier l'installation : `scripts/verifier.sh`, depuis la racine (tout doit être `OK`, code de sortie 0).
+## Installation
 
-## Créer un intent en partant de zéro
+**1. Dans le dépôt produit**, une seule fois, par un administrateur du dépôt, depuis un clone du kit :
 
-Règle de base : **un lot = un sous-intent = une PR**.
+```sh
+<clone du kit>/scripts/deploy.sh install /chemin/du/depot [<nom du projet>]
+cd /chemin/du/depot
+# Fusionnez puis supprimez les .nouveau listés, complétez CLAUDE.md et README.md, puis :
+git config core.hooksPath .githooks
+git add -A && git commit -m "Initialisation du SDLC" && git push
+cp <clone du kit>/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # si absent : setup en a besoin (étape 2)
+git sdlc setup --dry-run    # affiche ce qui va être configuré
+git sdlc setup              # applique
+```
 
-1. **Créer le dossier du lot** : `requirements/open/NN-nom-du-lot/` (numéro suivant, nom court en minuscules). Quand le lot démarre, le dossier est déplacé tel quel vers `requirements/in-progress/NN-nom-du-lot/`, et les liens qui le citent (par exemple dans le `Dépend de` d'un autre lot) sont mis à jour.
-2. **Rédiger l'intent** : dans Claude Code, demandez « rédiger un intent » (skill `redaction-intent`) en donnant votre besoin brut en texte libre et le dossier cible.
-   - Le skill pose les questions manquantes, une série à la fois.
-   - Il n'invente rien : ce que vous ne savez pas va dans « Questions ouvertes ».
-   - Il écrit `intent.md` avec `Statut : draft`, et refuse d'écraser un intent existant.
-   - Sans skill, copiez `templates/intent.md` dans le dossier et remplissez-le à la main.
-3. **Compléter ce que seul le PO décide** : la section « Priorité » (niveau Haute, Moyenne ou Basse, justification, échéance éventuelle). Elle reste « à définir par le PO » tant qu'il ne l'a pas renseignée.
-4. **Contrôler la taille** : demandez « contrôle de taille » (skill `controle-taille-intent`). Il évalue 8 signaux de découpage et propose des sous-intents si l'intent ne tient pas en une PR. Il ne modifie rien.
-5. **Committer** : le hook vérifie que les sections obligatoires sont présentes et nomme celles qui manquent. Il contrôle la présence, pas la qualité du contenu.
-6. **Faire valider par le PO** : le PO relit puis passe lui-même `**Statut :** draft` à `**Statut :** validé` (écriture exacte, avec l'accent). Aucun skill ni agent ne le fait.
+Le dépôt peut être existant ou vide ; un dossier absent est créé. Le script ne fait aucune opération Git dans le dépôt et lit le kit au commit `HEAD` du clone (les modifications non commitées sont ignorées et signalées). Il copie `.claude/`, `.github/`, `.githooks/`, `.sdlc/`, `templates/` et `REVIEW.md`, sans les dossiers `tests/` du kit ni `templates/projet/`, et produit `CLAUDE.md` et `README.md` depuis `templates/projet/` (nom du projet par défaut : celui du dossier). Un fichier déjà présent avec un autre contenu, par exemple un `.claude/settings.json`, un `CLAUDE.md` ou un `README.md` existant, est conservé : la version du kit est écrite à côté en `<fichier>.nouveau`, à fusionner à la main puis supprimer. Pour `settings.json`, ajoutez les entrées `SessionStart` et `PreToolUse` du kit.
 
-### Sections de l'intent
+Le script écrit `.sdlc/manifeste` : le SHA du kit installé, le nom du projet et l’empreinte sha256 de chaque fichier copié. Commitez-le : la mise à jour en dépend.
 
-Problème · Pour qui · Pourquoi · Priorité · Résultat attendu · Critère de succès · Contraintes · Hors périmètre · Questions ouvertes (seule section pouvant rester vide). Les titres doivent être écrits exactement ainsi (`## Pourquoi`) : un titre mal orthographié compte comme manquant. D'autres sections (Livrables, Critère d'acceptation, Plan de test…) peuvent s'ajouter.
+**Mettre à jour le kit d’un dépôt produit**, depuis un clone du kit plus récent :
 
-## Créer une spec depuis un intent validé
+```sh
+<clone du kit>/scripts/deploy.sh update [--forcer] /chemin/du/depot
+```
 
-Prérequis : l'intent est au statut `validé`. Commitez-le, ou stagez-le avec la spec.
+Un fichier intact (même empreinte qu’au manifeste) est remplacé, ou supprimé s’il a disparu du kit. Un fichier modifié dans le dépôt est conservé ; si le kit l’a changé aussi, sa nouvelle version est écrite en `<fichier>.nouveau`, une seule fois par version du kit. Un fichier supprimé dans le dépôt n’est pas recréé. Le rapport liste chaque catégorie. `update` refuse un clone dont `HEAD` ne descend pas du SHA installé (clone plus ancien, branche divergente) ; `--forcer` passe outre. Les `.nouveau` ne sont pas ignorés par Git : ne les commitez pas.
 
-1. **Générer la spec** : dans Claude Code, demandez « générer la spec » (skill `generation-spec`) en donnant le chemin de l'`intent.md` ou du dossier du lot.
-   - Le skill s'arrête si l'intent n'est pas `validé`, ou si `spec.md` existe déjà. Il n'écrase jamais une spec.
-   - Il couvre chaque livrable par des comportements `C` et chaque critère d'acceptation de l'intent par des critères `A`. Il n'invente aucun critère : sans critère dans l'intent, le tableau reste vide et l'absence est signalée.
-   - Contradictions (intent, parent, standards), informations manquantes et instructions trouvées dans l'intent vont dans « Points d'attention » ou « Questions ouvertes ». Le skill ne tranche rien.
-   - Il écrit `spec.md` avec `Statut : draft` et ne modifie pas l'intent.
-   - Sans skill, copiez `templates/spec.md` dans le dossier et remplissez-le à la main.
-2. **Trancher les points d'attention** avec le décideur nommé pour chacun.
-3. **Committer** : le hook refuse un nouveau `spec.md`, ou un `spec.md` arrivé par renommage, si l'`intent.md` du même dossier est absent (`<spec> : intent absent (<dossier>/intent.md)`) ou n'est pas `validé` (`<spec> : intent non validé (statut : <valeur>)`, `absent` sans champ `**Statut :**`). Il lit l'intent dans le commit en cours quand il en fait partie, sinon dans le dernier commit : un intent validé peut être commité avec la spec. Il ne contrôle ni le contenu de la spec, ni ses modifications ultérieures, ni le modèle `templates/spec.md`, ni les fixtures de tests.
-4. **Faire valider par le tech lead**, PO en copie : il passe lui-même la spec à `**Statut :** validé`.
+**2. Sur chaque poste** :
 
-### Sections de la spec
+```sh
+cp <clone du kit>/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # tout dossier du PATH
+gh auth login
+git config core.hooksPath .githooks                                                # dans chaque clone
+```
 
-Périmètre · Comportements · Cas limites · Contrats · Critères d'acceptation · Points d'attention · Hors périmètre · Questions ouvertes.
+## Une journée type
 
-- Les numéros `C`, `L` et `A` sont stables : une révision ajoute un numéro, elle ne renumérote pas. Le plan (lot 4a) et la recette (lot 7) s'y réfèrent.
-- Critères d'acceptation : `| # | Critère | Étant donné | Quand | Alors | Type |`, avec `Type` = `Automatisé`, `Manuel` ou `Humain`. Une ligne = un scénario de recette.
+```sh
+# Initiatrice (Jade) : capter l’intent avec Claude
+git sdlc new claims-status        # branche need/2026-10-28-claims-status/intent + PR brouillon
+#   … rédaction avec Claude, commits, git push …
+git sdlc ready 2026-10-28-claims-status intent       # revue demandée au PO
 
-## Produire le plan
+# PO (Paul) : relire sur GitHub, puis fusionner
+git sdlc merge 2026-10-28-claims-status intent       # gate franchi
 
-Prérequis : la spec est au statut `validé` ; sans spec, l'intent est au statut `validé`. Commitez-les, ou stagez-les avec le plan.
+# Spec : produite avec Claude par l’initiatrice ou un analyste, fusionnée par le PO
+git sdlc claim 2026-10-28-claims-status spec      # copie templates/spec.md dans spec.md
+#   … spec.md, push, git sdlc ready … ; Paul relit et fusionne
 
-1. **Lancer la séance** : dans Claude Code, demandez « générer le plan » (skill `generation-plan`) en donnant le dossier du lot ou le chemin de son `intent.md`.
-   - Le skill refuse, sans rien écrire, si l'intent est absent, si la spec existe sans être `validé` (pas de repli sur l'intent), ou, sans spec, si l'intent n'est pas `validé`. Il lit le statut dans l'arbre de travail, et rappelle de stager un amont validé non commité.
-   - Il passe en plan mode, lit l'intent, la spec et le code concerné, puis vous interroge : ce que le changement peut casser, l'étape la plus risquée, les options écartées, et si le changement est à risque.
-   - Il signale un numéro `C`, `L` ou `A` de la spec qui n'est rattaché à aucune étape. Au-delà de 7 étapes, ou avec des étapes indépendantes, il avertit que l'intent est peut-être à découper, sans bloquer.
-   - Il écrit `plan.md` en `draft` à la sortie du plan mode, que vous accordez. S'il révise un plan `validé`, il le repasse en `draft`.
-   - Sans skill, copiez `templates/plan.md` dans le dossier et remplissez-le à la main.
-2. **Committer le plan** avant tout code. Le hook refuse un nouveau `plan.md`, ou un `plan.md` arrivé par renommage, si l'`intent.md` du même dossier est absent (`<plan> : intent absent (<dossier>/intent.md)`), si la `spec.md` du dossier n'est pas `validé` (`<plan> : spec non validée (statut : <valeur>)`), ou, sans spec, si l'intent n'est pas `validé` (`<plan> : intent non validé (statut : <valeur>)`). Il lit l'intent et la spec dans le commit en cours quand ils en font partie, sinon dans le dernier commit : un amont validé peut être commité avec le plan. Il ne contrôle ni le contenu du plan, ni ses modifications ultérieures, ni le modèle `templates/plan.md`, ni les fixtures de tests.
-3. **Faire valider** par le développeur, ou par le tech lead si `À risque` vaut `oui` : il passe lui-même le plan à `**Statut :** validé`.
-4. **Implémenter** : une étape du plan = un commit. Si l'implémentation s'écarte du plan, mettez `plan.md` à jour dans le même commit ; un plan `validé` modifié repasse en `draft` et doit être revalidé.
+# Dev (Dina) : plan mode, puis code
+git sdlc claim 2026-10-28-claims-status build     # copie templates/plan.md dans plan.md
+#   … plan.md d’abord, puis le code et les tests, push, git sdlc ready …
 
-### Sections du plan
+# Tech lead (Léa) : revue selon REVIEW.md, puis gate
+git sdlc merge 2026-10-28-claims-status build
 
-En-tête : `Spec` · `Intent` · `Auteur` · `Statut` · `À risque` · `Validation` · `Base`. Sections : Prérequis · Fichiers touchés · Étapes · Tests à écrire · Couverture de la spec · Risques · Hors périmètre.
+# Release manager (Rémi)
+git sdlc release                  # release GitHub sur le tag YY.MM.DD du jour (.2, .3… si déjà livré)
+git sdlc release 26.11.04         # ou à la date de mise en production prévue
 
-- Couverture de la spec : `| Réf. | Étape |`, chaque numéro `C`, `L` et `A` rattaché à au moins une étape ; « Sans objet » sans spec.
+# Tout le monde
+git sdlc status 2026-10-28-claims-status
+git sdlc board                    # besoins en cours, triés par étape
+git sdlc board --by-person        # regroupés par personne ou équipe
+git sdlc board --all              # y compris livrés et rejetés
+```
 
-## Ranger les livrables
+`new`, `claim`, `ready`, `merge` et `reject` affichent ensuite la ligne de `git sdlc board` du besoin, relue sur GitHub.
 
-- Les livrables (hooks, skills, templates, scripts, documentation) se trouvent hors de `requirements/` et n'y renvoient pas. `requirements/` ne contient que les artefacts des lots (intent, spec, plan, recette) et n'est pas copié dans un nouveau projet.
-- Les tests automatisés d'un livrable vont dans `<dossier du livrable>/tests/<nom>/` (`run.sh` et `fixtures/`), à un chemin indépendant du lot qui l'a produit : par exemple `hooks/tests/<nom>/`, `.claude/hooks/tests/<nom>/`, `scripts/tests/<nom>/`.
-- Seuls les tests d'exigence (recette des critères d'acceptation d'un lot, jeux de données des skills compris) restent dans le dossier du lot.
+Depuis une branche `need/<id>/<étape>`, `status`, `claim`, `ready`, `merge` et `reject` se lancent sans id : `git sdlc status`, `git sdlc ready`, `git sdlc reject "<raison>"`. Avec l’id seul (`git sdlc merge <id>`), l’étape est celle de l’unique PR ouverte du besoin ; s’il y en a plusieurs, précisez-la. `git sdlc claim <id>` prend l’étape en cours du besoin, ou la suivante si la précédente est fusionnée (spec après l’intent, build après la spec). Le besoin et l’étape déduits sont affichés avant l’action. `reject` sans id demande confirmation, et refuse sans terminal : un id mal saisi passerait sinon pour le début de la raison.
 
-## Créer un nouveau projet
+`merge` refuse une PR encore en brouillon. En terminal, il propose de la sortir du brouillon puis de fusionner ; `git sdlc merge --ready` le fait sans question. Si les checks requis tournent encore (juste après un push ou la sortie du brouillon, qui relance `sdlc-conventions`), `merge` les attend avant de fusionner : le ruleset refuserait la fusion.
 
-Depuis un clone d'ai-factory à jour :
+Avant de fusionner, `merge` signale les commits de la branche locale `need/<id>/<étape>` absents de la branche distante, et les modifications non commitées si c’est la branche courante : la fusion porte sur la PR telle qu’elle est sur GitHub, et `--delete-branch` supprime la branche locale. En terminal, il demande confirmation ; sans terminal, il refuse.
 
-1. `scripts/ai-factory.sh create <dossier cible> <nom du projet>`. Le dossier cible doit être absent ou vide.
-   - Sont copiés les fichiers suivis par git à `HEAD` de `.claude/`, `hooks/`, `scripts/`, `templates/` (sauf `templates/projet/`) et `.gitignore`. Une modification non commitée du clone est ignorée, avec un avertissement.
-   - `CLAUDE.md` et `README.md` sont produits depuis `templates/projet/`, avec le nom du projet. Leurs sections propres au projet (architecture, erreurs fréquentes) sont à remplir.
-   - `requirements/`, `documents/` et le reste d'ai-factory ne sont pas copiés.
-   - `.ai-factory/manifeste` garde le SHA d'ai-factory et l'empreinte de chaque fichier copié : c'est ce qui permet les mises à jour.
-2. Suivre la marche à suivre affichée, que le script n'exécute pas : `cd <dossier cible>`, `git init`, `git config core.hooksPath hooks`. Avec un `.gitignore` global `.*/` : `git add -f .claude .ai-factory`.
-3. `bash scripts/verifier.sh` dans le projet doit sortir en 0.
+Toutes ces actions restent possibles dans l’interface GitHub. `git sdlc` lit l’état réel des PR : une PR fusionnée dans le navigateur apparaît comme gate franchi dans `board`.
 
-La liste des dossiers copiés est écrite en tête de `scripts/ai-factory.sh` (`LISTE_BLANCHE`), à un seul endroit.
+## Branches et trailer `Stage:`
 
-## Mettre à jour un projet
+Le trailer `Stage:` porte l’étape du cycle du playbook, pas le nom de la branche. Le hook `commit-msg` et `git sdlc` appliquent cette correspondance :
 
-Depuis la racine du projet : `scripts/ai-factory.sh update [--forcer] <chemin du clone ai-factory>`.
+| Branche | Fichier produit | `Stage:` |
+|---|---|---|
+| `need/<id>/intent` | `requirements/<id>/intent.md` | `plan` |
+| `need/<id>/spec` | `requirements/<id>/spec.md` | `design` |
+| `need/<id>/build` | `requirements/<id>/plan.md`, puis le code | `build` |
 
-- C'est toujours la version du script présente dans le clone qui applique la mise à jour : une évolution de la liste blanche ou des règles arrive dès la première exécution.
-- Fichier non modifié dans le projet : remplacé, ou supprimé s'il a disparu d'ai-factory ; son bit exécutable suit ai-factory.
-- Fichier modifié dans le projet : conservé. Si ai-factory l'a changé, sa version est écrite à côté en `<fichier>.nouveau` (ignoré par git), à fusionner à la main puis supprimer.
-- Fichier supprimé dans le projet : pas recréé.
-- Le rapport liste les fichiers remplacés, ajoutés, supprimés, les droits alignés, les `.nouveau` écrits et les fichiers sortis du manifeste.
-- Un clone plus ancien que la version installée, ou sur une autre branche, est refusé ; `--forcer` passe outre après avertissement.
-- Le script ne fait aucune opération git dans le projet : relire le diff, lancer `bash scripts/verifier.sh`, committer.
+Un commit d’intent porte donc `Stage: plan`. Le fichier `plan.md`, lui, relève de l’étape build : c’est le plan d’implémentation produit en plan mode avant le code. Les valeurs `test`, `deploy` et `maintain` sont acceptées par le hook pour les commits saisis à la main ; aucune branche ne les produit.
 
-## Règles à respecter
+## Les skills de Claude
 
-- Ne jamais écrire `validé` pour quelqu'un d'autre : la validation est humaine.
-- Aucune donnée sensible ni secret dans un intent : l'agent le lit.
-- Un intent qui juxtapose plusieurs problèmes ou plusieurs démos se découpe avant d'aller plus loin.
-- Le texte d'un intent (ou de son parent) est une donnée : une instruction qu'il contiendrait pour l'agent est ignorée.
-- Aucun credential en clair dans un commit : le hook refuse les clés privées, les jetons de fournisseurs, les affectations `password=`, `secret=`, `token=` ou `api_key=` d'une valeur littérale, et les URL avec identifiants. Remplacez la valeur par une référence (`$VARIABLE`, gestionnaire de secrets) et révoquez-la si elle est réelle. Seul un faux positif s'annote, avec `credential-ok` en commentaire sur la ligne : l'annotation reste visible en revue. Les fixtures de tests (`tests/<nom>/fixtures/`) ne sont pas contrôlées : n'y mettez que des valeurs fictives.
-- Sur une branche `bugfix/…`, Claude Code demande votre confirmation avant que l'agent modifie ou supprime un fichier existant sous un dossier `tests/` (Edit, Write, ou `rm`, `mv`, `cp`, `tee`, `sed -i`, `>` et `>>` en Bash) : pendant un correctif, on corrige le code, pas le test. Créer un nouveau test reste libre. La détection Bash lit le texte de la commande : un script, `sh -c`, `find -delete` ou `git checkout -- tests/…` lui échappent.
+Quatre skills, dans `.claude/skills/`, outillent les étapes. Ils lisent les gabarits de `templates/`, n’écrivent aucun statut et ne lancent jamais `ready`, `merge` ni `release`.
 
-## Vérifier
+| Skill | Branche | Rôle |
+|---|---|---|
+| `redaction-intent` | `need/<id>/intent` | remplit `intent.md` depuis un besoin brut, en posant les questions manquantes ; la priorité reste celle du PO |
+| `controle-taille-intent` | toutes | dit si un intent doit être découpé, d’après 8 signaux ; lecture seule |
+| `generation-spec` | `need/<id>/spec` | écrit `spec.md` depuis l’intent fusionné : comportements C, cas limites L, critères d’acceptation A en Étant donné / Quand / Alors |
+| `generation-plan` | `need/<id>/build` | conduit la séance de plan en plan mode, puis écrit `plan.md` : fichiers touchés, étapes = commits, tests, risques, couverture des C, L, A |
 
-- `scripts/verifier.sh`, depuis la racine : lance tous les `run.sh` du dépôt, affiche `OK` ou `ÉCHEC` pour chacun puis un récapitulatif, et sort en erreur si l'un échoue.
-- `bash hooks/tests/hook-intent/run.sh` : sections obligatoires de l'intent.
-- `bash hooks/tests/hook-spec/run.sh` : refus d'une spec dont l'intent n'est pas validé.
-- `bash hooks/tests/hook-plan/run.sh` : refus d'un plan sans intent ou dont l'amont n'est pas validé.
-- `bash hooks/tests/hook-credential/run.sh` : refus d'un credential en clair.
-- `bash scripts/tests/ai-factory/run.sh` : création et mise à jour d'un projet par `scripts/ai-factory.sh`.
-- `bash .claude/hooks/tests/hook-activation/run.sh` : signalement et blocage tant que les hooks git ne sont pas actifs.
-- `bash .claude/hooks/tests/protection-tests/run.sh` : confirmation demandée avant de modifier un test existant sur une branche `bugfix/`.
-- La recette manuelle d'un skill (jeux de données, résultats) est consignée dans le dossier du lot qui l'a livré.
+L’amont est accepté quand sa PR est fusionnée : le skill de spec refuse tant que `intent.md` n’est pas sur `main`, celui de plan tant que `spec.md` n’y est pas. Le check `sdlc-conventions` applique la même règle à la PR.
+
+## Comment l’étape et « qui » sont calculés
+
+Pour l’étape en cours, l’état de la PR détermine qui a la main :
+
+| État de la PR | Étape affichée | « Qui » |
+|---|---|---|
+| brouillon | `<Étape> en cours` | assigné(e)s, à défaut l’auteur |
+| prête (hors brouillon) | `<Étape> en revue, à fusionner` | relecteurs sollicités, à défaut PO ou tech lead |
+| corrections demandées | `<Étape> : corrections demandées` | assigné(e)s, à défaut l’auteur |
+| fusionnée, étape suivante pas commencée | `Intent accepté…`, `Spec acceptée…`, `Prêt à livrer` | rôle qui doit agir : analyste, Dev, RM |
+
+L’auteur d’une fusion n’apparaît pas dans QUI : `git sdlc status` l’indique dans les preuves.
+
+L’ordre de priorité est le suivant :
+
+1. PR fermée avec `sdlc:rejected`, ou tag `rejected/<id>` → **Rejeté**.
+2. PR build fusionnée dont le dernier commit est contenu dans un tag `YY.MM.DD[.V]` → **Livré** ; sinon **Prêt à livrer**.
+3. PR build ouverte → son état ci-dessus ; sinon branche build sans PR → **en cours (sans PR)**.
+4. PR spec fusionnée → **Spec acceptée** ; sinon PR spec ouverte, puis branche spec sans PR.
+5. PR intent fusionnée → **Intent accepté** ; sinon PR intent ouverte, puis branche intent sans PR.
+
+`status` affiche aussi les preuves : chaque gate franchi (date, PR, auteur de la fusion), l’état des checks, et les incidents enfants (`Parent: <id>`).
+
+## La revue par Claude
+
+`REVIEW.md` est écrit pour être lu par Claude comme par les humains. Deux intégrations décrites dans le playbook s’y branchent sans modifier le kit :
+
+- **Code Review géré** : un administrateur l’active et choisit les dépôts ; la revue suit `REVIEW.md`. Documentation : https://code.claude.com/docs/en/code-review
+- **claude-code-action** dans vos propres Actions : un commentaire `@claude` sur la PR demande une correction, poussée sur la branche. Documentation : https://code.claude.com/docs/en/github-actions
+
+Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion, faite par un humain.
+
+## CLAUDE.md et README.md du dépôt produit
+
+`scripts/deploy.sh install` produit le `CLAUDE.md` du dépôt depuis `templates/projet/CLAUDE.md` : section SDLC remplie (branches, trailers, gates humains, skills, vérification, secrets), sections du projet à compléter. Si le dépôt a déjà un `CLAUDE.md`, le modèle arrive en `CLAUDE.md.nouveau` : reportez-en la section SDLC.
+
+Il produit de même le `README.md` depuis `templates/projet/README.md` : mode d’emploi du SDLC pour l’équipe (mise en route d’un poste, cycle d’un besoin avec `git sdlc`, suivi, règles, mise à jour du kit), présentation, contenu et architecture du projet à compléter. Un `README.md` existant est conservé et le modèle arrive en `README.md.nouveau` : reportez-en les sections SDLC.
+
+## Points d’attention
+
+- **Séparation des tâches.** Sans approbation requise, GitHub laisse toute personne ayant le droit d’écriture fusionner, y compris l’auteur de la PR. Le rôle (PO pour intent et spec, tech lead pour le build) et « l’auteur ne fusionne pas sa propre PR » sont des conventions : `status` les rend visibles, rien ne les impose. Réservez le droit d’écriture en conséquence.
+- **Hooks client.** `commit-msg` et `pre-commit` se contournent avec `--no-verify`, et ne jouent pas sans `git config core.hooksPath .githooks` ; les hooks Claude Code le signalent et bloquent alors les commits de Claude. Le check `sdlc-conventions`, requis par le ruleset, revérifie côté GitHub le trailer `Need:`, le périmètre des fichiers et les credentials en clair ; la valeur de `Stage:` et les sections de l’intent ne sont contrôlées que par les hooks.
+- **Credentials.** La détection repère des formes connues (clé privée, jetons AWS, GitHub, Anthropic, Slack, affectation `password=…`, URL avec identifiants), pas tous les secrets. Une ligne marquée `credential-ok` et les fichiers sous `tests/<nom>/fixtures/` sont ignorés : la revue reste la dernière barrière. Un credential poussé est à révoquer, même retiré ensuite.
+- **Mode de fusion.** Seul le rebase garde les trailers `Need:`/`Stage:` sur chaque commit ; un squash les fusionnerait au gré du message. `setup` désactive squash et merge commit. `git sdlc merge` appelle `gh pr merge --rebase --delete-branch` (clé `mergeArgs` de `.sdlc/config`) : la branche distante et la branche locale sont supprimées. L’auteur de la fusion n’est connu que par l’API GitHub : sans elle (hors ligne, PR au-delà de `prLimit`), `status` retrouve l’étape par les trailers mais pas qui l’a fusionnée.
+- **Recette.** La checklist de la PR build demande une recette validée, refaite après toute modification. C’est déclaratif : rien ne la vérifie.
+- **Branches hors besoin.** `Need:` n’est exigé que sur `need/*` ; ailleurs le hook ajoute `Need: none` et le check vérifie seulement que `requirements/` (`intentDir`) n’est pas touché.
+- **Volume.** `status` et `board` lisent les `prLimit` (300) PR les plus récentes ciblant `main`. Augmentez la valeur dans `.sdlc/config` si besoin.
+- **Validation.** Le kit a été testé de bout en bout contre un GitHub simulé (PR, revues, fusions, releases, check CI réellement exécuté). Lancez `git sdlc setup --dry-run` puis vérifiez les rulesets créés dans *Settings → Rules* lors de la première installation.

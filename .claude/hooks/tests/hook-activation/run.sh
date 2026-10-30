@@ -9,12 +9,12 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 depot=$tmp/depot
 
-mkdir -p "$depot/hooks" "$depot/.claude/hooks" && cd "$depot" && git init -q .
+mkdir -p "$depot/.githooks" "$depot/.claude/hooks" && cd "$depot" && git init -q .
 cp "$scripts"/*.sh .claude/hooks/
 export CLAUDE_PROJECT_DIR=$depot
 
 fail=0
-commande="git config core.hooksPath hooks"
+commande="git config core.hooksPath .githooks"
 # regle <valeur|-> : fixe core.hooksPath, ou le retire avec -.
 regle() { if [ "$1" = - ]; then git config --unset core.hooksPath; else git config core.hooksPath "$1"; fi; }
 # lance <script> <entrée> : remplit rc, out (stdout) et err (stderr).
@@ -34,24 +34,24 @@ session() { regle "$2"; lance session-hooks-git.sh '{"hook_event_name":"SessionS
 # commit <nom> <valeur> <commande bash> <muet|bloque>
 commit() { regle "$2"; lance commit-hooks-git.sh "$(bash_json "$3")"; $4; verdict "$1" $?; }
 
-session "session, absent : signalé (A1, C2, C4, L1)"    -              signale
-session "session, actif : rien (A3, C3)"                hooks          muet
-session "session, autre valeur : signalé (L2, C12)"     .git/hooks     signale
-session "session, chemin absolu : rien (L8, C12)"       "$depot/hooks" muet
-session "session, ./hooks : rien (C12)"                 ./hooks        muet
+session "session, absent : signalé"       -                  signale
+session "session, actif : rien"           .githooks          muet
+session "session, autre valeur : signalé" .git/hooks         signale
+session "session, chemin absolu : rien"   "$depot/.githooks" muet
+session "session, ./.githooks : rien"     ./.githooks        muet
 
-commit "commit, absent : refusé (A2, C6, L1)"           -     'git commit -m x'                      bloque
-commit "commit, actif : passe (A3, C7)"                 hooks 'git commit -m x'                      muet
-commit "commit enchaîné : refusé (L3)"                  -     'git add . && git commit -m x'         bloque
-commit "--no-verify, actif : passe (L4)"                hooks 'git commit --no-verify -m x'          muet
-commit "texte sans commit réel : refusé (L7)"           -     'grep -rn \"git commit\" .'            bloque
-commit "autre commande : ignorée (C8)"                  -     'ls'                                   muet
+commit "commit, absent : refusé"         -         'git commit -m x'              bloque
+commit "commit, actif : passe"           .githooks 'git commit -m x'              muet
+commit "commit enchaîné : refusé"        -         'git add . && git commit -m x' bloque
+commit "--no-verify, actif : passe"      .githooks 'git commit --no-verify -m x'  muet
+commit "texte sans commit réel : refusé" -         'grep -rn \"git commit\" .'    bloque
+commit "autre commande : ignorée"        -         'ls'                           muet
 
 regle -; lance commit-hooks-git.sh "$(bash_json 'git commit -m x')"; rc1=$rc
-regle hooks; lance commit-hooks-git.sh "$(bash_json 'git commit -m x')"
-[ $rc1 -eq 2 ] && muet; verdict "activation en cours de session : refusé puis passe (L5)" $?
+regle .githooks; lance commit-hooks-git.sh "$(bash_json 'git commit -m x')"
+[ $rc1 -eq 2 ] && muet; verdict "activation en cours de session : refusé puis passe" $?
 
 regle -
 lance session-hooks-git.sh '{}'; lance commit-hooks-git.sh "$(bash_json 'git commit -m x')"
-! git config --get core.hooksPath >/dev/null; verdict "lecture seule : core.hooksPath toujours absent (C9)" $?
+! git config --get core.hooksPath >/dev/null; verdict "lecture seule : core.hooksPath toujours absent" $?
 exit $fail

@@ -1,11 +1,16 @@
-# Spec : <titre>
+# Spec : {{ID}}
 
-<!-- Numéros C, L et A stables : une révision ajoute un nouveau numéro, elle ne renumérote jamais. Le lot 4 (plan) et le lot 7 (recette) s'y réfèrent. -->
+<!--
+  Gabarit copié par `git sdlc claim {{ID}} spec`, puis rempli par le skill
+  generation-spec, sur la branche need/{{ID}}/spec, une fois intent.md fusionné sur main.
+  Le product owner relit la PR et la fusionne : pas de champ « Statut », l’étape se
+  déduit de git (`git sdlc status {{ID}}`).
+  Numéros C, L et A stables : une révision ajoute un nouveau numéro, elle ne renumérote
+  jamais. Le plan et la recette s’y réfèrent.
+-->
 
-- **Intent :** [intent.md](intent.md)
-- **Auteur :** <nom>
-- **Statut :** draft
-- **Validation :** <reprise de l'intent>
+- Intent : [intent.md](intent.md)
+- Auteur : {{AUTHOR}}
 
 ## Périmètre
 
@@ -13,9 +18,9 @@
 
 ## Comportements
 
-<!-- Règles numérotées C1, C2… groupées par livrable de l'intent. Chaque livrable a au moins un comportement. -->
+<!-- Règles numérotées C1, C2… groupées par résultat attendu de l’intent. Chaque résultat a au moins un comportement. -->
 
-### <livrable>
+### <résultat>
 
 - **C1.** <règle>
 
@@ -29,19 +34,19 @@
 
 ## Contrats
 
-<!-- Entrées, sorties, codes de retour et formats échangés (API, CLI, fichiers). « Sans objet » si rien n'est exposé. -->
+<!-- Entrées, sorties, codes de retour et formats échangés (API, CLI, fichiers). « Sans objet » si rien n’est exposé. -->
 
-## Critères d'acceptation
+## Critères d’acceptation
 
-<!-- Une ligne = un scénario, lu par le lot 7. Chaque critère de l'intent a au moins une ligne. Type : Automatisé | Manuel | Humain. -->
+<!-- Une ligne = un scénario, lu par la recette. Chaque critère de succès de l’intent a au moins une ligne. Type : Automatisé | Manuel | Humain. -->
 
 | # | Critère | Étant donné | Quand | Alors | Type |
 |---|---|---|---|---|---|
 | A1 | <critère> | <situation de départ> | <action> | <résultat observable> | <Automatisé \| Manuel \| Humain> |
 
-## Points d'attention
+## Points d’attention
 
-<!-- Contradictions, risques et arbitrages à trancher avant le build, chacun avec le décideur attendu. « Aucun » s'il n'y en a pas. -->
+<!-- Contradictions, risques et arbitrages à trancher avant le build, chacun avec le décideur attendu. « Aucun » s’il n’y en a pas. -->
 
 ## Hors périmètre
 
@@ -49,4 +54,4 @@
 
 ## Questions ouvertes
 
-<!-- Informations manquantes ou à trancher. Peut rester vide. -->
+<!-- Questions de l’intent non tranchées, et informations manquantes. Peut rester vide. -->
