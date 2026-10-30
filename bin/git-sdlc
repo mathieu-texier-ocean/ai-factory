@@ -19,6 +19,8 @@ git rev-parse --git-dir >/dev/null 2>&1 || die "à lancer dans un dépôt git"
 command -v gh >/dev/null 2>&1 || die "gh introuvable : installez GitHub CLI (https://cli.github.com)"
 
 ROOT=$(git rev-parse --show-toplevel)
+# Les chemins écrits (intent/<id>/…, templates/…) sont relatifs à la racine du dépôt.
+cd "$ROOT"
 cfg() {
   git config --get "sdlc.$1" 2>/dev/null \
     || git config -f "$ROOT/.sdlc/config" --get "sdlc.$1" 2>/dev/null \
@@ -630,7 +632,8 @@ cmd_claim() {
       git commit -q -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")" -- "$file"
     else
       [ -e "$file" ] || warn "gabarit $tpl absent : $file à créer"
-      git commit -q --allow-empty -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")"
+      # --only : commit vide, même si l’index contient des modifications, qui y restent.
+      git commit -q --allow-empty --only -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")"
     fi
   fi
   if [ "$push" = 0 ]; then
@@ -725,7 +728,7 @@ cmd_merge() {
 }
 
 cmd_reject() {
-  local id="" n count=0 reason
+  local id="" n count=0 reason prs ans
   [ $# -ge 1 ] || die "usage : git sdlc reject [<id>] <raison>"
   refresh
   # Le premier argument est l’id s’il désigne un besoin connu ; sinon le besoin
@@ -733,13 +736,21 @@ cmd_reject() {
   if list_ids | grep -qxF -- "$1"; then
     [ $# -ge 2 ] || die "raison manquante : git sdlc reject $1 <raison>"
     id=$1; shift
+    reason="$*"
   elif branch_need; then
+    # Un id mal saisi passerait pour le début de la raison et rejetterait le besoin
+    # de la branche courante : le rejet est irréversible, il se confirme.
     id=$B_ID
-    echo "Besoin $id."
+    reason="$*"
+    prs=$(pr_open_field "$id" 3 | sed 's/^/#/' | tr '\n' ' ')
+    warn "« $1 » n’est pas un besoin connu : rejet du besoin de la branche courante."
+    warn "besoin $id, raison « $reason », PR fermées : ${prs:-aucune (tag rejected/$id)}"
+    [ -t 0 ] || die "rejet annulé : sans terminal, précisez l’id : git sdlc reject $id <raison>"
+    read -r -p "Rejeter $id ? [o/N] " ans
+    case $ans in [oOyY]*) ;; *) die "rejet annulé" ;; esac
   else
-    die "usage : git sdlc reject [<id>] <raison> (sans id : depuis une branche need/<id>/<étape>)"
+    die "« $1 » n’est pas un besoin connu (git sdlc board --all) ; sans id, lancez depuis une branche need/<id>/<étape>"
   fi
-  reason="$*"
   for n in $(pr_open_field "$id" 3); do
     gh pr edit "$n" --add-label sdlc:rejected >/dev/null
     gh pr close "$n" --comment "Rejet : $reason" --delete-branch

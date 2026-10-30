@@ -93,7 +93,7 @@ git sdlc board --all              # y compris livrés et rejetés
 
 `new`, `claim`, `ready`, `merge` et `reject` affichent ensuite la ligne de `git sdlc board` du besoin, relue sur GitHub.
 
-Depuis une branche `need/<id>/<étape>`, `status`, `claim`, `ready`, `merge` et `reject` se lancent sans id : `git sdlc status`, `git sdlc ready`, `git sdlc reject "<raison>"`. Avec l’id seul (`git sdlc merge <id>`), l’étape est celle de l’unique PR ouverte du besoin ; s’il y en a plusieurs, précisez-la. `git sdlc claim <id>` prend l’étape en cours du besoin, ou la suivante si la précédente est fusionnée (spec après l’intent, build après la spec). Le besoin et l’étape déduits sont affichés avant l’action.
+Depuis une branche `need/<id>/<étape>`, `status`, `claim`, `ready`, `merge` et `reject` se lancent sans id : `git sdlc status`, `git sdlc ready`, `git sdlc reject "<raison>"`. Avec l’id seul (`git sdlc merge <id>`), l’étape est celle de l’unique PR ouverte du besoin ; s’il y en a plusieurs, précisez-la. `git sdlc claim <id>` prend l’étape en cours du besoin, ou la suivante si la précédente est fusionnée (spec après l’intent, build après la spec). Le besoin et l’étape déduits sont affichés avant l’action. `reject` sans id demande confirmation, et refuse sans terminal : un id mal saisi passerait sinon pour le début de la raison.
 
 `merge` refuse une PR encore en brouillon. En terminal, il propose de la sortir du brouillon puis de fusionner ; `git sdlc merge --ready` le fait sans question. Si les checks requis tournent encore (juste après un push ou la sortie du brouillon, qui relance `sdlc-conventions`), `merge` les attend avant de fusionner : le ruleset refuserait la fusion.
 
