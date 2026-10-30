@@ -240,6 +240,7 @@ Marche à suivre (non exécutée) :
   # fusionner puis supprimer les .nouveau ; renseigner releaseTeam dans .sdlc/config ; compléter CLAUDE.md
   git config core.hooksPath .githooks
   git add -A && git commit -m "Initialisation du SDLC" && git push
+  cp $SOURCE/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # si absent, tout dossier du PATH
   git sdlc setup --dry-run && git sdlc setup
 Si votre .gitignore global ignore les dossiers cachés (.*/) : git add -f .claude .github .githooks .sdlc
 FIN
