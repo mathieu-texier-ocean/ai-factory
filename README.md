@@ -18,9 +18,9 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `.claude/skills/` | skills Claude Code des étapes (voir « Les skills de Claude ») |
 | `.claude/settings.json`, `.claude/hooks/` | hooks Claude Code : signalent à l’ouverture de session, et bloquent les `git commit` de Claude, tant que `core.hooksPath` ne vaut pas `.githooks` |
 | `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
-| `templates/projet/CLAUDE.md` | modèle du `CLAUDE.md` du dépôt produit, rempli par `scripts/deployer.sh` ; non copié tel quel |
-| `scripts/deployer.sh` | installe le kit dans un dépôt produit, puis y répercute ses évolutions ; reste dans le dépôt du kit |
-| `scripts/verifier.sh` | lance tous les tests du kit (`<livrable>/tests/<nom>/run.sh`) ; reste dans le dépôt du kit |
+| `templates/projet/CLAUDE.md` | modèle du `CLAUDE.md` du dépôt produit, rempli par `scripts/deploy.sh` ; non copié tel quel |
+| `scripts/deploy.sh` | installe le kit dans un dépôt produit, puis y répercute ses évolutions ; reste dans le dépôt du kit |
+| `scripts/verify.sh` | lance tous les tests du kit (`<livrable>/tests/<nom>/run.sh`) ; reste dans le dépôt du kit |
 
 Prérequis : git 2.30+, bash 3.2+ (celui de macOS convient), GitHub CLI `gh` installé et authentifié (`gh auth login`) sur chaque poste. Les rulesets et les PR brouillon sur un dépôt privé dépendent de votre offre GitHub. Sans PR brouillon, le script se rabat sur une PR simple.
 
@@ -29,7 +29,7 @@ Prérequis : git 2.30+, bash 3.2+ (celui de macOS convient), GitHub CLI `gh` ins
 **1. Dans le dépôt produit**, une seule fois, par un administrateur du dépôt, depuis un clone du kit :
 
 ```sh
-<clone du kit>/scripts/deployer.sh install /chemin/du/depot [<nom du projet>]
+<clone du kit>/scripts/deploy.sh install /chemin/du/depot [<nom du projet>]
 cd /chemin/du/depot
 # Fusionnez puis supprimez les .nouveau listés, complétez CLAUDE.md, puis :
 git config core.hooksPath .githooks
@@ -46,7 +46,7 @@ Le script écrit `.sdlc/manifeste` : le SHA du kit installé, le nom du projet e
 **Mettre à jour le kit d’un dépôt produit**, depuis un clone du kit plus récent :
 
 ```sh
-<clone du kit>/scripts/deployer.sh update [--forcer] /chemin/du/depot
+<clone du kit>/scripts/deploy.sh update [--forcer] /chemin/du/depot
 ```
 
 Un fichier intact (même empreinte qu’au manifeste) est remplacé, ou supprimé s’il a disparu du kit. Un fichier modifié dans le dépôt est conservé ; si le kit l’a changé aussi, sa nouvelle version est écrite en `<fichier>.nouveau`, une seule fois par version du kit. Un fichier supprimé dans le dépôt n’est pas recréé. Le rapport liste chaque catégorie. `update` refuse un clone dont `HEAD` ne descend pas du SHA installé (clone plus ancien, branche divergente) ; `--forcer` passe outre. Les `.nouveau` ne sont pas ignorés par Git : ne les commitez pas.
@@ -161,7 +161,7 @@ Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion
 
 ## CLAUDE.md du dépôt produit
 
-`scripts/deployer.sh install` produit le `CLAUDE.md` du dépôt depuis `templates/projet/CLAUDE.md` : section SDLC remplie (branches, trailers, gates humains, skills, vérification, secrets), sections du projet à compléter. Si le dépôt a déjà un `CLAUDE.md`, le modèle arrive en `CLAUDE.md.nouveau` : reportez-en la section SDLC.
+`scripts/deploy.sh install` produit le `CLAUDE.md` du dépôt depuis `templates/projet/CLAUDE.md` : section SDLC remplie (branches, trailers, gates humains, skills, vérification, secrets), sections du projet à compléter. Si le dépôt a déjà un `CLAUDE.md`, le modèle arrive en `CLAUDE.md.nouveau` : reportez-en la section SDLC.
 
 ## Points d’attention
 

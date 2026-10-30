@@ -5,11 +5,11 @@ set -u
 
 racine=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$racine" ]; then
-  echo "scripts/verifier.sh : à lancer depuis la racine du dépôt : scripts/verifier.sh" >&2
+  echo "scripts/verify.sh : à lancer depuis la racine du dépôt : scripts/verify.sh" >&2
   exit 1
 fi
 if [ "$(pwd -P)" != "$racine" ]; then
-  echo "scripts/verifier.sh : à lancer depuis la racine du dépôt : cd $racine && scripts/verifier.sh" >&2
+  echo "scripts/verify.sh : à lancer depuis la racine du dépôt : cd $racine && scripts/verify.sh" >&2
   exit 1
 fi
 
@@ -18,7 +18,7 @@ while IFS= read -r f; do runs+=("$f"); done < <(
   find . -name .git -prune -o -type f -name run.sh -print | sed 's|^\./||' | LC_ALL=C sort
 )
 if [ "${#runs[@]}" -eq 0 ]; then
-  echo "scripts/verifier.sh : aucun run.sh trouvé dans le dépôt" >&2
+  echo "scripts/verify.sh : aucun run.sh trouvé dans le dépôt" >&2
   exit 1
 fi
 

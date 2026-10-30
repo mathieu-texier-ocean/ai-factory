@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Teste scripts/deployer.sh contre un faux clone du kit, dans un dossier temporaire.
+# Teste scripts/deploy.sh contre un faux clone du kit, dans un dossier temporaire.
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 repo_root=$(git -C "$here" rev-parse --show-toplevel)
@@ -33,11 +33,11 @@ ecrire templates/projet/CLAUDE.md '# {{nom-projet}}
 modèle v1'
 ecrire REVIEW.md 'revue'
 ecrire README.md 'readme du kit'
-ecrire scripts/verifier.sh 'exit 0'
-mkdir -p scripts && cp "$repo_root/scripts/deployer.sh" scripts/ && chmod +x scripts/deployer.sh
+ecrire scripts/verify.sh 'exit 0'
+mkdir -p scripts && cp "$repo_root/scripts/deploy.sh" scripts/ && chmod +x scripts/deploy.sh
 git add -A && git commit -qm base
 BASE=$(git rev-parse HEAD)
-D=$K/scripts/deployer.sh
+D=$K/scripts/deploy.sh
 
 # kit_commit <message> : commite l'état courant du faux clone.
 kit_commit() { git -C "$K" add -A && git -C "$K" commit -qm "$1"; }
@@ -103,9 +103,9 @@ if [ "$(id -u)" = 0 ]; then echo "SKIP refus : cible illisible (root)"; else
   chmod 755 "$tmp/ferme"
 fi
 mkdir -p "$tmp/pas-kit" && cp "$D" "$tmp/pas-kit/" && git -C "$tmp/pas-kit" init -q && git -C "$tmp/pas-kit" add -A && git -C "$tmp/pas-kit" -c user.email=t@t -c user.name=t commit -qm x
-refuse "refus : source qui n'est pas le kit" 1 "$tmp/pas-kit/deployer.sh" install "$tmp/pk" demo
+refuse "refus : source qui n'est pas le kit" 1 "$tmp/pas-kit/deploy.sh" install "$tmp/pk" demo
 cp -r "$K" "$tmp/kit-produit" && ecrire "$tmp/kit-produit/.sdlc/manifeste" x && kit_commit_p() { git -C "$tmp/kit-produit" add -A && git -C "$tmp/kit-produit" commit -qm p; } && kit_commit_p
-refuse "refus : source qui est un dépôt produit" 1 "$tmp/kit-produit/scripts/deployer.sh" install "$tmp/kp" demo
+refuse "refus : source qui est un dépôt produit" 1 "$tmp/kit-produit/scripts/deploy.sh" install "$tmp/kp" demo
 
 # --- non commité dans le kit ---
 ecrire "$K/.claude/settings.local.json" '{}'
@@ -202,11 +202,11 @@ verif "update : fichier modifié, droits non touchés" [ ! -x "$P/.githooks/lib/
 R=$tmp/reel
 mkdir -p "$R" && cd "$repo_root" && git ls-files -z -- bin scripts .claude .github .githooks .sdlc templates REVIEW.md \
   | while IFS= read -r -d '' f; do [ -e "$f" ] && mkdir -p "$R/$(dirname "$f")" && cp -p "$f" "$R/$f"; done
-mkdir -p "$R/templates/projet" "$R/scripts" && cp "$repo_root/templates/projet/CLAUDE.md" "$R/templates/projet/" && cp -p "$repo_root/scripts/deployer.sh" "$R/scripts/"
+mkdir -p "$R/templates/projet" "$R/scripts" && cp "$repo_root/templates/projet/CLAUDE.md" "$R/templates/projet/" && cp -p "$repo_root/scripts/deploy.sh" "$R/scripts/"
 cd "$R" && git init -q . && git add -A && git -c user.email=t@t -c user.name=t -c core.hooksPath=/dev/null commit -qm kit
 Q=$tmp/produit
 mkdir -p "$Q" && git -C "$Q" init -q && ecrire "$Q/src/app.c" 'int main;'
-"$R/scripts/deployer.sh" install "$Q" produit > /dev/null 2>&1
+"$R/scripts/deploy.sh" install "$Q" produit > /dev/null 2>&1
 cd "$Q" && git config user.email t@t && git config user.name t && git config core.hooksPath .githooks
 verif "bout en bout : commit accepté par les hooks du kit installé" sh -c 'git add -A && git commit -qm init && git log -1 --format=%B | grep -qx "Need: none"'
 verif "bout en bout : CLAUDE.md produit, sans tests du kit" [ "$(head -1 "$Q/CLAUDE.md")" = "# produit" -a -z "$(git -C "$Q" ls-files '*/tests/*')" ]

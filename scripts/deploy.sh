@@ -11,13 +11,13 @@ EXCLUS=(templates/projet)
 MODELES=(CLAUDE.md)
 MANIFESTE=.sdlc/manifeste
 
-erreur() { echo "scripts/deployer.sh : $*" >&2; }
+erreur() { echo "scripts/deploy.sh : $*" >&2; }
 refus() { erreur "$@"; exit 1; }
 usage() {
   cat >&2 <<'FIN'
 Usage :
-  <clone du kit>/scripts/deployer.sh install <dépôt produit> [<nom du projet>]
-  <clone du kit>/scripts/deployer.sh update [--forcer] <dépôt produit>
+  <clone du kit>/scripts/deploy.sh install <dépôt produit> [<nom du projet>]
+  <clone du kit>/scripts/deploy.sh update [--forcer] <dépôt produit>
 FIN
 }
 
@@ -253,7 +253,7 @@ cmd_update() {
   local cible=$1
   trouver_source
   verifier_cible "$cible"
-  [ -f "$cible/$MANIFESTE" ] || refus "$cible/$MANIFESTE absent : le kit n'y a pas été installé par scripts/deployer.sh install"
+  [ -f "$cible/$MANIFESTE" ] || refus "$cible/$MANIFESTE absent : le kit n'y a pas été installé par scripts/deploy.sh install"
 
   TMPD=$(mktemp -d) || refus "dossier temporaire impossible"
   lire_manifeste "$cible/$MANIFESTE"
