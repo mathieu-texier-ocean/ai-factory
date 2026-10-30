@@ -1,6 +1,6 @@
 ---
 name: controle-taille-intent
-description: Applique les critères de découpage à un intent/<id>/intent.md (un besoin = une PR par étape) et propose des besoins plus petits si besoin. TRIGGER when: contrôle de taille, intent trop gros, découper un intent, découpage, sous-besoins, check taille intent.
+description: Applique les critères de découpage à l'intent.md d'un besoin (un besoin = une PR par étape) et propose des besoins plus petits si besoin. TRIGGER when: contrôle de taille, intent trop gros, découper un intent, découpage, sous-besoins, check taille intent.
 ---
 
 # controle-taille-intent
@@ -9,7 +9,7 @@ description: Applique les critères de découpage à un intent/<id>/intent.md (u
 
 ## Étapes
 
-1. Lis l'intent indiqué : `intent/<id>/intent.md`, l'`<id>` étant donné ou tiré de la branche courante `need/<id>/<étape>`. Si un `plan.md` existe dans le même dossier, lis-le aussi.
+1. Lis l'intent indiqué : `<dir>/<id>/intent.md`, l'`<id>` étant donné ou tiré de la branche courante `need/<id>/<étape>`, et `<dir>` étant `intentDir` lu comme le fait `git sdlc` (`git config --get sdlc.intentDir`, sinon `git config -f .sdlc/config --get sdlc.intentDir`, sinon `intent`). Si un `plan.md` existe dans le même dossier, lis-le aussi.
 2. Évalue les signaux structurels, un oui/non chacun, en citant la phrase concernée :
    1. **Plusieurs problèmes** : « Problème » juxtapose des constats indépendants.
    2. **Résultat orphelin** : un élément de « Résultat attendu » n'est couvert par aucun critère de succès.
