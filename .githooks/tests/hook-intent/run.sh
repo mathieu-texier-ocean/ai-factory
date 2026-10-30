@@ -7,8 +7,8 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
 cd "$tmp" && git init -q . && git config user.email t@t && git config user.name t
-mkdir -p intent/_template .githooks/lib
-cp "$repo_root/intent/_template/intent.md" intent/_template/
+mkdir -p templates .githooks/lib
+cp "$repo_root/templates/intent.md" templates/
 cp "$repo_root/.githooks/pre-commit" .githooks/ && cp "$repo_root/.githooks/lib/credential.sh" .githooks/lib/
 git config core.hooksPath .githooks
 git add -A && git -c core.hooksPath=/dev/null commit -qm init
@@ -37,10 +37,9 @@ check "section vide acceptée"               section-vide.md  intent/b/intent.md
 check "chemin accentué contrôlé"            sans-pourquoi.md "intent/b é/intent.md" block "intent/b é/intent.md : section"
 check "autre nom de fichier ignoré"         sans-pourquoi.md intent/b/spec.md   pass
 check "intent.md hors du dossier ignoré"    sans-pourquoi.md doc/x/intent.md    pass
-check "gabarit lui-même ignoré"             sans-pourquoi.md intent/_template/intent.md pass
+check "gabarit lui-même ignoré"             sans-pourquoi.md templates/intent.md pass
 
 git config sdlc.intentDir besoins
-mkdir -p besoins/_template && cp intent/_template/intent.md besoins/_template/ && git add besoins && git -c core.hooksPath=/dev/null commit -qm besoins
 check "intentDir de la configuration suivi" sans-pourquoi.md besoins/b/intent.md block "manquante(s) : Pourquoi"
 check "ancien dossier alors ignoré"         sans-pourquoi.md intent/b/intent.md pass
 exit $fail

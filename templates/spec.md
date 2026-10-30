@@ -1,15 +1,16 @@
-# Spec : <titre>
+# Spec : {{ID}}
 
 <!--
-  Gabarit lu par le skill generation-spec, sur la branche need/<id>/spec, une fois
-  intent.md fusionné sur main. Le product owner relit la PR et la fusionne : pas de
-  champ « Statut », l’étape se déduit de git (`git sdlc status <id>`).
+  Gabarit copié par `git sdlc claim {{ID}} spec`, puis rempli par le skill
+  generation-spec, sur la branche need/{{ID}}/spec, une fois intent.md fusionné sur main.
+  Le product owner relit la PR et la fusionne : pas de champ « Statut », l’étape se
+  déduit de git (`git sdlc status {{ID}}`).
   Numéros C, L et A stables : une révision ajoute un nouveau numéro, elle ne renumérote
   jamais. Le plan et la recette s’y réfèrent.
 -->
 
 - Intent : [intent.md](intent.md)
-- Auteur : <nom>
+- Auteur : {{AUTHOR}}
 
 ## Périmètre
 

@@ -2,7 +2,7 @@
 # pre-commit — contrôles locaux du SDLC sur le contenu du commit.
 #
 # 1. Tout <intentDir>/<id>/intent.md stagé contient les sections obligatoires : les titres
-#    "## " de <intentDir>/_template/intent.md, hors « Questions ouvertes ». Présence
+#    "## " de templates/intent.md, hors « Questions ouvertes ». Présence
 #    uniquement, pas la qualité du contenu.
 # 2. Aucune ligne ajoutée ne contient de credential en clair (.githooks/lib/credential.sh).
 #    Faux positif : marqueur credential-ok sur la ligne.
@@ -18,7 +18,7 @@ root=$(git rev-parse --show-toplevel)
 idir=$(git config --get sdlc.intentDir 2>/dev/null \
   || git config -f "$root/.sdlc/config" --get sdlc.intentDir 2>/dev/null \
   || echo intent)
-template="$root/$idir/_template/intent.md"
+template="$root/templates/intent.md"
 optional="Questions ouvertes"
 status=0
 
@@ -32,12 +32,11 @@ fi
 # -z : chemins bruts, sans les guillemets de core.quotePath.
 while IFS= read -r -d '' path; do
   case $path in
-    "$idir/_template/"*) continue ;;
     "$idir"/*/intent.md) ;;
     *) continue ;;
   esac
   if [ ${#required[@]} -eq 0 ]; then
-    echo "pre-commit : $idir/_template/intent.md introuvable, sections de $path non vérifiées." >&2
+    echo "pre-commit : templates/intent.md introuvable, sections de $path non vérifiées." >&2
     continue
   fi
   content=$(git show ":$path")
@@ -47,7 +46,7 @@ while IFS= read -r -d '' path; do
   done
   if [ ${#missing[@]} -gt 0 ]; then
     list=$(printf '%s, ' "${missing[@]}"); list=${list%, }
-    echo "$path : section(s) obligatoire(s) manquante(s) : $list. Recopiez les titres de $idir/_template/intent.md." >&2
+    echo "$path : section(s) obligatoire(s) manquante(s) : $list. Recopiez les titres de templates/intent.md." >&2
     status=1
   fi
 done < <(git diff --cached --name-only -z --diff-filter=ACMR)

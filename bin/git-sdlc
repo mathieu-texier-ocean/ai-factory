@@ -543,6 +543,17 @@ cmd_board() {
   fi
 }
 
+# render_template <gabarit> <id> [parent] [origin] : le gabarit, champs {{…}} remplis.
+render_template() {
+  local author
+  author="$(git config user.name || echo '?')"
+  sed -e "s/{{ID}}/$(sed_escape "$2")/g" \
+      -e "s/{{AUTHOR}}/$(sed_escape "$author")/g" \
+      -e "s/{{DATE}}/$(date +%Y-%m-%d)/g" \
+      -e "s/{{PARENT}}/$(sed_escape "${3:-}")/g" \
+      -e "s/{{ORIGIN}}/$(sed_escape "${4:-}")/g" "$1"
+}
+
 cmd_new() {
   local slug="" id="" parent="—" origin="idée" today author tpl file
   while [ $# -gt 0 ]; do
@@ -568,14 +579,10 @@ cmd_new() {
   git switch -q --no-track -c "need/$id/intent" "$(main_ref)"
   mkdir -p "$IDIR/$id"
   file="$IDIR/$id/intent.md"
-  tpl="$IDIR/_template/intent.md"
+  tpl="templates/intent.md"
   author="$(git config user.name || echo '?')"
   if [ -f "$tpl" ]; then
-    sed -e "s/{{ID}}/$(sed_escape "$id")/g" \
-        -e "s/{{AUTHOR}}/$(sed_escape "$author")/g" \
-        -e "s/{{DATE}}/$today/g" \
-        -e "s/{{PARENT}}/$(sed_escape "$parent")/g" \
-        -e "s/{{ORIGIN}}/$(sed_escape "$origin")/g" "$tpl" > "$file"
+    render_template "$tpl" "$id" "$parent" "$origin" > "$file"
   else
     warn "gabarit $tpl absent : squelette minimal utilisé"
     printf '# Intent : %s\n\nAuthor: %s\nProduct-Owner: \nOrigin: %s\nParent: %s\n\n## Problème\n\n## Résultat attendu\n\n## Contraintes\n\n## Questions ouvertes\n' \
@@ -591,7 +598,7 @@ cmd_new() {
 }
 
 cmd_claim() {
-  local push=1 pos=() id step st br
+  local push=1 pos=() id step st br file tpl
   while [ $# -gt 0 ]; do
     case $1 in
       --no-push) push=0 ;;
@@ -614,7 +621,17 @@ cmd_claim() {
   elif has_ref "refs/remotes/$REMOTE/$br"; then git switch -q --track -c "$br" "$REMOTE/$br"
   else git switch -q --no-track -c "$br" "$(main_ref)"; fi
   if ! pr_open "$id" "$step"; then
-    git commit -q --allow-empty -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")"
+    file="$IDIR/$id/$(file_of "$step")"
+    tpl="templates/$(file_of "$step")"
+    if [ ! -e "$file" ] && [ -f "$tpl" ]; then
+      mkdir -p "$IDIR/$id"
+      render_template "$tpl" "$id" > "$file"
+      git add -- "$file"
+      git commit -q -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")" -- "$file"
+    else
+      [ -e "$file" ] || warn "gabarit $tpl absent : $file à créer"
+      git commit -q --allow-empty -m "Prise en charge : $step" -m "$(printf 'Need: %s\nStage: %s' "$id" "$st")"
+    fi
   fi
   if [ "$push" = 0 ]; then
     echo "$br pris en charge localement ; git sdlc claim $id $step publiera la branche et la PR."

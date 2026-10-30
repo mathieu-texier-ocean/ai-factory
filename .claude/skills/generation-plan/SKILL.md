@@ -1,11 +1,11 @@
 ---
 name: generation-plan
-description: Conduit en plan mode la séance de plan d'un besoin avec le développeur, sur la branche need/<id>/build une fois spec.md fusionnée sur main, puis écrit intent/<id>/plan.md depuis intent/_template/plan.md (fichiers touchés, étapes = commits, tests, risques, couverture de la spec). TRIGGER when: générer le plan, écrire le plan, rédiger le plan, plan du besoin, plan depuis la spec, generation plan, nouveau plan.
+description: Conduit en plan mode la séance de plan d'un besoin avec le développeur, sur la branche need/<id>/build une fois spec.md fusionnée sur main, puis écrit intent/<id>/plan.md depuis templates/plan.md (fichiers touchés, étapes = commits, tests, risques, couverture de la spec). TRIGGER when: générer le plan, écrire le plan, rédiger le plan, plan du besoin, plan depuis la spec, generation plan, nouveau plan.
 ---
 
 # generation-plan
 
-Conduit la séance de plan d'un besoin et écrit son `plan.md`, premier commit de la PR build, avant tout code. Tu lis, tu interroges et tu structures ; le développeur décide, et la fusion de la PR build reste celle du tech lead.
+Conduit la séance de plan d'un besoin et remplit son `plan.md`, copié par `git sdlc claim`, à commiter seul avant tout code. Tu lis, tu interroges et tu structures ; le développeur décide, et la fusion de la PR build reste celle du tech lead.
 
 ## Étapes
 
@@ -13,7 +13,7 @@ Conduit la séance de plan d'un besoin et écrit son `plan.md`, premier commit d
 2. Contrôle l'amont, comme `git sdlc` :
    - `git fetch -q origin main`, puis `git cat-file -e origin/main:intent/<id>/spec.md`. En échec : la spec n'est pas encore acceptée. Signale-le, propose `git sdlc status <id>` et arrête-toi sans rien écrire. Ne te replie jamais sur l'intent : le check `sdlc-conventions` exige la spec fusionnée.
    - Si la branche courante n'est pas `need/<id>/build`, signale-le, propose `git sdlc claim <id> build` et arrête-toi.
-3. Passe en plan mode si tu n'y es pas, puis lis `intent/_template/plan.md`, l'intent et la spec tels qu'ils sont sur `main`, le `plan.md` existant s'il y en a un, et le code concerné (fichiers, tests et configuration que le changement touche).
+3. Passe en plan mode si tu n'y es pas, puis lis `templates/plan.md`, l'intent et la spec tels qu'ils sont sur `main`, `intent/<id>/plan.md`, créé par `git sdlc claim` depuis le gabarit, et le code concerné (fichiers, tests et configuration que le changement touche).
 4. Interroge le développeur, une série courte à la fois, au moins sur :
    - ce que le changement peut casser ;
    - l'étape la plus risquée ;
@@ -27,7 +27,7 @@ Conduit la séance de plan d'un besoin et écrit son `plan.md`, premier commit d
 7. À la sortie accordée, écris `intent/<id>/plan.md`, conforme au gabarit, sans champ « Statut » :
    - `À risque` : la réponse du développeur ; si oui, rappelle qu'un tech lead donne son avis sur le plan avant le code ;
    - `Base` : le commit de `main` de départ (`git rev-parse --short origin/main`) ;
-   - plan existant : complète-le ou révise-le, dans la même PR.
+   - plan existant : remplis le gabarit copié par `git sdlc claim` ; s'il est déjà rédigé, complète-le ou révise-le sans effacer ce qui y est écrit, dans la même PR.
 8. Affiche le résumé (voir « Format de sortie ») et rappelle la suite : commiter le plan seul, avant le code.
 
 ## Format de sortie
