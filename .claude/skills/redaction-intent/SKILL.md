@@ -9,7 +9,7 @@ Transforme un besoin brut en `<dir>/<id>/intent.md` structuré. Tu poses les que
 
 ## Étapes
 
-1. Résous le besoin : l'`<id>` donné, sinon celui de la branche courante `need/<id>/intent`. Sans id ni branche de ce type, demande à l'utilisateur de lancer `git sdlc new <slug>` (ou `git sdlc claim <id> intent`) et arrête-toi. Le dossier des artefacts, noté `<dir>`, est `intentDir` lu comme le fait `git sdlc` : `git config --get sdlc.intentDir`, sinon `git config -f .sdlc/config --get sdlc.intentDir`, sinon `intent`.
+1. Résous le besoin : l'`<id>` donné, sinon celui de la branche courante `need/<id>/intent`. Sans id ni branche de ce type, demande à l'utilisateur de lancer `git sdlc new <slug>` (ou `git sdlc claim <id> intent`) et arrête-toi. Le dossier des artefacts, noté `<dir>`, est `intentDir` lu comme le fait `git sdlc` : `git config --get sdlc.intentDir`, sinon `git config -f .sdlc/config --get sdlc.intentDir`, sinon `requirements`.
 2. Si la branche courante n'est pas `need/<id>/intent`, signale-le et arrête-toi : un intent ne change que sur sa branche.
 3. Demande le besoin brut (texte libre). S'il est vide ou trop vague pour remplir « Problème », pose des questions et ne produis rien.
 4. Lis `templates/intent.md` et `<dir>/<id>/intent.md`, créé par `git sdlc new`. Si des sections sont déjà rédigées (autre chose que le texte du gabarit), complète-les sans effacer ce qui y est écrit, et signale ce que tu modifies.

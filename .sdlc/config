@@ -4,7 +4,7 @@
 	# Branche protégée vers laquelle toutes les PR sont ouvertes.
 	main = main
 	# Dossier des artefacts de besoin.
-	intentDir = intent
+	intentDir = requirements
 	# Tags de livraison YY.MM.DD[.V] : sans releaseTeam, seuls les admins du dépôt livrent.
 	# Pour ouvrir la livraison à une équipe GitHub (git sdlc setup) : releaseTeam = <slug>
 	# Nombre maximal de PR lues par status et board.

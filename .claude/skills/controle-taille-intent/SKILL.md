@@ -9,7 +9,7 @@ description: Applique les critères de découpage à l'intent.md d'un besoin (un
 
 ## Étapes
 
-1. Lis l'intent indiqué : `<dir>/<id>/intent.md`, l'`<id>` étant donné ou tiré de la branche courante `need/<id>/<étape>`, et `<dir>` étant `intentDir` lu comme le fait `git sdlc` (`git config --get sdlc.intentDir`, sinon `git config -f .sdlc/config --get sdlc.intentDir`, sinon `intent`). Si un `plan.md` existe dans le même dossier, lis-le aussi.
+1. Lis l'intent indiqué : `<dir>/<id>/intent.md`, l'`<id>` étant donné ou tiré de la branche courante `need/<id>/<étape>`, et `<dir>` étant `intentDir` lu comme le fait `git sdlc` (`git config --get sdlc.intentDir`, sinon `git config -f .sdlc/config --get sdlc.intentDir`, sinon `requirements`). Si un `plan.md` existe dans le même dossier, lis-le aussi.
 2. Évalue les signaux structurels, un oui/non chacun, en citant la phrase concernée :
    1. **Plusieurs problèmes** : « Problème » juxtapose des constats indépendants.
    2. **Résultat orphelin** : un élément de « Résultat attendu » n'est couvert par aucun critère de succès.

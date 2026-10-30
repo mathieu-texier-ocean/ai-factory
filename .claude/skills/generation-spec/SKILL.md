@@ -9,7 +9,7 @@ Transforme un intent accepté en `<dir>/<id>/spec.md`. Tu structures et tu rends
 
 ## Étapes
 
-1. Résous le besoin : l'`<id>` donné, sinon celui de la branche courante `need/<id>/spec`. Lis les réglages comme `git sdlc` : pour chaque clé, `git config --get sdlc.<clé>`, sinon `git config -f .sdlc/config --get sdlc.<clé>`, sinon la valeur par défaut. Dans la suite, `<remote>` est `remote` (défaut `origin`), `<main>` est `main` (défaut `main`) et `<dir>` est `intentDir` (défaut `intent`).
+1. Résous le besoin : l'`<id>` donné, sinon celui de la branche courante `need/<id>/spec`. Lis les réglages comme `git sdlc` : pour chaque clé, `git config --get sdlc.<clé>`, sinon `git config -f .sdlc/config --get sdlc.<clé>`, sinon la valeur par défaut. Dans la suite, `<remote>` est `remote` (défaut `origin`), `<main>` est `main` (défaut `main`) et `<dir>` est `intentDir` (défaut `requirements`).
 2. Contrôle l'amont, comme `git sdlc` :
    - `git fetch -q <remote> <main>`, puis `git cat-file -e <remote>/<main>:<dir>/<id>/intent.md`. En échec : l'intent n'est pas encore accepté. Signale-le, propose `git sdlc status <id>` et arrête-toi sans rien écrire.
    - Si la branche courante n'est pas `need/<id>/spec`, signale-le, propose `git sdlc claim <id> spec` et arrête-toi : le check `sdlc-conventions` refuse une spec ailleurs.

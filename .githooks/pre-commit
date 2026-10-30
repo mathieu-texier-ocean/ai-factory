@@ -17,7 +17,7 @@ root=$(git rev-parse --show-toplevel)
 
 idir=$(git config --get sdlc.intentDir 2>/dev/null \
   || git config -f "$root/.sdlc/config" --get sdlc.intentDir 2>/dev/null \
-  || echo intent)
+  || echo requirements)
 template="$root/templates/intent.md"
 optional="Questions ouvertes"
 status=0

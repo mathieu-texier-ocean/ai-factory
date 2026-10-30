@@ -19,7 +19,7 @@ git rev-parse --git-dir >/dev/null 2>&1 || die "à lancer dans un dépôt git"
 command -v gh >/dev/null 2>&1 || die "gh introuvable : installez GitHub CLI (https://cli.github.com)"
 
 ROOT=$(git rev-parse --show-toplevel)
-# Les chemins écrits (intent/<id>/…, templates/…) sont relatifs à la racine du dépôt.
+# Les chemins écrits (<intentDir>/<id>/…, templates/…) sont relatifs à la racine du dépôt.
 cd "$ROOT"
 cfg() {
   git config --get "sdlc.$1" 2>/dev/null \
@@ -28,7 +28,7 @@ cfg() {
 }
 REMOTE=${SDLC_REMOTE:-$(cfg remote origin)}
 MAIN=${SDLC_MAIN:-$(cfg main main)}
-IDIR=${SDLC_INTENT_DIR:-$(cfg intentDir intent)}
+IDIR=${SDLC_INTENT_DIR:-$(cfg intentDir requirements)}
 PR_LIMIT=$(cfg prLimit 300)
 MERGE_ARGS=$(cfg mergeArgs "--rebase --delete-branch")
 FETCH=1

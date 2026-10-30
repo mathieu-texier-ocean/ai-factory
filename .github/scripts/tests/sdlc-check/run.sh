@@ -9,11 +9,11 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
 cd "$tmp" && git init -q -b main . && git config user.email t@t && git config user.name t
-mkdir -p .github/scripts .githooks/lib templates intent/acc
+mkdir -p .github/scripts .githooks/lib templates requirements/acc
 cp "$repo_root/.github/scripts/sdlc-check.sh" .github/scripts/
 cp "$repo_root/.githooks/lib/credential.sh" .githooks/lib/
 cp "$repo_root/templates/intent.md" templates/
-echo "# Intent acc" > intent/acc/intent.md && echo "# Spec acc" > intent/acc/spec.md
+echo "# Intent acc" > requirements/acc/intent.md && echo "# Spec acc" > requirements/acc/spec.md
 git add -A && git commit -qm init
 main=$(git rev-parse main)
 
@@ -39,32 +39,32 @@ absent() {
 }
 
 branche need/nouv/intent
-mkdir -p intent/nouv && echo "# Intent" > intent/nouv/intent.md && git add -A && commit nouv
+mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && git add -A && commit nouv
 essai "PR intent conforme acceptée" pass "conventions du SDLC respectées"
 
 branche need/nouv/intent
-mkdir -p intent/nouv && echo "# Intent" > intent/nouv/intent.md && git add -A && commit ""
+mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && git add -A && commit ""
 essai "commit sans Need: refusé" block "trailer Need: manquant"
 
 branche need/nouv/spec
-mkdir -p intent/nouv && echo "# Spec" > intent/nouv/spec.md && git add -A && commit nouv
+mkdir -p requirements/nouv && echo "# Spec" > requirements/nouv/spec.md && git add -A && commit nouv
 essai "spec avant l'intent fusionné refusée" block "intent.md pas encore fusionné"
 
 branche need/acc/build
-echo "# Plan" > intent/acc/plan.md && git add -A && commit acc
+echo "# Plan" > requirements/acc/plan.md && git add -A && commit acc
 essai "PR build conforme acceptée" pass "conventions du SDLC respectées"
 
 branche need/acc/build
-echo "# Plan" > intent/acc/plan.md && mkdir -p "intent/autre é" && echo x > "intent/autre é/note é.md" && git add -A && commit acc
-essai "PR build : chemin accentué d'un autre besoin refusé" block "intent/autre é/note é.md appartient à un autre besoin"
+echo "# Plan" > requirements/acc/plan.md && mkdir -p "requirements/autre é" && echo x > "requirements/autre é/note é.md" && git add -A && commit acc
+essai "PR build : chemin accentué d'un autre besoin refusé" block "requirements/autre é/note é.md appartient à un autre besoin"
 
 branche need/acc/build
-echo "# Plan" > intent/acc/plan.md && git mv intent/acc/spec.md intent/acc/ancienne-spec.md && git add -A && commit acc
-essai "PR build : spec renommée refusée" block "intent/acc/spec.md ne change que par une PR intent/spec"
+echo "# Plan" > requirements/acc/plan.md && git mv requirements/acc/spec.md requirements/acc/ancienne-spec.md && git add -A && commit acc
+essai "PR build : spec renommée refusée" block "requirements/acc/spec.md ne change que par une PR intent/spec"
 
 branche outillage
-mkdir -p doc && git mv intent/acc/intent.md doc/intent.md && commit ""
-essai "hors besoin : intent déplacé hors du dossier refusé" block "intent/acc/intent.md : un artefact de besoin"
+mkdir -p doc && git mv requirements/acc/intent.md doc/intent.md && commit ""
+essai "hors besoin : intent déplacé hors du dossier refusé" block "requirements/acc/intent.md : un artefact de besoin"
 
 branche outillage
 cp "$fx/aws.txt" aws.txt && git add -A && commit ""
@@ -80,24 +80,24 @@ cp "$fx/aws.txt" aws.txt && git add -A && commit "" && git rm -q aws.txt && comm
 essai "credential ajouté puis retiré dans la PR accepté" pass
 
 branche need/acc/build
-echo "# Plan" > intent/acc/plan.md && cp "$fx/url.txt" config.txt && git add -A && commit acc
+echo "# Plan" > requirements/acc/plan.md && cp "$fx/url.txt" config.txt && git add -A && commit acc
 essai "credential refusé aussi sur une PR need/*" block "config.txt : credential en clair (URL avec identifiants)"
 
 # intentDir lu dans le .sdlc/config de main, pas dans celui de la PR.
-git switch -q -f main && mkdir -p .sdlc && printf '[sdlc]\n\tintentDir = requirements\n' > .sdlc/config
+git switch -q -f main && mkdir -p .sdlc && printf '[sdlc]\n\tintentDir = besoins\n' > .sdlc/config
 git add -A && git commit -qm config && main=$(git rev-parse main)
 
 branche need/nouv/intent
-mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && git add -A && commit nouv
+mkdir -p besoins/nouv && echo "# Intent" > besoins/nouv/intent.md && git add -A && commit nouv
 essai "intentDir de .sdlc/config : PR intent conforme acceptée" pass "conventions du SDLC respectées"
 
 branche need/nouv/intent
-mkdir -p intent/nouv && echo "# Intent" > intent/nouv/intent.md && git add -A && commit nouv
-essai "intentDir de .sdlc/config : intent/ hors périmètre" block "requirements/nouv/intent.md absent"
+mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && git add -A && commit nouv
+essai "intentDir de .sdlc/config : requirements/ hors périmètre" block "besoins/nouv/intent.md absent"
 
 branche outillage
-printf '[sdlc]\n\tintentDir = ailleurs\n' > .sdlc/config && mkdir -p requirements/x && echo x > requirements/x/intent.md
+printf '[sdlc]\n\tintentDir = ailleurs\n' > .sdlc/config && mkdir -p besoins/x && echo x > besoins/x/intent.md
 git add -A && commit ""
-essai "intentDir changé par la PR ignoré" block "requirements/x/intent.md : un artefact de besoin"
+essai "intentDir changé par la PR ignoré" block "besoins/x/intent.md : un artefact de besoin"
 
 exit $fail

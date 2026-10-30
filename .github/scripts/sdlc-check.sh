@@ -6,7 +6,7 @@
 #
 # Entrées (variables d’environnement) : BASE_SHA, HEAD_SHA, HEAD_REF
 # Dossier des besoins : SDLC_INTENT_DIR, sinon intentDir du .sdlc/config de la base
-# (main : une PR ne déplace pas le dossier qu’elle est contrôlée sur), sinon intent.
+# (main : une PR ne déplace pas le dossier qu’elle est contrôlée sur), sinon requirements.
 #
 # Règles :
 #   need/<id>/intent  ne modifie que <dir>/<id>/intent.md (et <dir>/<id>/assets/)
@@ -24,7 +24,7 @@
 set -euo pipefail
 
 : "${BASE_SHA:?BASE_SHA manquant}" "${HEAD_SHA:?HEAD_SHA manquant}" "${HEAD_REF:?HEAD_REF manquant}"
-IDIR=${SDLC_INTENT_DIR:-$(git config --blob "$BASE_SHA:.sdlc/config" --get sdlc.intentDir 2>/dev/null || echo intent)}
+IDIR=${SDLC_INTENT_DIR:-$(git config --blob "$BASE_SHA:.sdlc/config" --get sdlc.intentDir 2>/dev/null || echo requirements)}
 
 errors=0
 err() { printf '::error::%s\n' "$*"; errors=$((errors + 1)); }

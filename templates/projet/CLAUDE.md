@@ -14,7 +14,7 @@ git config core.hooksPath .githooks   # active commit-msg et pre-commit
 
 - Travaille uniquement sur la branche `need/<id>/<étape>` en cours ; jamais sur `main`.
 - Chaque commit se termine par les trailers `Need: <id>` et `Stage: <étape>` (intent → plan, spec → design, build → build).
-- En build, commence par `intent/<id>/plan.md` (plan mode) ; s’il change, mets-le à jour dans la même PR.
+- En build, commence par `requirements/<id>/plan.md` (plan mode) ; s’il change, mets-le à jour dans la même PR.
 - Ne modifie pas `intent.md` ni `spec.md` dans une PR build : ils ont leurs propres PR.
 - N’exécute jamais `git sdlc merge`, `gh pr merge` ni `git sdlc release` : ce sont des gates humains.
 - Pour une revue, suis `REVIEW.md`.

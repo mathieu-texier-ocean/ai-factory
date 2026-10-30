@@ -4,8 +4,8 @@ Ce fichier guide la revue de chaque pull request `need/<id>/<étape>`, qu’elle
 
 ## À lire avant de commenter
 
-- `intent/<id>/intent.md` et, pour une PR build, `intent/<id>/spec.md` sur `main` : ce qui a été demandé et décidé.
-- `intent/<id>/plan.md` dans la PR build : ce qui devait être fait.
+- `requirements/<id>/intent.md` et, pour une PR build, `requirements/<id>/spec.md` sur `main` : ce qui a été demandé et décidé.
+- `requirements/<id>/plan.md` dans la PR build : ce qui devait être fait.
 - Le diff de la PR et le résultat du check `sdlc-conventions` et des tests.
 
 Le check `sdlc-conventions` vérifie déjà les trailers, le périmètre des fichiers et la présence des artefacts. Ne le recommentez pas.

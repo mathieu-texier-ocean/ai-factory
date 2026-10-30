@@ -28,18 +28,19 @@ check() {
   [ $ok -eq 1 ] && echo "PASS $name" || { echo "FAIL $name (rc=$rc) $out"; fail=1; }
 }
 
-check "complet accepté"                     complet.md       intent/b/intent.md pass
-check "sans Pourquoi bloqué"                sans-pourquoi.md intent/b/intent.md block "manquante(s) : Pourquoi"
-check "titre mal orthographié bloqué"       titre-faute.md   intent/b/intent.md block "Pourquoi"
-check "plusieurs manquantes toutes nommées" sans-deux.md     intent/b/intent.md block "Pourquoi, Contraintes"
-check "sans Priorité bloqué"                sans-priorite.md intent/b/intent.md block "manquante(s) : Priorité"
-check "section vide acceptée"               section-vide.md  intent/b/intent.md pass
-check "chemin accentué contrôlé"            sans-pourquoi.md "intent/b é/intent.md" block "intent/b é/intent.md : section"
-check "autre nom de fichier ignoré"         sans-pourquoi.md intent/b/spec.md   pass
+check "complet accepté"                     complet.md       requirements/b/intent.md pass
+check "sans Pourquoi bloqué"                sans-pourquoi.md requirements/b/intent.md block "manquante(s) : Pourquoi"
+check "titre mal orthographié bloqué"       titre-faute.md   requirements/b/intent.md block "Pourquoi"
+check "plusieurs manquantes toutes nommées" sans-deux.md     requirements/b/intent.md block "Pourquoi, Contraintes"
+check "sans Priorité bloqué"                sans-priorite.md requirements/b/intent.md block "manquante(s) : Priorité"
+check "section vide acceptée"               section-vide.md  requirements/b/intent.md pass
+check "chemin accentué contrôlé"            sans-pourquoi.md "requirements/b é/intent.md" block "requirements/b é/intent.md : section"
+check "autre nom de fichier ignoré"         sans-pourquoi.md requirements/b/spec.md   pass
 check "intent.md hors du dossier ignoré"    sans-pourquoi.md doc/x/intent.md    pass
+check "intent/ ignoré par défaut"           sans-pourquoi.md intent/b/intent.md pass
 check "gabarit lui-même ignoré"             sans-pourquoi.md templates/intent.md pass
 
 git config sdlc.intentDir besoins
 check "intentDir de la configuration suivi" sans-pourquoi.md besoins/b/intent.md block "manquante(s) : Pourquoi"
-check "ancien dossier alors ignoré"         sans-pourquoi.md intent/b/intent.md pass
+check "ancien dossier alors ignoré"         sans-pourquoi.md requirements/b/intent.md pass
 exit $fail

@@ -108,9 +108,9 @@ Le trailer `Stage:` porte l’étape du cycle du playbook, pas le nom de la bran
 
 | Branche | Fichier produit | `Stage:` |
 |---|---|---|
-| `need/<id>/intent` | `intent/<id>/intent.md` | `plan` |
-| `need/<id>/spec` | `intent/<id>/spec.md` | `design` |
-| `need/<id>/build` | `intent/<id>/plan.md`, puis le code | `build` |
+| `need/<id>/intent` | `requirements/<id>/intent.md` | `plan` |
+| `need/<id>/spec` | `requirements/<id>/spec.md` | `design` |
+| `need/<id>/build` | `requirements/<id>/plan.md`, puis le code | `build` |
 
 Un commit d’intent porte donc `Stage: plan`. Le fichier `plan.md`, lui, relève de l’étape build : c’est le plan d’implémentation produit en plan mode avant le code. Les valeurs `test`, `deploy` et `maintain` sont acceptées par le hook pour les commits saisis à la main ; aucune branche ne les produit.
 
@@ -170,6 +170,6 @@ Dans les deux cas, Claude commente ; il ne fusionne pas. La gate reste la fusion
 - **Credentials.** La détection repère des formes connues (clé privée, jetons AWS, GitHub, Anthropic, Slack, affectation `password=…`, URL avec identifiants), pas tous les secrets. Une ligne marquée `credential-ok` et les fichiers sous `tests/<nom>/fixtures/` sont ignorés : la revue reste la dernière barrière. Un credential poussé est à révoquer, même retiré ensuite.
 - **Mode de fusion.** Seul le rebase garde les trailers `Need:`/`Stage:` sur chaque commit ; un squash les fusionnerait au gré du message. `setup` désactive squash et merge commit. `git sdlc merge` appelle `gh pr merge --rebase --delete-branch` (clé `mergeArgs` de `.sdlc/config`) : la branche distante et la branche locale sont supprimées. L’auteur de la fusion n’est connu que par l’API GitHub : sans elle (hors ligne, PR au-delà de `prLimit`), `status` retrouve l’étape par les trailers mais pas qui l’a fusionnée.
 - **Recette.** La checklist de la PR build demande une recette validée, refaite après toute modification. C’est déclaratif : rien ne la vérifie.
-- **Branches hors besoin.** `Need:` n’est exigé que sur `need/*` ; ailleurs le hook ajoute `Need: none` et le check vérifie seulement que `intent/` n’est pas touché.
+- **Branches hors besoin.** `Need:` n’est exigé que sur `need/*` ; ailleurs le hook ajoute `Need: none` et le check vérifie seulement que `requirements/` (`intentDir`) n’est pas touché.
 - **Volume.** `status` et `board` lisent les `prLimit` (300) PR les plus récentes ciblant `main`. Augmentez la valeur dans `.sdlc/config` si besoin.
 - **Validation.** Le kit a été testé de bout en bout contre un GitHub simulé (PR, revues, fusions, releases, check CI réellement exécuté). Lancez `git sdlc setup --dry-run` puis vérifiez les rulesets créés dans *Settings → Rules* lors de la première installation.

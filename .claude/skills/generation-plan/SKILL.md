@@ -9,7 +9,7 @@ Conduit la séance de plan d'un besoin et remplit son `plan.md`, copié par `git
 
 ## Étapes
 
-1. Résous le besoin : l'`<id>` donné, sinon celui de la branche courante `need/<id>/build`. Lis les réglages comme `git sdlc` : pour chaque clé, `git config --get sdlc.<clé>`, sinon `git config -f .sdlc/config --get sdlc.<clé>`, sinon la valeur par défaut. Dans la suite, `<remote>` est `remote` (défaut `origin`), `<main>` est `main` (défaut `main`) et `<dir>` est `intentDir` (défaut `intent`).
+1. Résous le besoin : l'`<id>` donné, sinon celui de la branche courante `need/<id>/build`. Lis les réglages comme `git sdlc` : pour chaque clé, `git config --get sdlc.<clé>`, sinon `git config -f .sdlc/config --get sdlc.<clé>`, sinon la valeur par défaut. Dans la suite, `<remote>` est `remote` (défaut `origin`), `<main>` est `main` (défaut `main`) et `<dir>` est `intentDir` (défaut `requirements`).
 2. Contrôle l'amont, comme `git sdlc` :
    - `git fetch -q <remote> <main>`, puis `git cat-file -e <remote>/<main>:<dir>/<id>/spec.md`. En échec : la spec n'est pas encore acceptée. Signale-le, propose `git sdlc status <id>` et arrête-toi sans rien écrire. Ne te replie jamais sur l'intent : le check `sdlc-conventions` exige la spec fusionnée.
    - Si la branche courante n'est pas `need/<id>/build`, signale-le, propose `git sdlc claim <id> build` et arrête-toi.

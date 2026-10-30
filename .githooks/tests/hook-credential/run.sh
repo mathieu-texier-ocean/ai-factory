@@ -98,9 +98,9 @@ absent "fichier annoté non nommé" "annote.txt"
 cp_fx binaire.bin binaire.bin
 essai "binaire accepté" pass
 
-cp_fx intent-incomplet.md intent/b/intent.md
+cp_fx intent-incomplet.md requirements/b/intent.md
 cp_fx aws.txt aws.txt
-essai "cumul avec le contrôle des intents" block "intent/b/intent.md : section(s) obligatoire(s) manquante(s)" "aws.txt : $msg"
+essai "cumul avec le contrôle des intents" block "requirements/b/intent.md : section(s) obligatoire(s) manquante(s)" "aws.txt : $msg"
 
 cp_fx propre.txt a/propre.txt && sans_hook "état initial"
 git mv a b && cat "$fx/affectation.txt" >> b/propre.txt && git add b/propre.txt
