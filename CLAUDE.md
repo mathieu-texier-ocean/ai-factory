@@ -1,4 +1,4 @@
-# Kit SDLC git + GitHub
+# ai-factory
 
 ## Commandes
 

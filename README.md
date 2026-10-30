@@ -1,4 +1,4 @@
-# Kit SDLC git + GitHub
+# ai-factory
 
 Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitHub. Chaque étape d’un besoin est une pull request vers `main`, relue sur GitHub ; sa fusion franchit la gate. Il répond à deux questions : qui travaille sur quoi, et à quelle étape en est chaque besoin. L’étape se déduit de l’état réel des branches, des PR et des tags ; elle n’est jamais saisie à la main.
 
