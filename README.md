@@ -13,8 +13,8 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `.githooks/pre-commit` | refuse un `intent.md` auquel il manque une section du gabarit, et un credential en clair dans une ligne ajoutée |
 | `.githooks/lib/credential.sh` | détection des credentials, partagée par le pre-commit et le check CI |
 | `.sdlc/config` | réglages partagés (branche principale, équipe release, arguments de fusion…) |
-| `intent/_template/intent.md` | gabarit copié par `git sdlc new` |
-| `intent/_template/spec.md`, `plan.md` | gabarits lus par les skills de spec et de plan |
+| `templates/intent.md` | gabarit copié par `git sdlc new` |
+| `templates/spec.md`, `plan.md` | gabarits copiés par `git sdlc claim` (étapes spec et build), remplis par les skills de spec et de plan |
 | `.claude/skills/` | skills Claude Code des étapes (voir « Les skills de Claude ») |
 | `.claude/settings.json`, `.claude/hooks/` | hooks Claude Code : signalent à l’ouverture de session, et bloquent les `git commit` de Claude, tant que `core.hooksPath` ne vaut pas `.githooks` |
 | `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
@@ -70,11 +70,11 @@ git sdlc ready 2026-10-28-claims-status intent       # revue demandée au PO
 git sdlc merge 2026-10-28-claims-status intent       # gate franchi
 
 # Spec : produite avec Claude par l’initiatrice ou un analyste, fusionnée par le PO
-git sdlc claim 2026-10-28-claims-status spec
+git sdlc claim 2026-10-28-claims-status spec      # copie templates/spec.md dans spec.md
 #   … spec.md, push, git sdlc ready … ; Paul relit et fusionne
 
 # Dev (Dina) : plan mode, puis code
-git sdlc claim 2026-10-28-claims-status build
+git sdlc claim 2026-10-28-claims-status build     # copie templates/plan.md dans plan.md
 #   … plan.md d’abord, puis le code et les tests, push, git sdlc ready …
 
 # Tech lead (Léa) : revue selon REVIEW.md, puis gate
@@ -115,7 +115,7 @@ Un commit d’intent porte donc `Stage: plan`. Le fichier `plan.md`, lui, relèv
 
 ## Les skills de Claude
 
-Quatre skills, dans `.claude/skills/`, outillent les étapes. Ils lisent les gabarits de `intent/_template/`, n’écrivent aucun statut et ne lancent jamais `ready`, `merge` ni `release`.
+Quatre skills, dans `.claude/skills/`, outillent les étapes. Ils lisent les gabarits de `templates/`, n’écrivent aucun statut et ne lancent jamais `ready`, `merge` ni `release`.
 
 | Skill | Branche | Rôle |
 |---|---|---|

@@ -9,10 +9,10 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
 cd "$tmp" && git init -q -b main . && git config user.email t@t && git config user.name t
-mkdir -p .github/scripts .githooks/lib intent/_template intent/acc
+mkdir -p .github/scripts .githooks/lib templates intent/acc
 cp "$repo_root/.github/scripts/sdlc-check.sh" .github/scripts/
 cp "$repo_root/.githooks/lib/credential.sh" .githooks/lib/
-cp "$repo_root/intent/_template/intent.md" intent/_template/
+cp "$repo_root/templates/intent.md" templates/
 echo "# Intent acc" > intent/acc/intent.md && echo "# Spec acc" > intent/acc/spec.md
 git add -A && git commit -qm init
 main=$(git rev-parse main)

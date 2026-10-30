@@ -1,14 +1,15 @@
-# Plan : <titre>
+# Plan : {{ID}}
 
 <!--
-  Gabarit lu par le skill generation-plan, en plan mode, sur la branche need/<id>/build,
-  une fois spec.md fusionnée sur main. Le plan est le premier commit de la PR build,
-  avant tout code ; une étape = un commit. Si l’implémentation diverge, mettez le plan
-  à jour dans la même PR. Pas de champ « Statut » : la fusion de la PR fait foi.
+  Gabarit copié par `git sdlc claim {{ID}} build`, puis rempli par le skill
+  generation-plan, en plan mode, sur la branche need/{{ID}}/build, une fois spec.md
+  fusionnée sur main. Commitez le plan rempli seul, avant tout code ; une étape = un
+  commit. Si l’implémentation diverge, mettez le plan à jour dans la même PR. Pas de
+  champ « Statut » : la fusion de la PR fait foi.
 -->
 
 - Spec : [spec.md](spec.md) · Intent : [intent.md](intent.md)
-- Auteur : <nom>
+- Auteur : {{AUTHOR}}
 - À risque : <oui | non>
 - Base : <commit de main au départ>
 

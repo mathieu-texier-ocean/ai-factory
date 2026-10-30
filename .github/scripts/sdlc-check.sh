@@ -65,7 +65,7 @@ if [[ $HEAD_REF =~ ^need/([^/]+)/(intent|spec|build)$ ]]; then
       build)
         case $f in
           "$dir/intent.md"|"$dir/spec.md") err "PR build : $f ne change que par une PR intent/spec (fusion par le PO)" ;;
-          "$IDIR/_template/"*|"$dir/"*) ;;
+          "$dir/"*) ;;
           "$IDIR/"*) err "PR build : $f appartient à un autre besoin" ;;
         esac ;;
     esac
@@ -87,7 +87,6 @@ else
   echo "Branche hors besoin : $HEAD_REF"
   for f in ${files[@]+"${files[@]}"}; do
     case $f in
-      "$IDIR/_template/"*) ;;
       "$IDIR/"*) err "$f : un artefact de besoin ne change que sur une branche need/<id>/…" ;;
     esac
   done
