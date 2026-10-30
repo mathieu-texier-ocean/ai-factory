@@ -83,4 +83,21 @@ branche need/acc/build
 echo "# Plan" > intent/acc/plan.md && cp "$fx/url.txt" config.txt && git add -A && commit acc
 essai "credential refusé aussi sur une PR need/*" block "config.txt : credential en clair (URL avec identifiants)"
 
+# intentDir lu dans le .sdlc/config de main, pas dans celui de la PR.
+git switch -q -f main && mkdir -p .sdlc && printf '[sdlc]\n\tintentDir = requirements\n' > .sdlc/config
+git add -A && git commit -qm config && main=$(git rev-parse main)
+
+branche need/nouv/intent
+mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && git add -A && commit nouv
+essai "intentDir de .sdlc/config : PR intent conforme acceptée" pass "conventions du SDLC respectées"
+
+branche need/nouv/intent
+mkdir -p intent/nouv && echo "# Intent" > intent/nouv/intent.md && git add -A && commit nouv
+essai "intentDir de .sdlc/config : intent/ hors périmètre" block "requirements/nouv/intent.md absent"
+
+branche outillage
+printf '[sdlc]\n\tintentDir = ailleurs\n' > .sdlc/config && mkdir -p requirements/x && echo x > requirements/x/intent.md
+git add -A && commit ""
+essai "intentDir changé par la PR ignoré" block "requirements/x/intent.md : un artefact de besoin"
+
 exit $fail

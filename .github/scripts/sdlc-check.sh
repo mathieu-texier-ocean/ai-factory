@@ -5,15 +5,16 @@
 # Remplace le hook serveur : le ruleset de main exige ce check avant toute fusion.
 #
 # Entrées (variables d’environnement) : BASE_SHA, HEAD_SHA, HEAD_REF
-# Facultatif : SDLC_INTENT_DIR (intent)
+# Dossier des besoins : SDLC_INTENT_DIR, sinon intentDir du .sdlc/config de la base
+# (main : une PR ne déplace pas le dossier qu’elle est contrôlée sur), sinon intent.
 #
 # Règles :
-#   need/<id>/intent  ne modifie que intent/<id>/intent.md (et intent/<id>/assets/)
-#   need/<id>/spec    ne modifie que intent/<id>/spec.md (et assets) ; intent.md déjà sur main
-#   need/<id>/build   contient intent/<id>/plan.md ; ne modifie ni intent.md ni spec.md ;
+#   need/<id>/intent  ne modifie que <dir>/<id>/intent.md (et <dir>/<id>/assets/)
+#   need/<id>/spec    ne modifie que <dir>/<id>/spec.md (et assets) ; intent.md déjà sur main
+#   need/<id>/build   contient <dir>/<id>/plan.md ; ne modifie ni intent.md ni spec.md ;
 #                     spec.md déjà sur main ; ne touche aucun autre besoin
 #   chaque commit (hors merges) porte Need: <id>
-#   autre branche     ne touche pas intent/<id>/ (trailers non exigés)
+#   autre branche     ne touche pas <dir>/<id>/ (trailers non exigés)
 #   toute branche     aucune ligne ajoutée ne contient de credential en clair
 #                     (.githooks/lib/credential.sh, partagé avec le pre-commit)
 #
@@ -23,7 +24,7 @@
 set -euo pipefail
 
 : "${BASE_SHA:?BASE_SHA manquant}" "${HEAD_SHA:?HEAD_SHA manquant}" "${HEAD_REF:?HEAD_REF manquant}"
-IDIR=${SDLC_INTENT_DIR:-intent}
+IDIR=${SDLC_INTENT_DIR:-$(git config --blob "$BASE_SHA:.sdlc/config" --get sdlc.intentDir 2>/dev/null || echo intent)}
 
 errors=0
 err() { printf '::error::%s\n' "$*"; errors=$((errors + 1)); }
