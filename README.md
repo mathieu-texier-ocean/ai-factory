@@ -34,6 +34,7 @@ cd /chemin/du/depot
 # Fusionnez puis supprimez les .nouveau listés, éditez .sdlc/config (releaseTeam), complétez CLAUDE.md, puis :
 git config core.hooksPath .githooks
 git add -A && git commit -m "Initialisation du SDLC" && git push
+cp <clone du kit>/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # si absent : setup en a besoin (étape 2)
 git sdlc setup --dry-run    # affiche ce qui va être configuré
 git sdlc setup              # applique
 ```
@@ -53,9 +54,9 @@ Un fichier intact (même empreinte qu’au manifeste) est remplacé, ou supprim�
 **2. Sur chaque poste** :
 
 ```sh
-cp bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # tout dossier du PATH
+cp <clone du kit>/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # tout dossier du PATH
 gh auth login
-git config core.hooksPath .githooks                                 # dans chaque clone
+git config core.hooksPath .githooks                                                # dans chaque clone
 ```
 
 ## Une journée type
