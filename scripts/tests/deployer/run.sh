@@ -60,6 +60,7 @@ verif "install : manifeste, SHA et nom" [ "$(sed -n 1,2p "$P/.sdlc/manifeste")" 
 verif "install : manifeste vérifiable par sha256" sh -c "cd '$P' && tail -n +3 .sdlc/manifeste | $(command -v sha256sum >/dev/null && echo sha256sum || echo 'shasum -a 256') -c --status"
 verif "install : manifeste trié, sans lui-même" sh -c "tail -n +3 '$P/.sdlc/manifeste' | cut -c67- > '$tmp/c'; LC_ALL=C sort -c '$tmp/c' && ! grep -qx .sdlc/manifeste '$tmp/c'"
 verif "install : marche à suivre affichée, aucun .git" sh -c "printf '%s' \"\$1\" | grep -qF 'git config core.hooksPath .githooks' && [ ! -e '$P/.git' ]" _ "$out"
+verif "install : git-sdlc copié depuis le clone avant setup" sh -c "printf '%s\n' \"\$1\" | awk -v c=\"cp \$2/bin/git-sdlc \" 'index(\$0, c) { cp = NR } /git sdlc setup/ { s = NR } END { exit !(cp && s && cp < s) }'" _ "$out" "$(git -C "$K" rev-parse --show-toplevel)"
 
 "$D" install "$tmp/nom" 'a/b & c\d' > /dev/null 2>&1
 verif "install : nom avec / & \\ injecté tel quel" [ "$(head -1 "$tmp/nom/CLAUDE.md")" = '# a/b & c\d' ]
