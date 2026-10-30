@@ -5,8 +5,8 @@
 	main = main
 	# Dossier des artefacts de besoin.
 	intentDir = intent
-	# Équipe GitHub autorisée à créer les tags de livraison YY.MM.DD[.V] (git sdlc setup).
-	releaseTeam = release-managers
+	# Tags de livraison YY.MM.DD[.V] : sans releaseTeam, seuls les admins du dépôt livrent.
+	# Pour ouvrir la livraison à une équipe GitHub (git sdlc setup) : releaseTeam = <slug>
 	# Nombre maximal de PR lues par status et board.
 	prLimit = 300
 	# Arguments de gh pr merge pour git sdlc merge. Garder --rebase : seul le rebase

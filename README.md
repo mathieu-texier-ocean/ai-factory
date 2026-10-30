@@ -12,7 +12,7 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `.githooks/commit-msg` | ajoute `Need:` et `Stage:` sur les branches `need/*`, `Need: none` ailleurs |
 | `.githooks/pre-commit` | refuse un `intent.md` auquel il manque une section du gabarit, et un credential en clair dans une ligne ajoutée |
 | `.githooks/lib/credential.sh` | détection des credentials, partagée par le pre-commit et le check CI |
-| `.sdlc/config` | réglages partagés (branche principale, équipe release, arguments de fusion…) |
+| `.sdlc/config` | réglages partagés (branche principale, arguments de fusion, équipe release facultative…) |
 | `templates/intent.md` | gabarit copié par `git sdlc new` |
 | `templates/spec.md`, `plan.md` | gabarits copiés par `git sdlc claim` (étapes spec et build), remplis par les skills de spec et de plan |
 | `.claude/skills/` | skills Claude Code des étapes (voir « Les skills de Claude ») |
@@ -31,7 +31,7 @@ Prérequis : git 2.30+, bash 3.2+ (celui de macOS convient), GitHub CLI `gh` ins
 ```sh
 <clone du kit>/scripts/deployer.sh install /chemin/du/depot [<nom du projet>]
 cd /chemin/du/depot
-# Fusionnez puis supprimez les .nouveau listés, éditez .sdlc/config (releaseTeam), complétez CLAUDE.md, puis :
+# Fusionnez puis supprimez les .nouveau listés, complétez CLAUDE.md, puis :
 git config core.hooksPath .githooks
 git add -A && git commit -m "Initialisation du SDLC" && git push
 cp <clone du kit>/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # si absent : setup en a besoin (étape 2)

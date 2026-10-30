@@ -237,7 +237,7 @@ cmd_install() {
 Marche à suivre (non exécutée) :
   cd $cible
   git init                              # si ce n'est pas encore un dépôt
-  # fusionner puis supprimer les .nouveau ; renseigner releaseTeam dans .sdlc/config ; compléter CLAUDE.md
+  # fusionner puis supprimer les .nouveau ; compléter CLAUDE.md
   git config core.hooksPath .githooks
   git add -A && git commit -m "Initialisation du SDLC" && git push
   cp $SOURCE/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # si absent, tout dossier du PATH
