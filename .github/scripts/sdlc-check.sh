@@ -9,8 +9,8 @@
 # (main : une PR ne déplace pas le dossier qu’elle est contrôlée sur), sinon requirements.
 #
 # Règles :
-#   need/<id>/intent  ne modifie que <dir>/<id>/intent.md (et <dir>/<id>/assets/)
-#   need/<id>/spec    ne modifie que <dir>/<id>/spec.md (et assets) ; intent.md déjà sur main
+#   need/<id>/intent  ne modifie que <dir>/<id>/intent.md (et tldr.md, <dir>/<id>/assets/)
+#   need/<id>/spec    ne modifie que <dir>/<id>/spec.md (et tldr.md, assets) ; intent.md déjà sur main
 #   need/<id>/build   contient <dir>/<id>/plan.md ; ne modifie ni intent.md ni spec.md ;
 #                     spec.md déjà sur main ; ne touche aucun autre besoin
 #   chaque commit (hors merges) porte Need: <id>
@@ -62,7 +62,7 @@ if [[ $HEAD_REF =~ ^need/([^/]+)/(intent|spec|build)$ ]]; then
   for f in ${files[@]+"${files[@]}"}; do
     case $step in
       intent|spec)
-        case $f in "$dir/$step.md"|"$dir/assets/"*) ;; *) err "PR $step : $f hors périmètre (seul $dir/$step.md)" ;; esac ;;
+        case $f in "$dir/$step.md"|"$dir/tldr.md"|"$dir/assets/"*) ;; *) err "PR $step : $f hors périmètre (seuls $dir/$step.md et $dir/tldr.md)" ;; esac ;;
       build)
         case $f in
           "$dir/intent.md"|"$dir/spec.md") err "PR build : $f ne change que par une PR intent/spec (fusion par le PO)" ;;

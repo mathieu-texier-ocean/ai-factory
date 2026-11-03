@@ -16,6 +16,7 @@ git config core.hooksPath .githooks   # active commit-msg et pre-commit
 - Chaque commit se termine par les trailers `Need: <id>` et `Stage: <étape>` (intent → plan, spec → design, build → build).
 - En build, commence par `requirements/<id>/plan.md` (plan mode) ; s’il change, mets-le à jour dans la même PR.
 - Ne modifie pas `intent.md` ni `spec.md` dans une PR build : ils ont leurs propres PR.
+- `requirements/<id>/tldr.md` résume le besoin et ses décisions importantes. Mets-le à jour dans la PR de chaque étape : intent, spec, build, et validation, la recette comprise.
 - N’exécute jamais `git sdlc merge`, `gh pr merge` ni `git sdlc release` : ce sont des gates humains.
 - Pour une revue, suis `REVIEW.md`.
 - Skills par étape : `redaction-intent` et `controle-taille-intent`, `generation-spec`, `generation-plan`.

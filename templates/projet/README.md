@@ -13,8 +13,8 @@ Le projet suit le SDLC natif IA avec git et GitHub. Chaque étape d’un besoin 
 | Chemin | Rôle |
 |---|---|
 | `CLAUDE.md` | Contexte lu par Claude à chaque session |
-| `requirements/<id>/` | Un dossier par besoin : `intent.md`, `spec.md`, `plan.md`, et `assets/` si besoin |
-| `templates/` | Gabarits d’intent, de spec et de plan, copiés par `git sdlc new` et `git sdlc claim` |
+| `requirements/<id>/` | Un dossier par besoin : `intent.md`, `spec.md`, `plan.md`, `tldr.md` (résumé et décisions, tenu à jour à chaque étape), et `assets/` si besoin |
+| `templates/` | Gabarits d’intent, de spec et de plan, copiés par `git sdlc new` et `git sdlc claim`, et de TL;DR, copié par les skills |
 | `.claude/skills/` | Skills de rédaction d’intent, de contrôle de taille, de génération de spec et de plan |
 | `.claude/hooks/`, `.claude/settings.json` | Hooks Claude Code : signalent à l’ouverture de session, et bloquent les `git commit` de Claude, tant que les hooks git ne sont pas actifs |
 | `.githooks/` | `commit-msg` ajoute les trailers `Need:` et `Stage:` ; `pre-commit` refuse un `intent.md` auquel il manque une section, et un credential en clair |

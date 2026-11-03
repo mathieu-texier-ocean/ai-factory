@@ -21,11 +21,12 @@ Transforme un intent accepté en `<dir>/<id>/spec.md`. Tu structures et tu rends
 7. Reprends chaque question ouverte de l'intent : soit une information de l'intent la tranche (le comportement concerné cite sa source), soit tu la reportes telle quelle dans « Questions ouvertes ».
 8. Toute contradiction entre l'intent, le parent et les standards va dans « Points d'attention », avec les deux sources citées et le décideur attendu. Ne la tranche pas.
 9. Écris `<dir>/<id>/spec.md` (le gabarit rempli, ou à défaut créé), sans champ « Statut ».
-10. Affiche le résumé (voir « Format de sortie ») et rappelle la suite : commit, `git push`, puis `git sdlc ready` une fois la spec relue.
+10. Tiens à jour `<dir>/<id>/tldr.md` (créé depuis `templates/tldr.md`, `{{ID}}` remplacé, s'il manque) : mets « Résumé » à jour, et ajoute dans « Décisions » une ligne `spec` par question ouverte de l'intent que la spec tranche, avec sa source. Un point d'attention n'y entre qu'une fois arbitré par son décideur. N'efface aucune ligne existante.
+11. Affiche le résumé (voir « Format de sortie ») et rappelle la suite : commit, `git push`, puis `git sdlc ready` une fois la spec relue.
 
 ## Format de sortie
 
-- Le fichier `<dir>/<id>/spec.md`, conforme au gabarit.
+- Le fichier `<dir>/<id>/spec.md`, conforme au gabarit, et `<dir>/<id>/tldr.md` à jour.
 - Puis le résumé :
   - nombre de comportements, de cas limites et de critères d'acceptation ;
   - liste des points d'attention ;

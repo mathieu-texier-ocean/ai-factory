@@ -28,11 +28,12 @@ Conduit la séance de plan d'un besoin et remplit son `plan.md`, copié par `git
    - `À risque` : la réponse du développeur ; si oui, rappelle qu'un tech lead donne son avis sur le plan avant le code ;
    - `Base` : le commit de `<main>` de départ (`git rev-parse --short <remote>/<main>`) ;
    - plan existant : remplis le gabarit copié par `git sdlc claim` ; s'il est déjà rédigé, complète-le ou révise-le sans effacer ce qui y est écrit, dans la même PR.
-8. Affiche le résumé (voir « Format de sortie ») et rappelle la suite : commiter le plan seul, avant le code.
+8. Tiens à jour `<dir>/<id>/tldr.md` (créé depuis `templates/tldr.md`, `{{ID}}` remplacé, s'il manque) : mets « Résumé » à jour, et ajoute dans « Décisions » une ligne `build` pour la valeur de `À risque` et pour chaque option écartée, avec le développeur pour décideur. N'efface aucune ligne existante.
+9. Affiche le résumé (voir « Format de sortie ») et rappelle la suite : commiter le plan seul, avant le code.
 
 ## Format de sortie
 
-- Le fichier `<dir>/<id>/plan.md`, conforme au gabarit.
+- Le fichier `<dir>/<id>/plan.md`, conforme au gabarit, et `<dir>/<id>/tldr.md` à jour.
 - Puis le résumé :
   - nombre d'étapes et valeur de `À risque` ;
   - avertissements : taille ou branches parallèles, numéros de la spec non couverts ;
@@ -44,7 +45,7 @@ En cas d'arrêt (étape 2) ou de sortie du plan mode refusée (étape 6) : un me
 ## Interdits
 
 - N'ajoute aucun statut et n'exécute jamais `git sdlc merge`, `gh pr merge` ni `git sdlc release` : ce sont des gates humains.
-- N'écris ni code ni test : seulement `plan.md`.
+- N'écris ni code ni test : seulement `plan.md` et `tldr.md`.
 - Ne modifie ni l'intent ni la spec : dans une PR build, le check `sdlc-conventions` les refuse.
 - N'écris aucun fichier tant que tu es en plan mode.
 - N'invente ni réponse du développeur, ni chiffre, ni contrainte : ce qui manque reste visible dans le plan.

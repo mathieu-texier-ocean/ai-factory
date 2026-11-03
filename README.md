@@ -15,6 +15,7 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `.sdlc/config` | réglages partagés (branche principale, arguments de fusion, équipe release facultative…) |
 | `templates/intent.md` | gabarit copié par `git sdlc new` |
 | `templates/spec.md`, `plan.md` | gabarits copiés par `git sdlc claim` (étapes spec et build), remplis par les skills de spec et de plan |
+| `templates/tldr.md` | gabarit du résumé du besoin et de ses décisions, copié par les skills, puis tenu à jour à chaque étape |
 | `.claude/skills/` | skills Claude Code des étapes (voir « Les skills de Claude ») |
 | `.claude/settings.json`, `.claude/hooks/` | hooks Claude Code : signalent à l’ouverture de session, et bloquent les `git commit` de Claude, tant que `core.hooksPath` ne vaut pas `.githooks` |
 | `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
@@ -113,6 +114,8 @@ Le trailer `Stage:` porte l’étape du cycle du playbook, pas le nom de la bran
 | `need/<id>/build` | `requirements/<id>/plan.md`, puis le code | `build` |
 
 Un commit d’intent porte donc `Stage: plan`. Le fichier `plan.md`, lui, relève de l’étape build : c’est le plan d’implémentation produit en plan mode avant le code. Les valeurs `test`, `deploy` et `maintain` sont acceptées par le hook pour les commits saisis à la main ; aucune branche ne les produit.
+
+Chaque étape peut aussi mettre à jour `requirements/<id>/tldr.md`, le résumé du besoin et de ses décisions importantes : le check l’accepte dans les PR intent et spec, à côté du fichier de l’étape, et la PR build peut le modifier comme tout fichier du besoin. Les skills le créent et le complètent ; à la validation, il se met à jour dans la PR build.
 
 ## Les skills de Claude
 

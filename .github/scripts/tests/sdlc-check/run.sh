@@ -43,6 +43,22 @@ mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && g
 essai "PR intent conforme acceptée" pass "conventions du SDLC respectées"
 
 branche need/nouv/intent
+mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && echo "# TL;DR" > requirements/nouv/tldr.md && git add -A && commit nouv
+essai "PR intent avec tldr.md acceptée" pass "conventions du SDLC respectées"
+
+branche need/nouv/intent
+mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && echo x > requirements/nouv/notes.md && git add -A && commit nouv
+essai "PR intent : autre fichier du besoin refusé" block "requirements/nouv/notes.md hors périmètre"
+
+branche need/acc/spec
+echo "# Spec v2" > requirements/acc/spec.md && echo "# TL;DR" > requirements/acc/tldr.md && git add -A && commit acc
+essai "PR spec avec tldr.md acceptée" pass "conventions du SDLC respectées"
+
+branche need/acc/spec
+echo "# Spec v2" > requirements/acc/spec.md && echo "# Plan" > requirements/acc/plan.md && git add -A && commit acc
+essai "PR spec : plan.md refusé" block "requirements/acc/plan.md hors périmètre"
+
+branche need/nouv/intent
 mkdir -p requirements/nouv && echo "# Intent" > requirements/nouv/intent.md && git add -A && commit ""
 essai "commit sans Need: refusé" block "trailer Need: manquant"
 

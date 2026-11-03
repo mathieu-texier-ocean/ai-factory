@@ -17,7 +17,8 @@ Transforme un besoin brut en `<dir>/<id>/intent.md` structuré. Tu poses les que
 6. « Priorité » : demande au product owner le niveau (Haute, Moyenne ou Basse), sa justification et l'échéance éventuelle. S'il ne les fournit pas, laisse « à définir par le PO » et ajoute la priorité dans « Questions ouvertes ». Ne déduis jamais un niveau du besoin.
 7. Remplis chaque section avec ce que l'utilisateur a dit, reformulé de façon concise. Toute information non fournie va dans « Questions ouvertes », jamais déduite. Garde les titres `## ` du gabarit à l'identique : le hook `pre-commit` refuse un intent auquel il en manque un.
 8. Garde l'en-tête `Clé: valeur` (Author, Product-Owner, Origin, Parent, Ticket, Risk) en début de ligne : `git sdlc` le lit. N'y ajoute pas de champ « Statut ».
-9. Montre l'intent produit et propose de lancer `controle-taille-intent`. Rappelle la suite : commit, `git push`, puis `git sdlc ready` quand l'auteur l'a relu.
+9. Tiens à jour `<dir>/<id>/tldr.md`. S'il n'existe pas, copie `templates/tldr.md` en remplaçant `{{ID}}`. Remplis « Résumé » en quelques lignes, et ajoute dans « Décisions » une ligne `intent` par décision que l'utilisateur a prise pendant la rédaction, avec sa date et son décideur. N'y écris rien qui ne soit pas dans l'intent, et n'efface aucune ligne existante.
+10. Montre l'intent et le TL;DR produits et propose de lancer `controle-taille-intent`. Rappelle la suite : commit, `git push`, puis `git sdlc ready` quand l'auteur l'a relu.
 
 ## Interdits
 
