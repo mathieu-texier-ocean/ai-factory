@@ -23,3 +23,6 @@
 - 2026-11-04 · intent · Périmètre : `status` et refus de `merge` ; `board` hors périmètre (Mathieu Texier)
 - 2026-11-04 · intent · Priorité Basse, sans échéance (Mathieu Texier)
 - 2026-11-04 · intent · Product owner : Mathieu Texier (Mathieu Texier)
+- 2026-11-04 · intent · Priorité Basse justifiée : gain de confort, l'information reste sur GitHub et aucun besoin n'est bloqué (Mathieu Texier)
+- 2026-11-04 · intent · Raison illisible : check affiché sans raison, la commande n'échoue pas (Mathieu Texier)
+- 2026-11-04 · intent · Longueur maximale de la raison : reportée au build, à fixer avec les premiers essais (Mathieu Texier)

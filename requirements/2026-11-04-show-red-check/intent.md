@@ -46,13 +46,14 @@ Chaque check rouge impose un aller-retour sur GitHub, alors que `git sdlc` se ve
      Justification en une phrase. Échéance seulement si elle est réelle, sinon « aucune ». -->
 
 - Niveau : Basse
-- Justification :
+- Justification : gain de confort ; l'information reste accessible sur GitHub et aucun besoin n'est bloqué.
 - Échéance : aucune
 
 ## Résultat attendu
 
 - `git sdlc status` : sous la ligne `checks rouges` des preuves, une ligne par check en échec, avec son nom, sa conclusion, la raison de l'échec fournie par GitHub (titre ou résumé) et le lien vers le détail. Les checks verts ou en cours ne sont pas détaillés.
 - `git sdlc merge` : quand la fusion est refusée pour checks rouges, le même détail s'affiche.
+- Raison illisible (droits, API indisponible) : le check s'affiche avec son nom, sa conclusion et son lien, sans raison ; la commande n'échoue pas pour autant.
 
 ## Utilisateurs et systèmes concernés
 
@@ -83,11 +84,10 @@ Mesurables, pour que les tests et la revue puissent les vérifier.
 - [ ] Le refus de `git sdlc merge` pour checks rouges affiche le même détail.
 - [ ] La sortie `status --porcelain` est inchangée.
 - [ ] Les check runs (GitHub Actions) comme les statuts de commit sont couverts.
+- [ ] Raison illisible : le check s'affiche sans raison et la commande se termine normalement.
 
 ## Questions ouvertes
 
 Elles doivent être tranchées ou reportées explicitement dans spec.md.
 
-- Justification de la priorité Basse (product owner).
-- Longueur maximale de la raison affichée : faut-il tronquer le résumé ?
-- Raison illisible (droits, API indisponible) : afficher le check sans raison ?
+- Longueur maximale de la raison affichée (tronquer le résumé ?) : reportée au build, à fixer avec les premiers essais.
