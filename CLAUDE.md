@@ -29,9 +29,21 @@ OK .claude/hooks/tests/hook-activation/run.sh
 - Si le comportement change volontairement, mettre à jour le test et le signaler explicitement.
 - `bin/git-sdlc` n'a pas de test automatisé : `bash -n bin/git-sdlc`, et le décrire dans le commit s'il a été essayé contre un dépôt GitHub.
 
+## SDLC
+
+- Une évolution du kit passe par un besoin : travaille uniquement sur la branche `need/<id>/<étape>` en cours ; jamais sur `main`. Un correctif sans besoin va sur une branche hors `need/*` (`Need: none`), sans toucher `requirements/`.
+- Chaque commit d'une branche `need/*` se termine par les trailers `Need: <id>` et `Stage: <étape>` (intent → plan, spec → design, build → build).
+- En build, commence par `requirements/<id>/plan.md` (plan mode) ; s'il change, mets-le à jour dans la même PR.
+- Ne modifie pas `intent.md` ni `spec.md` dans une PR build : ils ont leurs propres PR.
+- `requirements/<id>/tldr.md` résume le besoin et ses décisions importantes. Mets-le à jour dans la PR de chaque étape : intent, spec, build, et validation, la recette comprise.
+- N'exécute jamais `git sdlc merge`, `gh pr merge` ni `git sdlc release` : ce sont des gates humains.
+- Pour une revue, suis `REVIEW.md`.
+- Skills par étape : `redaction-intent` et `controle-taille-intent`, `generation-spec`, `generation-plan`.
+- Un livrable du kit et ses tests vivent hors de `requirements/` et n'y renvoient pas.
+
 ## Conventions
 
-- Ce dépôt est le kit, pas un dépôt produit : il n'a pas de besoins sous `requirements/` et ses commits suivent `feat(kit): …`, `fix(kit): …`, `docs(kit): …`, `test(kit): …`, le corps expliquant le pourquoi.
+- Ce dépôt est le kit, et il se développe avec son propre SDLC (section « SDLC ») : ses besoins vivent sous `requirements/<id>/`, que `scripts/deploy.sh` ne copie pas. Ses commits suivent `feat(kit): …`, `fix(kit): …`, `docs(kit): …`, `test(kit): …`, le corps expliquant le pourquoi.
 - Tout ce qui est copié dans un dépôt produit (`.claude/`, `.github/`, `.githooks/`, `.sdlc/`, `templates/`, `REVIEW.md`) doit fonctionner seul : pas de lien vers `scripts/` ni vers un fichier propre au kit.
 - Tests automatisés d'un livrable : `<dossier du livrable>/tests/<nom>/` (`run.sh` et `fixtures/`), dans un dépôt git temporaire, une ligne `PASS`/`FAIL` par cas. `scripts/deploy.sh` les exclut de la copie dans un dépôt produit.
 - Scripts : bash 3.2 (macOS) pour ce qui tourne sur un poste ; chemins lus en `-z`, jamais par `git diff --name-only` seul (guillemets de `core.quotePath`).
