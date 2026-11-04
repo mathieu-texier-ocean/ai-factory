@@ -79,7 +79,7 @@
     <div class="scroll">
     <svg viewBox="0 0 840 436" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="git-sdlc-data-flow-title git-sdlc-data-flow-desc">
       <title id="git-sdlc-data-flow-title">Qui fait quoi dans le SDLC git</title>
-      <desc id="git-sdlc-data-flow-desc">Le product owner rédige l’intent et valide la spec, l’ingénierie planifie, code et teste, le tech lead revoit et merge, puis les ops posent le tag de release et surveillent la production, qui renvoie un nouvel intent.</desc>
+      <desc id="git-sdlc-data-flow-desc">L’initiateur rédige l’intent avec Claude et le product owner fusionne les PR d’intent et de spec ; l’ingénierie planifie, code et teste sur la PR build, que le tech lead revoit selon REVIEW.md et fusionne par rebase ; le release manager publie une release GitHub sur un tag YY.MM.DD, et un incident en production ouvre un nouvel intent avec Parent.</desc>
       <defs>
         <pattern id="git-sdlc-df-dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="0.8" fill="rgba(45,49,66,0.10)" class="dot"/></pattern>
         <marker id="git-sdlc-df-arr-muted" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#4f5d75" class="m-muted"/></marker>
@@ -111,7 +111,7 @@
       </g>
 
       <g aria-label="Rôles">
-        <text x="70" y="72" class="lane-label">PRODUIT</text><text x="70" y="84" class="lane-label">PRODUCT OWNER</text>
+        <text x="70" y="72" class="lane-label">PRODUIT</text><text x="70" y="84" class="lane-label">INITIATEUR · PO</text>
         <text x="70" y="152" class="lane-label">INGÉNIERIE</text><text x="70" y="164" class="lane-label">DEV + CLAUDE</text>
         <text x="70" y="232" class="lane-label">REVUE</text><text x="70" y="244" class="lane-label">TECH LEAD</text>
         <text x="70" y="312" class="lane-label">RELEASE</text><text x="70" y="324" class="lane-label">OPS · RM</text>
@@ -129,49 +129,49 @@
 
       <!-- PO : Rédiger l’intent -->
       <rect x="146" y="44" width="100" height="64" rx="6" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" class="node"/>
-      <rect x="150" y="48" width="18" height="10" rx="3" fill="rgba(45,49,66,0.12)" class="chip"/><text x="159" y="55" class="role-text">PO</text>
-      <text x="196" y="67" class="node-title">Rédiger l’intent</text><text x="196" y="79" class="node-sub">need/&lt;id&gt;/intent</text><text x="196" y="91" class="node-tool">merge → main</text>
+      <rect x="150" y="48" width="18" height="10" rx="3" fill="rgba(45,49,66,0.12)" class="chip"/><text x="159" y="55" class="role-text">INI</text>
+      <text x="196" y="67" class="node-title">Rédiger l’intent</text><text x="196" y="79" class="node-sub">need/&lt;id&gt;/intent</text><text x="196" y="91" class="node-tool">skill redaction-intent</text>
       <rect x="226" y="98" width="16" height="8" rx="3" fill="#6e6479"/><text x="234" y="104" class="chip-text">IN</text>
 
       <!-- PO : Valider la spec -->
       <rect x="258" y="44" width="100" height="64" rx="6" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" class="node"/>
       <rect x="262" y="48" width="18" height="10" rx="3" fill="rgba(45,49,66,0.12)" class="chip"/><text x="271" y="55" class="role-text">PO</text>
-      <text x="308" y="67" class="node-title">Valider la spec</text><text x="308" y="79" class="node-sub">need/&lt;id&gt;/spec</text><text x="308" y="91" class="node-tool">Approved-by: PO</text>
+      <text x="308" y="67" class="node-title">Valider la spec</text><text x="308" y="79" class="node-sub">need/&lt;id&gt;/spec</text><text x="308" y="91" class="node-tool">git sdlc merge · PO</text>
       <rect x="262" y="98" width="16" height="8" rx="3" fill="#6e6479"/><text x="270" y="104" class="chip-text">IN</text>
       <rect x="338" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="346" y="104" class="chip-text">SP</text>
 
       <!-- DEV : Plan & code (focal) -->
       <rect x="370" y="124" width="100" height="64" rx="6" fill="rgba(191,69,32,0.07)" stroke="#bf4520" stroke-width="1.2" class="node-focal"/>
       <rect x="374" y="128" width="18" height="10" rx="3" fill="rgba(191,69,32,0.20)" class="chip-focal"/><text x="383" y="135" class="role-text focal-text">DEV</text>
-      <text x="420" y="147" class="node-title">Plan &amp; code</text><text x="420" y="159" class="node-sub">need/&lt;id&gt;/build</text><text x="420" y="171" class="node-tool">plan.md · Claude Code</text>
+      <text x="420" y="147" class="node-title">Plan &amp; code</text><text x="420" y="159" class="node-sub">need/&lt;id&gt;/build</text><text x="420" y="171" class="node-tool">plan mode · plan.md</text>
       <rect x="374" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="382" y="184" class="chip-text">SP</text>
       <rect x="450" y="178" width="16" height="8" rx="3" fill="#b8915a"/><text x="458" y="184" class="chip-text">CD</text>
 
       <!-- DEV : Tests -->
       <rect x="482" y="124" width="100" height="64" rx="6" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" class="node"/>
       <rect x="486" y="128" width="18" height="10" rx="3" fill="rgba(45,49,66,0.12)" class="chip"/><text x="495" y="135" class="role-text">DEV</text>
-      <text x="532" y="147" class="node-title">Tests en boucle</text><text x="532" y="159" class="node-sub">make test · evals</text><text x="532" y="171" class="node-tool">notes --ref=tests</text>
+      <text x="532" y="147" class="node-title">Tests en boucle</text><text x="532" y="159" class="node-sub">tests + recette</text><text x="532" y="171" class="node-tool">check sdlc-conventions</text>
       <rect x="486" y="178" width="16" height="8" rx="3" fill="#b8915a"/><text x="494" y="184" class="chip-text">CD</text>
-      <rect x="562" y="178" width="16" height="8" rx="3" fill="#4a7c59"/><text x="570" y="184" class="chip-text">NT</text>
+      <rect x="562" y="178" width="16" height="8" rx="3" fill="#4a7c59"/><text x="570" y="184" class="chip-text">PR</text>
 
       <!-- TL : Revue & merge -->
       <rect x="594" y="204" width="100" height="64" rx="6" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" class="node"/>
       <rect x="598" y="208" width="18" height="10" rx="3" fill="rgba(45,49,66,0.12)" class="chip"/><text x="607" y="215" class="role-text">TL</text>
-      <text x="644" y="227" class="node-title">Revue &amp; merge</text><text x="644" y="239" class="node-sub">notes --ref=review</text><text x="644" y="251" class="node-tool">merge -S → main</text>
-      <rect x="598" y="258" width="16" height="8" rx="3" fill="#4a7c59"/><text x="606" y="264" class="chip-text">NT</text>
+      <text x="644" y="227" class="node-title">Revue &amp; merge</text><text x="644" y="239" class="node-sub">REVIEW.md · Claude</text><text x="644" y="251" class="node-tool">merge --rebase → main</text>
+      <rect x="598" y="258" width="16" height="8" rx="3" fill="#4a7c59"/><text x="606" y="264" class="chip-text">PR</text>
       <rect x="674" y="258" width="16" height="8" rx="3" fill="#b8915a"/><text x="682" y="264" class="chip-text">CD</text>
 
       <!-- OPS : Tag de release -->
       <rect x="594" y="284" width="100" height="64" rx="6" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" class="node"/>
       <rect x="598" y="288" width="18" height="10" rx="3" fill="rgba(45,49,66,0.12)" class="chip"/><text x="607" y="295" class="role-text">RM</text>
-      <text x="644" y="307" class="node-title">Tag de release</text><text x="644" y="319" class="node-sub">release/&lt;date&gt;</text><text x="644" y="331" class="node-tool">git tag -s</text>
+      <text x="644" y="307" class="node-title">Tag de release</text><text x="644" y="319" class="node-sub">YY.MM.DD[.V]</text><text x="644" y="331" class="node-tool">git sdlc release</text>
       <rect x="598" y="338" width="16" height="8" rx="3" fill="#b8915a"/><text x="606" y="344" class="chip-text">CD</text>
       <rect x="674" y="338" width="16" height="8" rx="3" fill="#9c6b50"/><text x="682" y="344" class="chip-text">TG</text>
 
       <!-- OPS : Surveillance -->
       <rect x="706" y="284" width="100" height="64" rx="6" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" class="node"/>
       <rect x="710" y="288" width="18" height="10" rx="3" fill="rgba(45,49,66,0.12)" class="chip"/><text x="719" y="295" class="role-text">OPS</text>
-      <text x="756" y="307" class="node-title">Surveillance</text><text x="756" y="319" class="node-sub">bands.yaml · 3σ</text><text x="756" y="331" class="node-tool">→ nouvel intent.md</text>
+      <text x="756" y="307" class="node-title">Surveillance</text><text x="756" y="319" class="node-sub">incident en prod</text><text x="756" y="331" class="node-tool">new --parent &lt;id&gt;</text>
       <rect x="710" y="338" width="16" height="8" rx="3" fill="#9c6b50"/><text x="718" y="344" class="chip-text">TG</text>
       <rect x="786" y="338" width="16" height="8" rx="3" fill="#6e6479"/><text x="794" y="344" class="chip-text">IN</text>
 
@@ -189,9 +189,9 @@
       <rect x="180" y="388" width="16" height="8" rx="3" fill="#6e6479"/><text x="188" y="394" class="chip-text">IN</text><text x="202" y="396" class="legend-text">intent.md</text>
       <rect x="248" y="388" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="256" y="394" class="chip-text">SP</text><text x="270" y="396" class="legend-text">spec.md</text>
       <rect x="312" y="388" width="16" height="8" rx="3" fill="#b8915a"/><text x="320" y="394" class="chip-text">CD</text><text x="334" y="396" class="legend-text">plan.md + diff</text>
-      <rect x="394" y="388" width="16" height="8" rx="3" fill="#4a7c59"/><text x="402" y="394" class="chip-text">NT</text><text x="416" y="396" class="legend-text">git notes</text>
-      <rect x="464" y="388" width="16" height="8" rx="3" fill="#9c6b50"/><text x="472" y="394" class="chip-text">TG</text><text x="486" y="396" class="legend-text">tag release</text>
-      <text x="548" y="396" class="legend-text">puce gauche = entrée · puce droite = sortie</text>
+      <rect x="394" y="388" width="16" height="8" rx="3" fill="#4a7c59"/><text x="402" y="394" class="chip-text">PR</text><text x="416" y="396" class="legend-text">PR · revue</text>
+      <rect x="464" y="388" width="16" height="8" rx="3" fill="#9c6b50"/><text x="472" y="394" class="chip-text">TG</text><text x="486" y="396" class="legend-text">release YY.MM.DD</text>
+      <text x="560" y="396" class="legend-text">puce gauche = entrée · puce droite = sortie</text>
 
       <!-- Légende : flux -->
       <text x="164" y="418" class="legend-label">FLUX</text>

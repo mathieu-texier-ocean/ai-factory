@@ -64,7 +64,7 @@
     <div class="scroll">
     <svg viewBox="0 0 1160 576" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="git-sdlc-states-title git-sdlc-states-desc">
       <title id="git-sdlc-states-title">Cycle de vie d’un besoin dans git</title>
-      <desc id="git-sdlc-states-desc">Un besoin passe par cinq phases (intent, spec, build et tests, prêt à livrer, livré), chacune franchie par un événement git, avec deux états de reprise (corrections, incident) et une issue terminale (rejet).</desc>
+      <desc id="git-sdlc-states-desc">Un besoin passe par cinq phases (intent, spec, build et tests, prêt à livrer, livré). Chaque étape est une pull request vers main dont la fusion par rebase franchit la gate ; la livraison est une release GitHub sur un tag YY.MM.DD[.V]. Deux états de reprise (corrections demandées sur la PR, incident ouvert par un intent enfant) et une issue terminale (rejet par git sdlc reject).</desc>
       <defs>
         <pattern id="git-sdlc-dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)" class="f-dot"/></pattern>
         <marker id="git-sdlc-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4f5d75" class="f-muted"/></marker>
@@ -103,12 +103,12 @@
         <rect x="254" y="244" width="64" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="286" y="253">MERGE INTENT</text>
         <rect x="476" y="244" width="60" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="506" y="253">MERGE SPEC</text>
         <rect x="694" y="244" width="64" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="726" y="253">MERGE BUILD</text>
-        <rect x="914" y="244" width="64" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="946" y="253" fill="#bf4520" class="f-accent">TAG RELEASE</text>
+        <rect x="914" y="244" width="64" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="946" y="253" fill="#bf4520" class="f-accent">TAG YY.MM.DD</text>
         <rect x="532" y="182" width="52" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="558" y="191">CONSTATS</text>
         <rect x="648" y="182" width="56" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="676" y="191">CORRECTIF</text>
-        <rect x="986" y="182" width="78" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="1025" y="191">BANDE FRANCHIE</text>
-        <rect x="572" y="36" width="76" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="610" y="45">NOUVEL INTENT</text>
-        <rect x="184" y="356" width="48" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="208" y="365">REFUS PO</text>
+        <rect x="986" y="182" width="78" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="1025" y="191">INCIDENT PROD</text>
+        <rect x="556" y="36" width="108" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="610" y="45">NEW --PARENT &lt;ID&gt;</text>
+        <rect x="184" y="356" width="68" height="12" rx="2" fill="#f5f5f5" class="f-paper"/><text x="218" y="365">SDLC REJECT</text>
       </g>
 
       <circle cx="28" cy="264" r="6" fill="#2d3142" class="f-ink"/>
@@ -120,28 +120,28 @@
           <rect x="114" y="238" width="32" height="12" rx="2" fill="none" stroke="rgba(79,93,117,0.45)" class="s-tag"/>
           <text x="130" y="247" fill="#4f5d75" font-size="7" font-family="'Geist Mono',monospace" class="f-muted">PLAN</text>
           <text x="176" y="270" fill="#2d3142" font-size="12" font-weight="600" class="f-ink">Intent en cours</text>
-          <text x="176" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PO · need/&lt;id&gt;/intent</text>
+          <text x="176" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PR intent · fusion PO</text>
         </g>
         <g>
           <rect x="324" y="228" width="144" height="72" rx="8" fill="#ffffff" stroke="#2d3142" class="f-node s-ink"/>
           <rect x="334" y="238" width="40" height="12" rx="2" fill="none" stroke="rgba(79,93,117,0.45)" class="s-tag"/>
           <text x="354" y="247" fill="#4f5d75" font-size="7" font-family="'Geist Mono',monospace" class="f-muted">DESIGN</text>
           <text x="396" y="270" fill="#2d3142" font-size="12" font-weight="600" class="f-ink">Spec en cours</text>
-          <text x="396" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PO · need/&lt;id&gt;/spec</text>
+          <text x="396" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PR spec · fusion PO</text>
         </g>
         <g>
           <rect x="544" y="228" width="144" height="72" rx="8" fill="#ffffff" stroke="#2d3142" class="f-node s-ink"/>
           <rect x="554" y="238" width="68" height="12" rx="2" fill="none" stroke="rgba(79,93,117,0.45)" class="s-tag"/>
           <text x="588" y="247" fill="#4f5d75" font-size="7" font-family="'Geist Mono',monospace" class="f-muted">BUILD · TEST</text>
           <text x="616" y="270" fill="#2d3142" font-size="12" font-weight="600" class="f-ink">Plan, code, tests</text>
-          <text x="616" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">Dev · need/&lt;id&gt;/build</text>
+          <text x="616" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PR build · fusion TL</text>
         </g>
         <g>
           <rect x="764" y="228" width="144" height="72" rx="8" fill="#ffffff" stroke="#2d3142" class="f-node s-ink"/>
           <rect x="774" y="238" width="40" height="12" rx="2" fill="none" stroke="rgba(79,93,117,0.45)" class="s-tag"/>
           <text x="794" y="247" fill="#4f5d75" font-size="7" font-family="'Geist Mono',monospace" class="f-muted">DEPLOY</text>
           <text x="836" y="270" fill="#2d3142" font-size="12" font-weight="600" class="f-ink">Prêt à livrer</text>
-          <text x="836" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">main · Stage: build</text>
+          <text x="836" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PR build fusionnée</text>
         </g>
         <g>
           <rect x="984" y="228" width="144" height="72" rx="8" fill="rgba(191,69,32,0.08)" stroke="#bf4520" class="f-tint s-accent"/>
@@ -150,7 +150,7 @@
           <circle cx="1108" cy="244" r="7" fill="none" stroke="#bf4520" class="s-accent"/>
           <circle cx="1108" cy="244" r="4" fill="#bf4520" class="f-accent"/>
           <text x="1056" y="270" fill="#2d3142" font-size="12" font-weight="600" class="f-ink">Livré</text>
-          <text x="1056" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">RM · tag release/*</text>
+          <text x="1056" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">RM · tag YY.MM.DD[.V]</text>
         </g>
       </g>
 
@@ -161,7 +161,7 @@
           <rect x="554" y="86" width="44" height="12" rx="2" fill="none" stroke="rgba(79,93,117,0.45)" class="s-tag"/>
           <text x="576" y="95" fill="#4f5d75" font-size="7" font-family="'Geist Mono',monospace" class="f-muted">REPRISE</text>
           <text x="616" y="118" fill="#2d3142" font-size="12" font-weight="600" class="f-ink">Corrections</text>
-          <text x="616" y="134" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">git notes --ref=review</text>
+          <text x="616" y="134" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PR · changes requested</text>
         </g>
         <g>
           <rect x="984" y="76" width="144" height="72" rx="8" fill="#f5f5f5" stroke="#4f5d75" stroke-dasharray="5,4" class="f-paper s-muted"/>
@@ -178,19 +178,19 @@
         <rect x="114" y="442" width="50" height="12" rx="2" fill="none" stroke="rgba(79,93,117,0.45)" class="s-tag"/>
         <text x="139" y="451" fill="#4f5d75" font-size="7" font-family="'Geist Mono',monospace" class="f-muted">TERMINAL</text>
         <text x="176" y="474" fill="#2d3142" font-size="12" font-weight="600" class="f-ink">Rejeté</text>
-        <text x="176" y="490" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">branche non fusionnée</text>
+        <text x="176" y="490" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" class="f-muted">PR close · sdlc:rejected</text>
       </g>
 
       <!-- Annotation éditoriale. -->
       <g font-family="'Instrument Serif',Georgia,serif" font-style="italic" font-size="14" fill="#4f5d75" class="f-muted">
-        <text x="280" y="462">Un refus peut survenir à chaque gate, avant merge :</text>
-        <text x="280" y="482">la branche est supprimée et rien n’atteint main.</text>
+        <text x="280" y="462">Un rejet peut survenir à chaque étape : git sdlc reject ferme les PR ouvertes</text>
+        <text x="280" y="482">avec l’étiquette sdlc:rejected ; un besoin déjà accepté reçoit le tag rejected/&lt;id&gt;.</text>
       </g>
 
       <!-- Légende : bande horizontale en bas. -->
       <g font-family="'Geist Mono',monospace" font-size="8" letter-spacing="0.06em" fill="#4f5d75" class="f-muted">
         <line x1="32" y1="548" x2="64" y2="548" stroke="#4f5d75" stroke-width="1.2" class="s-muted"/>
-        <text x="72" y="551">gate · merge -S + Approved-by</text>
+        <text x="72" y="551">gate · fusion de la PR (rebase)</text>
         <line x1="332" y1="548" x2="364" y2="548" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" class="s-muted"/>
         <text x="372" y="551">reprise / boucle</text>
         <line x1="532" y1="548" x2="564" y2="548" stroke="#bf4520" stroke-width="1.4" class="s-accent"/>
