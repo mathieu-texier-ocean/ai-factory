@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-`git sdlc status` et le refus de `git sdlc merge` disent seulement « checks rouges » : pour savoir quel check échoue et pourquoi, il faut ouvrir la PR sur GitHub. Le besoin ajoute, pour chaque check rouge, son nom, sa conclusion, la raison donnée par GitHub et son lien. La spec fixe 9 comportements (C1–C9), 9 cas limites et 9 critères d'acceptation ; sa révision du 2026-11-05 lit la raison d'un check GitHub Actions dans ses annotations, son titre et son résumé étant vides. Étape en cours : build, en trois étapes (détail dans `status`, détail au refus de `merge`, tests avec un faux `gh`).
+`git sdlc status` et le refus de `git sdlc merge` disent seulement « checks rouges » : pour savoir quel check échoue et pourquoi, il faut ouvrir la PR sur GitHub. Le besoin ajoute, pour chaque check rouge, son nom, sa conclusion, la raison donnée par GitHub et son lien. La spec fixe 9 comportements (C1–C9), 9 cas limites et 9 critères d'acceptation ; sa révision du 2026-11-05 lit la raison d'un check GitHub Actions dans ses annotations, son titre et son résumé étant vides. Build livré en trois étapes (détail dans `status`, détail au refus de `merge`, tests avec un faux `gh`), puis corrigé après revue. Étape en cours : recette, fiche dans `validation.md` (critères automatisés constatés, essais contre GitHub à faire côté hôte).
 
 ## Décisions
 
