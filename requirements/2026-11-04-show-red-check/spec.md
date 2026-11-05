@@ -39,6 +39,10 @@ Le détail des checks rouges d'une PR ouverte d'un besoin, dans la sortie humain
 
 - **C8.** Quand la raison d'un check rouge ne peut pas être lue (droits insuffisants, API indisponible, sortie vide), la ligne du check s'affiche avec son nom, sa conclusion et son lien, sans raison. La commande se poursuit et garde le code de retour qu'elle aurait eu sans ce détail.
 
+### Raison d'un check GitHub Actions
+
+- **C9.** Un check run sans titre ni résumé de sortie prend pour raison le message de sa première annotation de niveau `failure`. Sans une telle annotation, C8 s'applique.
+
 ## Cas limites
 
 <!-- Situations aux bords et comportement attendu, en citant la règle C concernée. -->
@@ -53,6 +57,7 @@ Le détail des checks rouges d'une PR ouverte d'un besoin, dans la sortie humain
 | L6 | Jeton sans accès aux check runs, ou API GitHub indisponible pendant la lecture des raisons | Lignes sans raison, `status` se termine normalement (C8). |
 | L7 | PR encore en brouillon avec des checks rouges | Le détail s'affiche aussi : les preuves de `status` couvrent toute PR ouverte (C1). |
 | L8 | `git sdlc board` sur un besoin dont la PR a des checks rouges | Sortie inchangée (hors périmètre). |
+| L9 | Job GitHub Actions en échec : titre et résumé de sortie vides, une annotation `::error::<message>` | La raison affichée est `<message>` (C9). |
 
 ## Contrats
 
@@ -87,6 +92,7 @@ Le détail des checks rouges d'une PR ouverte d'un besoin, dans la sortie humain
 | A6 | Check run couvert | Un check run GitHub Actions en échec, avec un titre de sortie | `git sdlc status <id>` | La raison affichée est ce titre | Manuel |
 | A7 | Statut de commit couvert | Un statut de commit en `failure` ou `error`, avec une description | `git sdlc status <id>` | La ligne donne le contexte, l'état, la description et le lien | Manuel |
 | A8 | Raison illisible | Un check rouge dont la raison ne peut pas être lue (jeton sans accès aux check runs) | `git sdlc status <id>` | La ligne s'affiche sans raison ; code de retour 0 | Manuel |
+| A9 | Raison d'un check Actions | Une PR dont le check `sdlc-conventions` échoue avec `::error::<message>` | `git sdlc status <id>` | La ligne du check affiche `<message>` comme raison | Automatisé |
 
 ## Points d’attention
 
@@ -96,6 +102,8 @@ Le détail des checks rouges d'une PR ouverte d'un besoin, dans la sortie humain
 - `bin/git-sdlc` n'a pas de test automatisé : tous les critères sont `Manuel`, à jouer contre un dépôt GitHub. Ajouter un faux `gh` pour les automatiser est à arbitrer par le tech lead.
 - La raison d'un check run (titre ou résumé de sa sortie) n'est pas dans le résumé des checks de la liste des PR : il faut une lecture GitHub de plus, seulement quand un check est rouge (C5). Un jeton sans accès aux check runs donne C8. Risque à confirmer par le tech lead au build.
 - Aucun skill de standards dans `.claude/skills/` ne couvre le format des sorties en ligne de commande.
+- Révision du 2026-11-05 (C9, L9, A9) : un sondage de GitHub (dépôt `cli/cli` et check `sdlc-conventions`) montre qu'un job GitHub Actions en échec a un titre et un résumé de sortie vides ; la raison est dans ses annotations (`::error::`). Sans C9, C4 afficherait toujours un check Actions sans raison. La lecture des annotations est un appel GitHub de plus, seulement pour un check rouge (C5 tenu).
+- Faux `gh` : retenu par le développeur le 2026-11-05 pour automatiser les tests au build.
 
 ## Hors périmètre
 
