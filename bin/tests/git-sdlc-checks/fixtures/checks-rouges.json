@@ -1,10 +1,12 @@
 [
- {"name":"sdlc-conventions","state":"FAILURE","description":"","link":"https://github.com/o/r/actions/runs/1/job/101","bucket":"fail"},
- {"name":"lint","state":"IN_PROGRESS","description":"","link":"https://github.com/o/r/actions/runs/1/job/103","bucket":"pending"},
- {"name":"tests","state":"FAILURE","description":"","link":"https://github.com/o/r/runs/102","bucket":"fail"},
- {"name":"ci/ext","state":"ERROR","description":"Build\n  cassé","link":"https://ci.example/9","bucket":"fail"},
- {"name":"annule","state":"CANCELLED","description":"","link":"","bucket":"cancel"},
- {"name":"injoignable","state":"TIMED_OUT","description":"","link":"https://github.com/o/r/actions/runs/1/job/104","bucket":"fail"},
- {"name":"long","state":"FAILURE","description":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","link":"","bucket":"fail"},
- {"name":"vert","state":"SUCCESS","description":"ok","link":"https://ci.example/1","bucket":"pass"}
+ {"name": "sdlc-conventions", "state": "FAILURE", "description": "", "link": "https://github.com/o/r/actions/runs/1/job/101", "bucket": "fail"},
+ {"name": "lint", "state": "IN_PROGRESS", "description": "", "link": "https://github.com/o/r/actions/runs/1/job/103", "bucket": "pending"},
+ {"name": "tests", "state": "FAILURE", "description": "", "link": "https://github.com/o/r/runs/102", "bucket": "fail"},
+ {"name": "ci/ext", "state": "ERROR", "description": "Build\n  cassé", "link": "https://ci.example/9", "bucket": "fail"},
+ {"name": "annule", "state": "CANCELLED", "description": "", "link": "", "bucket": "cancel"},
+ {"name": "injoignable", "state": "TIMED_OUT", "description": "", "link": "https://github.com/o/r/actions/runs/1/job/104", "bucket": "fail"},
+ {"name": "long", "state": "FAILURE", "description": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "link": "", "bucket": "fail"},
+ {"name": "ext", "state": "FAILURE", "description": "", "link": "https://ci.example/runs/102", "bucket": "fail"},
+ {"name": "echap", "state": "FAILURE", "description": "a\u001b[31mb C:\\build", "link": "", "bucket": "fail"},
+ {"name": "vert", "state": "SUCCESS", "description": "ok", "link": "https://ci.example/1", "bucket": "pass"}
 ]

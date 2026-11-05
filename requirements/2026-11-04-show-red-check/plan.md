@@ -41,9 +41,9 @@
 
 ### 1. Détail des checks rouges dans `status`
 
-- `JQ_PRS` et `load_prs` inchangés : `--porcelain` et `board` gardent leur sortie.
+- `JQ_PRS` partage avec `red_checks` la définition `red` (ensemble de C2) ; sa sortie et `load_prs` sont inchangés : `--porcelain` et `board` gardent leur sortie.
 - `open_state` mémorise la PR à détailler (`RED_PR`) quand le résumé vaut `rouges`, sans appel GitHub : `board` passe aussi par là.
-- Nouvelle fonction `red_checks <pr>` : `gh pr checks <pr> --json name,state,description,link` (code de retour non nul toléré), filtre `state` sur l'ensemble de C2 repris de `JQ_PRS` ; pour une description vide et un lien `…/job/<id>` ou `…/runs/<id>`, `gh api repos/{owner}/{repo}/check-runs/<id>` (titre, sinon résumé), puis ses annotations (premier `failure`). Toute erreur laisse la raison vide. Raison ramenée à une ligne ; champs vides omis.
+- Nouvelle fonction `red_checks <pr>` : `gh pr checks <pr> --json name,state,description,link` (code de retour non nul toléré), filtre `state` sur l'ensemble de C2 repris de `JQ_PRS` ; pour une description vide et un lien GitHub de check run (`https://<hôte>/<org>/<dépôt>/actions/runs/<n>/job/<id>` ou `…/<dépôt>/runs/<id>`, jamais le lien d'un CI externe), `gh api repos/{owner}/{repo}/check-runs/<id>` (titre, sinon résumé), puis ses annotations (premier `failure`). Toute erreur laisse la raison vide ; `gh pr checks --json` illisible (gh trop ancien) est signalé. Raison ramenée à une ligne, caractères de contrôle retirés ; champs séparés par `\037` (pas `@tsv`, qui doublerait les antislashs) ; champs vides omis.
 - `cmd_status`, sortie humaine seulement : lignes insérées, indentées, sous `checks       rouges`.
 - `README.md` : la ligne des preuves de `status` mentionne le détail.
 
@@ -73,6 +73,7 @@ Couvre : A1, A2, A3, A4, A5, A6, A7, A8, A9, L8.
   - `status --porcelain` identique à la référence ; `board` sans ligne de détail ; ni l'un ni l'autre n'appelle `pr checks` ou `api` (A5, L8). `board` passe par `column`, dont la sortie dépend de la locale : pas de référence figée ;
   - check run avec titre ; statut de commit avec description (A6, A7) ;
   - `gh api` en échec, check sans lien, raison sur plusieurs lignes (A8, L4, L5, L6).
+  - PR en brouillon (L7) ; statut externe sans description dont le lien finit par `/runs/<n>` : aucun appel à l'API des check runs (L3) ; caractère de contrôle retiré, antislash intact ; `gh pr checks --json` indisponible : signalé, `status` en code 0 ; `checkReasonMax` invalide signalé seulement quand un détail s'affiche.
 - `bash -n bin/git-sdlc`.
 - Manuel, côté hôte : `git sdlc status` sur une PR dont `sdlc-conventions` est rouge, décrit dans le commit (le jeton du devcontainer ne lit pas les PR).
 

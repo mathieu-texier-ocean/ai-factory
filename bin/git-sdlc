@@ -8,7 +8,8 @@
 #   fusion                  par rebase uniquement : historique linéaire, trailers sur chaque commit
 #   livraison               release GitHub sur un tag YY.MM.DD[.V] protégé
 #
-# Prérequis : git 2.30+, bash 3.2+, gh authentifié (gh auth login).
+# Prérequis : git 2.30+, bash 3.2+, gh authentifié (gh auth login) et assez récent
+# pour gh pr checks --json (détail des checks rouges).
 # Installation : placer ce fichier dans le PATH → `git sdlc <commande>`.
 set -euo pipefail
 
@@ -32,7 +33,6 @@ IDIR=${SDLC_INTENT_DIR:-$(cfg intentDir requirements)}
 PR_LIMIT=$(cfg prLimit 300)
 MERGE_ARGS=$(cfg mergeArgs "--rebase --delete-branch")
 REASON_MAX=$(cfg checkReasonMax 120)
-[[ $REASON_MAX =~ ^[0-9]+$ ]] || { warn "sdlc.checkReasonMax invalide ($REASON_MAX) : 120 retenu"; REASON_MAX=120; }
 FETCH=1
 RELEASE_META=1
 PRS=""
@@ -243,9 +243,15 @@ open_state() {
   fi
 }
 
-# Raison d’un check rouge sur une ligne, au plus checkReasonMax caractères (0 : sans limite).
-JQ_LINE='def line: tostring | gsub("[[:space:]]+"; " ") | ltrimstr(" ") | rtrimstr(" ")
+# Remplit JQ_LINE : raison d’un check rouge sur une ligne, sans caractère de contrôle (texte
+# venu de la PR), au plus checkReasonMax caractères (0 : sans limite). Seul un entier
+# entre dans le filtre ; la clé n’est validée que lorsqu’un détail est affiché.
+JQ_LINE=""
+line_def() {
+  [[ $REASON_MAX =~ ^[0-9]+$ ]] || { warn "sdlc.checkReasonMax invalide ($REASON_MAX) : 120 retenu"; REASON_MAX=120; }
+  JQ_LINE='def line: tostring | gsub("[[:cntrl:][:space:]]+"; " ") | ltrimstr(" ") | rtrimstr(" ")
                    | if '$REASON_MAX' > 0 and length > '$REASON_MAX' then .[0:'$REASON_MAX' - 1] + "…" else . end;'
+}
 
 # Raison du check run $1 : titre, sinon résumé, sinon première annotation « failure »
 # (un job GitHub Actions n’a ni titre ni résumé). Vide si GitHub ne répond pas.
@@ -262,16 +268,21 @@ check_reason() {
 
 # Une ligne par check rouge de la PR $1 : nom, conclusion, raison, lien ; un champ vide
 # est omis. gh pr checks sort en erreur quand des checks échouent : seule sa sortie compte.
+# Champs séparés par \037 : @tsv doublerait les antislashs, et un séparateur blanc
+# fusionnerait les champs vides. Seul un lien GitHub de check run mène à son API.
 red_checks() {
   local rows name state desc link
+  line_def
   rows=$(gh pr checks "$1" --json name,state,description,link \
            --jq "$JQ_DEFS$JQ_LINE"' .[] | select(.state | red)
-                 | [.name, .state, (.description // "" | line), .link] | map(nz) | @tsv' \
+                 | [.name, .state, (.description // "" | line), (.link // "")] | join("\u001f")' \
            2>/dev/null) || true
-  [ -n "$rows" ] || return 0
-  while IFS=$'\t' read -r name state desc link; do
-    desc=$(nd "$desc") link=$(nd "$link")
-    if [ -z "$desc" ] && [[ $link =~ /(job|runs)/([0-9]+)$ ]]; then
+  if [ -z "$rows" ]; then
+    warn "PR #$1 : détail des checks rouges illisible (gh pr checks --json : gh à mettre à jour ?)"
+    return 0
+  fi
+  while IFS=$'\037' read -r name state desc link; do
+    if [ -z "$desc" ] && [[ $link =~ ^https://[^/]+/[^/]+/[^/]+/(actions/runs/[0-9]+/job|runs)/([0-9]+)$ ]]; then
       desc=$(check_reason "${BASH_REMATCH[2]}")
     fi
     printf '%s  %s%s%s\n' "$name" "$state" "${desc:+  $desc}" "${link:+  $link}"

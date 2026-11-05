@@ -29,7 +29,8 @@ jqp=. rc=0 prev=""
 for a in "$@"; do [ "$prev" != --jq ] || jqp=$a; prev=$a; done
 case "$1 $2" in
   "pr list")   f=$GH_FIX/prs-$GH_CAS.json ;;
-  "pr checks") f=$GH_FIX/checks-$GH_CAS.json; rc=1 ;;  # gh sort en 1 quand des checks échouent
+  "pr checks") [ -z "${GH_CHECKS_KO:-}" ] || { echo "unknown flag: --json" >&2; exit 1; }  # gh trop ancien
+               f=$GH_FIX/checks-${GH_CHECKS:-$GH_CAS}.json; rc=1 ;;  # gh sort en 1 quand des checks échouent
   "api "*)     p=${2#repos/\{owner\}/\{repo\}/check-runs/}; f=$GH_FIX/run-${p//\//-}.json ;;
   *) echo "faux gh : appel non prévu : $*" >&2; exit 3 ;;
 esac
@@ -63,7 +64,7 @@ reference() {
   [ "$OUT" = "$(cat "$here/fixtures/attendu-$1.txt" 2>/dev/null)" ]
 }
 
-# --- status, checks rouges (A1, A2, A6–A9, L1–L7, L9) ---
+# --- status, checks rouges (A1, A2, A6–A9, L1–L6, L9) ---
 sdlc rouges status x-1
 verif "status rouges : code 0" [ "$RC" -eq 0 ]
 verif "status rouges : détail juste sous « checks rouges » (C1)" \
@@ -89,6 +90,8 @@ sdlc rouges status x-1
 l=$(printf '%s\n' "$OUT" | sed -n 's/^    long  FAILURE  //p')
 verif "checkReasonMax = 0 : raison entière" [ "$(printf '%s' "$l" | jq -R length)" = 200 ]
 git config sdlc.checkReasonMax abc
+sdlc verts status x-1
+verif "checkReasonMax invalide sans check rouge : rien signalé" [ -z "$ERR" ]
 sdlc rouges status x-1
 l=$(printf '%s\n' "$OUT" | sed -n 's/^    long  FAILURE  //p')
 verif "checkReasonMax invalide : 120 retenu et signalé" \
@@ -97,7 +100,27 @@ git config --unset sdlc.checkReasonMax
 sdlc rouges status x-1
 verif "checks verts et en cours non détaillés (L1)" \
   [ "$(printf '%s\n' "$OUT" | grep -cE '^    (lint|vert) ')" = 0 ]
-verif "une ligne par check rouge (A2)" [ "$(printf '%s\n' "$OUT" | grep -c '^    [^ ]')" = 6 ]
+verif "lien d'un CI externe : pas d'appel à l'API des check runs (L3)" \
+  [ "$(a_ligne "$OUT" "    ext  FAILURE  https://ci.example/runs/102" && echo o)$(grep -c '^api .*/102$' "$GH_LOG")" = o0 ]
+verif "raison : caractère de contrôle retiré, antislash intact" a_ligne "$OUT" "    echap  FAILURE  a [31mb C:\build"
+verif "une ligne par check rouge (A2)" [ "$(printf '%s\n' "$OUT" | grep -c '^    [^ ]')" = 8 ]
+verif "status rouges : rien sur la sortie d'erreur" [ -z "$ERR" ]
+
+# --- PR en brouillon : le détail s'affiche aussi (L7) ---
+export GH_CHECKS=rouges
+sdlc brouillon status x-1
+verif "PR en brouillon : détail affiché (L7)" \
+  a_ligne "$OUT" "    sdlc-conventions  FAILURE  Trailer Need absent sur 1 commit  https://github.com/o/r/actions/runs/1/job/101"
+unset GH_CHECKS
+
+# --- gh sans pr checks --json : signalé, status se termine normalement ---
+export GH_CHECKS_KO=1
+sdlc rouges status x-1
+verif "gh trop ancien : code 0" [ "$RC" -eq 0 ]
+verif "gh trop ancien : « checks rouges » affiché" a_ligne "$OUT" "  checks       rouges"
+verif "gh trop ancien : signalé sur la sortie d'erreur" \
+  [ "$(printf '%s\n' "$ERR" | grep -c 'détail des checks rouges illisible')" = 1 ]
+unset GH_CHECKS_KO
 
 # --- sans check rouge : sortie inchangée, aucun appel de plus (A3, C5) ---
 for cas in verts en-cours aucun; do
