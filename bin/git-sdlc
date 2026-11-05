@@ -593,6 +593,105 @@ m_day_epoch() {
   echo $(( ( (y / 400) * 146097 + yoe * 365 + yoe / 4 - yoe / 100 + doy - 719468 ) * 86400 ))
 }
 
+# Date d’auteur du premier commit qui touche <intentDir>/$1/$2 : sur main, sinon sur la
+# branche need/$1/$3. Vide si aucun. sed lit tout : pas de SIGPIPE sous pipefail.
+m_first() {
+  local ref p=$IDIR/$1/$2 d
+  d=$(git log "$(main_ref)" --reverse --format=%at -- "$p" | sed -n 1p)
+  if [ -z "$d" ] && ref=$(branch_ref "$1" "$3"); then
+    d=$(git log "$ref" --reverse --format=%at -- "$p" | sed -n 1p)
+  fi
+  printf '%s' "$d"
+}
+
+# Première fusion de l’étape $2 du besoin $1 dans MG_EP et MG_OID (vides si non fusionnée) :
+# la plus ancienne date entre la première PR fusionnée et le premier commit de main portant
+# les trailers. claim permet de refusionner une étape ; merge_info retient la plus récente.
+m_merge() {
+  local pr c idr
+  MG_EP="" MG_OID=""
+  pr=$(awk -F'\t' -v i="$1" -v s="$2" '$1 == i && $2 == s && $4 == "MERGED" && $6 != "-" { print $6 "\t" $7; exit }' "$PRS")
+  idr=$(re_escape "$1")
+  c=$(git log "$(main_ref)" --first-parent --reverse --format='%ct%x09%H' --all-match \
+        --grep="^Need: $idr\$" --grep="^Stage: $(stage_of "$2")\$" | sed -n 1p)
+  if [ -n "$pr" ]; then MG_EP=${pr%%$'\t'*} MG_OID=${pr#*$'\t'}; fi
+  if [ -n "$c" ] && { [ -z "$MG_EP" ] || [ "${c%%$'\t'*}" -lt "$MG_EP" ]; }; then
+    MG_EP=${c%%$'\t'*} MG_OID=${c#*$'\t'}
+  fi
+  [ "$MG_OID" != - ] || MG_OID=""
+}
+
+# Commits de main qui touchent <intentDir>/$1/$2 avec une date d’auteur postérieure à $3.
+m_rework_count() {
+  git log "$(main_ref)" --format=%at -- "$IDIR/$1/$2" | awk -v t="$3" '$1 > t { n++ } END { print n + 0 }'
+}
+
+# Ligne need du besoin $1, durées en secondes, « — » si absente ; vide si --since l’écarte.
+# Colonnes : id survie C5 C8 C9 C10 C11 C19 premier_passage rework
+m_need() {
+  local id=$1 start t0 mi ms mb surv c5=— c8=— c9=— c10=— c11=— rej=0
+  t0=$(m_first "$id" intent.md intent)
+  m_merge "$id" intent; mi=$MG_EP
+  m_merge "$id" spec;   ms=$MG_EP
+  m_merge "$id" build;  mb=$MG_EP
+  # Date de début : premier commit de l’intent, sinon création de la plus ancienne PR (besoin
+  # rejeté avant la fusion de l’intent : branche supprimée), sinon date du tag rejected.
+  start=$t0
+  [ -n "$start" ] || start=$(awk -F'\t' -v i="$id" '$1 == i && $5 != "-" && (m == "" || $5 < m) { m = $5 } END { print m }' "$PRS")
+  if [ -z "$start" ] && has_tag "rejected/$id"; then
+    start=$(git for-each-ref --format='%(taggerdate:unix)%(*committerdate:unix)%(committerdate:unix)' "refs/tags/rejected/$id" | cut -c1-10)
+  fi
+  if [ -n "$M_SINCE" ]; then
+    [ -n "$start" ] && [ "$start" -ge "$M_SINCE" ] || return 0
+  fi
+
+  awk -F'\t' -v i="$id" '$1 == i && $4 == "CLOSED" && $8 ~ /(^|,)sdlc:rejected(,|$)/ { f = 1 } END { exit !f }' "$PRS" && rej=1
+  has_tag "rejected/$id" && rej=1
+  if [ -n "$mi" ]; then surv=accepté; elif [ "$rej" = 1 ]; then surv=rejeté; else surv="en cours"; fi
+
+  [ -z "$t0" ] || [ -z "$mi" ] || c5=$(( mi - t0 ))
+  [ -z "$mi" ] || [ -z "$ms" ] || c9=$(( ms - mi ))
+  [ -z "$ms" ] || [ -z "$mb" ] || c11=$(( mb - ms ))
+  if on_main "$id" intent.md; then
+    t=$(m_first "$id" spec.md spec)
+    if [ -n "$t" ]; then c8=$(m_rework_count "$id" intent.md "$t"); else c8=0; fi
+  fi
+  if on_main "$id" spec.md; then
+    t=$(m_first "$id" plan.md build)
+    if [ -n "$t" ]; then c10=$(m_rework_count "$id" spec.md "$t"); else c10=0; fi
+  fi
+  printf 'need\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t—\t—\t—\n' "$id" "$surv" "$c5" "$c8" "$c9" "$c10" "$c11"
+}
+
+# Lignes need (durées en secondes) sur stdin → lignes need et agg du contrat --porcelain :
+# durées en heures à une décimale, taux à deux décimales, médianes avec leur effectif n.
+M_AWK_PORCELAIN='
+function hours(v) { return v == "—" ? v : sprintf("%.1f", v / 3600) }
+function med(name, step, k, scale,   m, i, j, x, v) {
+  m = cnt[k] + 0
+  if (m == 0) { print "agg\t" name "\t" step "\t—\t0"; return }
+  for (i = 2; i <= m; i++) { x = val[k, i]; for (j = i - 1; j >= 1 && val[k, j] > x; j--) val[k, j + 1] = val[k, j]; val[k, j + 1] = x }
+  v = (m % 2) ? val[k, (m + 1) / 2] : (val[k, m / 2] + val[k, m / 2 + 1]) / 2
+  printf "agg\t%s\t%s\t%.1f\t%d\n", name, step, v / scale, m
+}
+function add(k, v) { if (v != "—") val[k, ++cnt[k]] = v + 0 }
+$1 == "need" {
+  add("c5", $4); add("c8", $5); add("c9", $6); add("c10", $7); add("c11", $8); add("c19", $9)
+  if ($3 == "accepté") acc++; else if ($3 == "rejeté") rej++
+  $4 = hours($4); $6 = hours($6); $8 = hours($8); $9 = hours($9)
+  print
+}
+END {
+  med("delai_intent", "—", "c5", 3600)
+  if (acc + rej) printf "agg\tsurvie\t—\t%.2f\t%d\n", acc / (acc + rej), acc + rej
+  else print "agg\tsurvie\t—\t—\t0"
+  med("retouches_intent", "—", "c8", 1)
+  med("delai_intent_spec", "—", "c9", 3600)
+  med("retouches_spec", "—", "c10", 1)
+  med("delai_spec_build", "—", "c11", 3600)
+  med("delai_build_release", "—", "c19", 3600)
+}'
+
 cmd_metrics() {
   local porcelain=0 since="" since_ep="" f id
   while [ $# -gt 0 ]; do
@@ -619,12 +718,11 @@ cmd_metrics() {
   wait "$f"
   resolve_main
 
-  : > "$M_TMP/needs"
-  for id in $(list_ids); do
-    printf 'need\t%s\t—\t—\t—\t—\t—\t—\t—\t—\t—\t—\n' "$id" >> "$M_TMP/needs"
-  done
+  M_SINCE=$since_ep
+  for id in $(list_ids); do m_need "$id"; done > "$M_TMP/needs"
+  LC_ALL=C awk -F'\t' -v OFS='\t' "$M_AWK_PORCELAIN" "$M_TMP/needs" > "$M_TMP/porcelain"
   if [ "$porcelain" = 1 ]; then
-    cat "$M_TMP/needs"
+    cat "$M_TMP/porcelain"
   elif [ -s "$M_TMP/needs" ]; then
     { printf 'BESOIN\n'; cut -f2 "$M_TMP/needs"; } | align
   else
