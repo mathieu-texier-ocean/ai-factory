@@ -52,17 +52,16 @@ Sans signal, les correctifs et évolutions du kit restent inutilisés, et des po
 ## Résultat attendu
 
 - La référence est la dernière release GitHub du dépôt du kit (tag `YY.MM.DD[.V]`) : clé `sdlc.kitRepo` de `.sdlc/config`, surchargeable par `git config`, par défaut `ocean-shiftmove/ai-factory`.
-- `git-sdlc` porte sa version dans une variable (« dev » dans le dépôt du kit). Chaque release du kit joint en fichier un `git-sdlc` dont la variable vaut le tag ; c'est ce fichier que la commande de mise à jour installe. `.sdlc/manifeste` enregistre, en plus du SHA, le tag de la release installée ; un manifeste ancien, sans tag, est comparé par le SHA que vise le tag.
-- Les commandes `git sdlc` comparent à cette release la version de `git-sdlc` installée sur le poste et celle du kit installé dans le dépôt courant. Si l'une est en retard, elles affichent un avis d'une ligne qui nomme la version disponible et la commande de mise à jour.
+- `git-sdlc` porte sa version dans une variable (« dev » dans le dépôt du kit). Chaque release du kit joint en fichier un `git-sdlc` dont la variable vaut le tag ; c'est ce fichier qu'un poste installe. `.sdlc/manifeste` enregistre, en plus du SHA, le tag de la release installée ; un manifeste ancien, sans tag, est comparé par le SHA que vise le tag.
+- Les commandes `git sdlc` comparent à cette release la version de `git-sdlc` installée sur le poste et celle du kit installé dans le dépôt courant. Si l'une est en retard, elles affichent un avis d'une ligne qui nomme la version disponible et la façon de se mettre à jour à la main : télécharger le `git-sdlc` de la release, lancer `deploy.sh update` depuis un clone du kit à ce tag.
 - La vérification interroge GitHub au plus une fois par jour et par dépôt ; le résultat est mis en cache dans le `.git` du dépôt.
 - GitHub injoignable ou dépôt du kit illisible : un avis discret « vérification impossible », la commande s'exécute normalement.
 - `git config sdlc.updateCheck false` (local ou global) désactive la vérification.
-- Une commande de mise à jour (par exemple `git sdlc update`), sur confirmation de l'utilisateur, remplace `git-sdlc` dans le `PATH` par celui de la release, puis met à jour le kit du dépôt depuis cette release, avec les règles de `deploy.sh update` (fichier modifié localement conservé, nouvelle version en `<fichier>.nouveau`). Si le dossier de `git-sdlc` n'est pas inscriptible, elle n'y touche pas, indique le chemin et la commande à lancer à la main, et met quand même à jour le kit si l'utilisateur l'a confirmé.
 
 ## Utilisateurs et systèmes concernés
 
 - Utilisateurs : utilisateurs de `git sdlc` sur leur poste ; mainteneur du kit, qui publie les releases.
-- Systèmes, API, dépôts : `bin/git-sdlc` ; `.sdlc/manifeste` des dépôts produits ; releases GitHub de `ocean-shiftmove/ai-factory`, lues via `gh` ; logique de mise à jour de `scripts/deploy.sh`.
+- Systèmes, API, dépôts : `bin/git-sdlc` ; `.sdlc/manifeste` des dépôts produits ; releases GitHub de `ocean-shiftmove/ai-factory`, lues via `gh` ; `scripts/deploy.sh`, qui écrit le manifeste.
 
 ## Contraintes
 
@@ -70,13 +69,13 @@ Sans signal, les correctifs et évolutions du kit restent inutilisés, et des po
 - Prérequis de chaque utilisateur : accès en lecture au dépôt du kit avec le `gh` déjà authentifié.
 - La première release du kit est publiée par le mainteneur avant le build de ce besoin, pour servir de référence réelle.
 - Fonctionne seul dans un dépôt produit, sans clone du kit ni fichier propre au kit (`scripts/deploy.sh` n'y est pas copié).
-- Lecture seule côté GitHub ; aucune opération git (ni commit, ni push) dans le dépôt produit : l'utilisateur relit et commite la mise à jour.
-- Aucune mise à jour sans confirmation explicite de l'utilisateur.
+- Lecture seule côté GitHub ; la vérification n'écrit dans le dépôt que son cache, sous `.git`.
 - L'avis et la vérification ne bloquent ni ne ralentissent sensiblement une commande `git sdlc`.
 
 ## Hors périmètre
 
-- Mise à jour automatique sans confirmation.
+- Commande qui applique la mise à jour : besoin séparé `2026-11-05-sdlc-self-update`, découpé de celui-ci le 2026-11-05.
+- Mise à jour automatique.
 - Signal à l'ouverture de session Claude Code (hook `SessionStart`) : non retenu le 2026-11-05.
 - Retour à une version antérieure.
 - Suivre `main` d'ai-factory plutôt que ses releases.
@@ -85,14 +84,15 @@ Sans signal, les correctifs et évolutions du kit restent inutilisés, et des po
 
 Mesurables, pour que les tests et la revue puissent les vérifier.
 
-- [ ] Avec une release plus récente que `git-sdlc` installé, une commande `git sdlc` affiche un avis nommant la version disponible et la commande de mise à jour ; à jour, aucun avis.
+- [ ] Chaque release du kit contient en fichier un `git-sdlc` dont la version affichée vaut le tag ; le `git-sdlc` du dépôt du kit affiche « dev ».
+- [ ] `deploy.sh install` et `update` à partir d'un tag écrivent ce tag dans `.sdlc/manifeste`.
+- [ ] La référence suit `sdlc.kitRepo` quand elle est définie, `ocean-shiftmove/ai-factory` sinon.
+- [ ] Avec une release plus récente que `git-sdlc` installé, une commande `git sdlc` affiche un avis nommant la version disponible et la mise à jour à faire ; à jour, aucun avis.
 - [ ] Même chose pour le kit d'un dépôt produit plus ancien que la release.
 - [ ] Deux commandes lancées le même jour dans un même dépôt n'interrogent GitHub qu'une fois.
 - [ ] GitHub injoignable ou dépôt du kit illisible : avis « vérification impossible », code de sortie de la commande inchangé.
 - [ ] Avec `sdlc.updateCheck` à `false`, aucune requête GitHub et aucun avis.
 - [ ] Un manifeste sans tag (installé avant ce besoin) est comparé correctement à la release.
-- [ ] Dossier de `git-sdlc` non inscriptible : le script n'est pas modifié, le message donne le chemin et la commande manuelle.
-- [ ] La commande de mise à jour ne modifie rien sans confirmation ; après confirmation, `git-sdlc` et le kit sont à la version de la release, les fichiers modifiés localement sont conservés avec leur `.nouveau`, et aucun commit n'est créé.
 - [ ] Testé dans un dépôt git temporaire avec un `gh` factice, une ligne `PASS`/`FAIL` par cas.
 
 ## Questions ouvertes

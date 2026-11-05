@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié à la main sur chaque poste, et le kit d'un dépôt produit n'est mis à jour que via `deploy.sh update` depuis un clone. Les commandes `git sdlc` signaleront, au plus une fois par jour, qu'une release plus récente existe, et une commande mettra à jour `git-sdlc` et le kit sur confirmation, sans commit. Étape en cours : intent.
+Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié à la main sur chaque poste, et le kit d'un dépôt produit n'est mis à jour que via `deploy.sh update` depuis un clone. Les commandes `git sdlc` signaleront, au plus une fois par jour, qu'une release plus récente existe et comment se mettre à jour. La commande qui applique la mise à jour est un besoin séparé, `2026-11-05-sdlc-self-update`. Étape en cours : intent.
 
 ## Décisions
 
@@ -29,3 +29,4 @@ Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié 
 - 2026-11-05 · intent · Cache dans le `.git` du dépôt ; désactivation par `git config sdlc.updateCheck false` (Mathieu Texier)
 - 2026-11-05 · intent · Dossier de `git-sdlc` non inscriptible : refus expliqué, kit mis à jour quand même si confirmé (Mathieu Texier)
 - 2026-11-05 · intent · Version de `git-sdlc` : fichier joint à chaque release du kit, variable = tag ; précise la ligne sur la variable renseignée avec le tag (Mathieu Texier)
+- 2026-11-05 · intent · Découpage après contrôle de taille : ce besoin garde la détection et l'avis ; la commande de mise à jour et la décision « dossier non inscriptible » passent dans `2026-11-05-sdlc-self-update` (Mathieu Texier)
