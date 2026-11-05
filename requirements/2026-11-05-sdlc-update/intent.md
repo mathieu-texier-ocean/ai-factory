@@ -12,7 +12,7 @@
 -->
 
 Author: Mathieu Texier
-Product-Owner: <Prénom Nom> <email>
+Product-Owner: Mathieu Texier <mathieu.texier@ocean.fr>
 Created: 2026-11-05
 Origin: idée
 Parent: —
@@ -29,50 +29,75 @@ Risk: standard
 
 ## Problème
 
-Ce qu’on ne peut pas faire aujourd’hui, qui est touché, et ce que ça coûte.
+Rien ne signale qu'une nouvelle version d'ai-factory existe. `git-sdlc` est copié à la main dans le `PATH` de chaque poste, et le kit d'un dépôt produit n'évolue que si quelqu'un lance `scripts/deploy.sh update` depuis un clone récent du kit. Les mises à jour passent donc inaperçues pendant l'usage : postes et dépôts restent sur d'anciennes versions, et une évolution du kit met longtemps à atteindre ses utilisateurs.
 
 ## Pour qui
 
-Qui exprime, valide et consomme ce besoin.
+- Exprime et valide : le mainteneur du kit (Mathieu Texier).
+- Consomme : chaque utilisateur de `git sdlc` sur son poste, et les dépôts produits où le kit est déployé.
 
 ## Pourquoi
 
-Le coût ou le risque si on ne fait rien.
+Sans signal, les correctifs et évolutions du kit restent inutilisés, et des postes d'une même équipe tournent avec des versions différentes de `git-sdlc` et du kit.
 
 ## Priorité
 
 <!-- Décision du product owner, jamais déduite. Niveau : Haute | Moyenne | Basse.
      Justification en une phrase. Échéance seulement si elle est réelle, sinon « aucune ». -->
 
-- Niveau : à définir par le PO
-- Justification :
+- Niveau : Moyenne
+- Justification : les postes et dépôts restent sur d'anciennes versions sans le savoir, mais aucun besoin en cours n'est bloqué.
 - Échéance : aucune
 
 ## Résultat attendu
 
-À quoi ressemble « mieux », vu par l’utilisateur.
+- La référence est la dernière release GitHub du dépôt du kit (tag `YY.MM.DD[.V]`) : clé `sdlc.kitRepo` de `.sdlc/config`, surchargeable par `git config`, par défaut `ocean-shiftmove/ai-factory`.
+- `git-sdlc` porte sa version dans une variable (« dev » dans le dépôt du kit). Chaque release du kit joint en fichier un `git-sdlc` dont la variable vaut le tag ; c'est ce fichier que la commande de mise à jour installe. `.sdlc/manifeste` enregistre, en plus du SHA, le tag de la release installée ; un manifeste ancien, sans tag, est comparé par le SHA que vise le tag.
+- Les commandes `git sdlc` comparent à cette release la version de `git-sdlc` installée sur le poste et celle du kit installé dans le dépôt courant. Si l'une est en retard, elles affichent un avis d'une ligne qui nomme la version disponible et la commande de mise à jour.
+- La vérification interroge GitHub au plus une fois par jour et par dépôt ; le résultat est mis en cache dans le `.git` du dépôt.
+- GitHub injoignable ou dépôt du kit illisible : un avis discret « vérification impossible », la commande s'exécute normalement.
+- `git config sdlc.updateCheck false` (local ou global) désactive la vérification.
+- Une commande de mise à jour (par exemple `git sdlc update`), sur confirmation de l'utilisateur, remplace `git-sdlc` dans le `PATH` par celui de la release, puis met à jour le kit du dépôt depuis cette release, avec les règles de `deploy.sh update` (fichier modifié localement conservé, nouvelle version en `<fichier>.nouveau`). Si le dossier de `git-sdlc` n'est pas inscriptible, elle n'y touche pas, indique le chemin et la commande à lancer à la main, et met quand même à jour le kit si l'utilisateur l'a confirmé.
 
 ## Utilisateurs et systèmes concernés
 
-- Utilisateurs :
-- Systèmes, API, dépôts :
+- Utilisateurs : utilisateurs de `git sdlc` sur leur poste ; mainteneur du kit, qui publie les releases.
+- Systèmes, API, dépôts : `bin/git-sdlc` ; `.sdlc/manifeste` des dépôts produits ; releases GitHub de `ocean-shiftmove/ai-factory`, lues via `gh` ; logique de mise à jour de `scripts/deploy.sh`.
 
 ## Contraintes
 
-Sécurité, données personnelles, conformité, performance, compatibilité.
+- Bash 3.2 ; chemins lus en `-z`.
+- Prérequis de chaque utilisateur : accès en lecture au dépôt du kit avec le `gh` déjà authentifié.
+- La première release du kit est publiée par le mainteneur avant le build de ce besoin, pour servir de référence réelle.
+- Fonctionne seul dans un dépôt produit, sans clone du kit ni fichier propre au kit (`scripts/deploy.sh` n'y est pas copié).
+- Lecture seule côté GitHub ; aucune opération git (ni commit, ni push) dans le dépôt produit : l'utilisateur relit et commite la mise à jour.
+- Aucune mise à jour sans confirmation explicite de l'utilisateur.
+- L'avis et la vérification ne bloquent ni ne ralentissent sensiblement une commande `git sdlc`.
 
 ## Hors périmètre
 
-Ce que ce besoin ne couvre volontairement pas.
+- Mise à jour automatique sans confirmation.
+- Signal à l'ouverture de session Claude Code (hook `SessionStart`) : non retenu le 2026-11-05.
+- Retour à une version antérieure.
+- Suivre `main` d'ai-factory plutôt que ses releases.
 
 ## Critères de succès
 
 Mesurables, pour que les tests et la revue puissent les vérifier.
 
-- [ ] 
+- [ ] Avec une release plus récente que `git-sdlc` installé, une commande `git sdlc` affiche un avis nommant la version disponible et la commande de mise à jour ; à jour, aucun avis.
+- [ ] Même chose pour le kit d'un dépôt produit plus ancien que la release.
+- [ ] Deux commandes lancées le même jour dans un même dépôt n'interrogent GitHub qu'une fois.
+- [ ] GitHub injoignable ou dépôt du kit illisible : avis « vérification impossible », code de sortie de la commande inchangé.
+- [ ] Avec `sdlc.updateCheck` à `false`, aucune requête GitHub et aucun avis.
+- [ ] Un manifeste sans tag (installé avant ce besoin) est comparé correctement à la release.
+- [ ] Dossier de `git-sdlc` non inscriptible : le script n'est pas modifié, le message donne le chemin et la commande manuelle.
+- [ ] La commande de mise à jour ne modifie rien sans confirmation ; après confirmation, `git-sdlc` et le kit sont à la version de la release, les fichiers modifiés localement sont conservés avec leur `.nouveau`, et aucun commit n'est créé.
+- [ ] Testé dans un dépôt git temporaire avec un `gh` factice, une ligne `PASS`/`FAIL` par cas.
 
 ## Questions ouvertes
 
 Elles doivent être tranchées ou reportées explicitement dans spec.md.
 
-- 
+- Ce qui produit et joint le fichier `git-sdlc` à la release du kit (`git sdlc release`, workflow CI sur le tag…) : à préciser en spec.
+- Les autres questions ont été tranchées le 2026-11-05 (voir `tldr.md`).
