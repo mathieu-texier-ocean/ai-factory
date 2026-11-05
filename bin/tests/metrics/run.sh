@@ -186,4 +186,49 @@ JSON
 lance metrics --porcelain --no-fetch
 verifie "C4 mergedAt de la PR, plus ancien que le commit de fusion, retenu" eval '[ "$(ligne need d | cut -f8)" = 95.0 ]'
 
+
+# ---------------------------------------------------------------- étape 3
+
+# SDLC_NOW fige « aujourd'hui » au 2026-08-20 à 15:00 UTC.
+export SDLC_NOW=1787238000
+
+depot releases
+lance metrics --porcelain --no-fetch
+verifie "L10 aucun tag, sans --since : fréquence à —" \
+  eval '[ "$(ligne agg releases_par_semaine | cut -f4,5)" = "$(printf "—\t0")" ]'
+lance metrics --since 2026-08-01 --porcelain --no-fetch
+verifie "L10 aucun tag, avec --since : fréquence à 0.0" \
+  eval '[ "$(ligne agg releases_par_semaine | cut -f4,5)" = "$(printf "0.0\t0")" ]'
+besoin r 2026-08-01T10:00:00Z 2026-08-01T12:00:00Z 2026-08-02T10:00:00Z 2026-08-02T12:00:00Z 2026-08-03T10:00:00Z 2026-08-04T12:00:00Z
+GIT_COMMITTER_DATE=2026-08-20T08:00:00Z git tag -a 26.08.20 -m livraison
+lance metrics --porcelain --no-fetch
+verifie "A17 un tag du jour, sans --since : fenêtre d'un jour, 7.0 (L19)" \
+  eval '[ $rc -eq 0 ] && [ "$(ligne agg releases_par_semaine | cut -f4,5)" = "$(printf "7.0\t1")" ]'
+lance metrics --since 2026-08-21 --porcelain --no-fetch
+verifie "A17 --since dans le futur : 0.0, n=0" \
+  eval '[ $rc -eq 0 ] && [ "$(ligne agg releases_par_semaine | cut -f4,5)" = "$(printf "0.0\t0")" ]'
+lance metrics --porcelain --no-fetch
+verifie "C19 date du tag annoté, sans release GitHub" eval '[ "$(ligne need r | cut -f9)" = 380.0 ]'
+lance metrics --since 2026-08-07 --porcelain --no-fetch
+verifie "C20 fenêtre de 14 jours, un tag : 0.5" eval '[ "$(ligne agg releases_par_semaine | cut -f4,5)" = "$(printf "0.5\t1")" ]'
+cat > "$GH_DATA/releases.json" <<'JSON'
+[ {"tagName": "26.08.20", "publishedAt": "2026-08-20T10:00:00Z"} ]
+JSON
+lance metrics --porcelain --no-fetch
+verifie "C19 date de publication GitHub prioritaire" eval '[ "$(ligne need r | cut -f9)" = 382.0 ] && [ "$(ligne agg delai_build_release | cut -f4,5)" = "$(printf "382.0\t1")" ]'
+
+depot claude
+lance metrics --porcelain --no-fetch
+verifie "L15 sans CLAUDE.md : aucune ligne claude" eval '[ -z "$(printf "%s\n" "$out" | grep "^claude")" ]'
+echo a > CLAUDE.md && git add CLAUDE.md && commit_le 2026-06-30T23:00:00Z "claude 1"
+echo b >> CLAUDE.md && git add CLAUDE.md && commit_le 2026-07-01T01:00:00Z "claude 2"
+echo c >> CLAUDE.md && git add CLAUDE.md && commit_le 2026-07-15T10:00:00Z "claude 3"
+mkdir -p sous && echo x > sous/CLAUDE.md && git add sous && commit_le 2026-07-16T10:00:00Z "autre CLAUDE.md"
+lance metrics --porcelain --no-fetch
+verifie "C21 commits de CLAUDE.md à la racine, par mois" \
+  eval '[ "$(printf "%s\n" "$out" | grep "^claude" | tr "\t\n" ":;")" = "claude:2026-06:1;claude:2026-07:2;" ]'
+lance metrics --since 2026-07-02 --porcelain --no-fetch
+verifie "C21 restreint à la fenêtre --since" eval '[ "$(printf "%s\n" "$out" | grep "^claude" | tr "\t\n" ":;")" = "claude:2026-07:1;" ]'
+unset SDLC_NOW
+
 exit $fail

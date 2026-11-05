@@ -619,6 +619,20 @@ m_merge() {
     MG_EP=${c%%$'\t'*} MG_OID=${c#*$'\t'}
   fi
   [ "$MG_OID" != - ] || MG_OID=""
+  # git tag --contains demande un commit local : sinon celui qui porte les trailers.
+  [ -z "$MG_OID" ] || has_ref "$MG_OID" || MG_OID=$(printf '%s' "$c" | cut -f2)
+}
+
+# Fichier $M_TMP/releases : une ligne « tag date » par tag YY.MM.DD[.V]. Date de publication
+# GitHub (un seul gh release list), sinon date du tag, sinon date de committer du commit tagué.
+m_load_releases() {
+  gh release list --limit 1000 --json tagName,publishedAt \
+     --jq '.[] | select(.publishedAt != null) | [.tagName, (.publishedAt | fromdateiso8601)] | @tsv' \
+     > "$M_TMP/published" 2>/dev/null || : > "$M_TMP/published"
+  git for-each-ref --format='%(refname:strip=2)%09%(taggerdate:unix)%09%(*committerdate:unix)%(committerdate:unix)' \
+      "${RELEASE_GLOBS[@]/#/refs/tags/}" \
+    | awk -F'\t' -v OFS='\t' 'FILENAME == ARGV[1] { pub[$1] = $2; next }
+        { print $1, ($1 in pub) ? pub[$1] : ($2 != "" ? $2 : $3) }' "$M_TMP/published" - > "$M_TMP/releases"
 }
 
 # Commits de main qui touchent <intentDir>/$1/$2 avec une date d’auteur postérieure à $3.
@@ -629,11 +643,11 @@ m_rework_count() {
 # Ligne need du besoin $1, durées en secondes, « — » si absente ; vide si --since l’écarte.
 # Colonnes : id survie C5 C8 C9 C10 C11 C19 premier_passage rework
 m_need() {
-  local id=$1 start t0 mi ms mb surv c5=— c8=— c9=— c10=— c11=— rej=0
+  local id=$1 start t0 mi ms mb ob rel re surv c5=— c8=— c9=— c10=— c11=— c19=— rej=0
   t0=$(m_first "$id" intent.md intent)
   m_merge "$id" intent; mi=$MG_EP
   m_merge "$id" spec;   ms=$MG_EP
-  m_merge "$id" build;  mb=$MG_EP
+  m_merge "$id" build;  mb=$MG_EP ob=$MG_OID
   # Date de début : premier commit de l’intent, sinon création de la plus ancienne PR (besoin
   # rejeté avant la fusion de l’intent : branche supprimée), sinon date du tag rejected.
   start=$t0
@@ -652,6 +666,12 @@ m_need() {
   [ -z "$t0" ] || [ -z "$mi" ] || c5=$(( mi - t0 ))
   [ -z "$mi" ] || [ -z "$ms" ] || c9=$(( ms - mi ))
   [ -z "$ms" ] || [ -z "$mb" ] || c11=$(( mb - ms ))
+  # Release de la première fusion du build : la première qui la contient, comme compute.
+  if [ -n "$ob" ]; then
+    rel=$(git tag --contains "$ob" --list "${RELEASE_GLOBS[@]}" --sort=creatordate 2>/dev/null | sed -n 1p)
+    re=$(awk -F'\t' -v t="$rel" '$1 == t { print $2 }' "$M_TMP/releases")
+    [ -z "$re" ] || c19=$(( re - mb ))
+  fi
   if on_main "$id" intent.md; then
     t=$(m_first "$id" spec.md spec)
     if [ -n "$t" ]; then c8=$(m_rework_count "$id" intent.md "$t"); else c8=0; fi
@@ -660,7 +680,7 @@ m_need() {
     t=$(m_first "$id" plan.md build)
     if [ -n "$t" ]; then c10=$(m_rework_count "$id" spec.md "$t"); else c10=0; fi
   fi
-  printf 'need\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t—\t—\t—\n' "$id" "$surv" "$c5" "$c8" "$c9" "$c10" "$c11"
+  printf 'need\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t—\t—\n' "$id" "$surv" "$c5" "$c8" "$c9" "$c10" "$c11" "$c19"
 }
 
 # Lignes need (durées en secondes) sur stdin → lignes need et agg du contrat --porcelain :
@@ -692,6 +712,39 @@ END {
   med("delai_build_release", "—", "c19", 3600)
 }'
 
+# Ligne agg de la fréquence des releases (C20). Fenêtre du jour de --since, à défaut du jour
+# du plus ancien tag, jusqu'au jour de l'appel, bornes comprises : jamais de division par zéro.
+m_release_rate() {
+  LC_ALL=C awk -F'\t' -v since="$M_SINCE" -v now="$M_NOW" '
+    { ep[NR] = $2; if (min == "" || $2 < min) min = $2 }
+    END {
+      today = now - now % 86400
+      if (since != "") start = since
+      else if (min != "") start = min - min % 86400
+      else { print "agg\treleases_par_semaine\t—\t—\t0"; exit }
+      if (start > today) { print "agg\treleases_par_semaine\t—\t0.0\t0"; exit }
+      days = (today - start) / 86400 + 1
+      for (i = 1; i <= NR; i++) if (ep[i] >= start && ep[i] < today + 86400) n++
+      printf "agg\treleases_par_semaine\t—\t%.1f\t%d\n", n * 7 / days, n
+    }' "$M_TMP/releases"
+}
+
+# Lignes claude (C21) : commits de main qui touchent CLAUDE.md à la racine, par mois UTC de
+# la date de committer, dans la fenêtre --since. Mois calculé sans date -d ni mktime.
+m_claude() {
+  git log "$(main_ref)" --format=%ct -- ':(top)CLAUDE.md' \
+    | LC_ALL=C awk -v since="$M_SINCE" '
+        since == "" || $1 >= since {
+          z = int($1 / 86400) + 719468; era = int(z / 146097); doe = z - era * 146097
+          yoe = int((doe - int(doe / 1460) + int(doe / 36524) - int(doe / 146096)) / 365)
+          doy = doe - (365 * yoe + int(yoe / 4) - int(yoe / 100)); mp = int((5 * doy + 2) / 153)
+          m = mp < 10 ? mp + 3 : mp - 9; y = yoe + era * 400 + (m <= 2)
+          n[sprintf("%04d-%02d", y, m)]++
+        }
+        END { for (k in n) print "claude\t" k "\t" n[k] }' \
+    | LC_ALL=C sort
+}
+
 cmd_metrics() {
   local porcelain=0 since="" since_ep="" f id
   while [ $# -gt 0 ]; do
@@ -719,8 +772,13 @@ cmd_metrics() {
   resolve_main
 
   M_SINCE=$since_ep
+  m_load_releases
   for id in $(list_ids); do m_need "$id"; done > "$M_TMP/needs"
-  LC_ALL=C awk -F'\t' -v OFS='\t' "$M_AWK_PORCELAIN" "$M_TMP/needs" > "$M_TMP/porcelain"
+  {
+    LC_ALL=C awk -F'\t' -v OFS='\t' "$M_AWK_PORCELAIN" "$M_TMP/needs"
+    m_release_rate
+    m_claude
+  } > "$M_TMP/porcelain"
   if [ "$porcelain" = 1 ]; then
     cat "$M_TMP/porcelain"
   elif [ -s "$M_TMP/needs" ]; then
