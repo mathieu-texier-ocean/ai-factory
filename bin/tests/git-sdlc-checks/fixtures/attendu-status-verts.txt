@@ -1,0 +1,8 @@
+Besoin    x-1
+PO        PO <po@example.com>
+Étape     Build en revue, à fusionner (PR #7)  [build-review]
+Qui       @lead (2026-11-05 10:00)
+Suite     @lead : relire, puis git sdlc merge x-1 build
+Preuves
+  PR           #7  https://github.com/o/r/pull/7
+  checks       verts

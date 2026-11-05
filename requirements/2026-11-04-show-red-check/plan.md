@@ -69,7 +69,7 @@ Couvre : A1, A2, A3, A4, A5, A6, A7, A8, A9, L8.
   - deux checks rouges, un en cours : deux lignes (A2, L1) ;
   - checks verts, en cours, absents : sortie identique à la référence, aucun appel `pr checks` ni `api` (A3, C5) ;
   - `merge` refusé : détail sur la sortie d'erreur, code 1, `pr merge` jamais appelé (A4) ;
-  - `status --porcelain` et `board` identiques à la référence, sans appel `pr checks` (A5, L8) ;
+  - `status --porcelain` identique à la référence ; `board` sans ligne de détail ; ni l'un ni l'autre n'appelle `pr checks` ou `api` (A5, L8). `board` passe par `column`, dont la sortie dépend de la locale : pas de référence figée ;
   - check run avec titre ; statut de commit avec description (A6, A7) ;
   - `gh api` en échec, check sans lien, raison sur plusieurs lignes (A8, L4, L5, L6).
 - `bash -n bin/git-sdlc`.
@@ -94,7 +94,8 @@ Couvre : A1, A2, A3, A4, A5, A6, A7, A8, A9, L8.
 
 - Peut casser : la sortie de `status` sans check rouge, `--porcelain`, `board`, et le refus de `merge`. Parade : comparaison à une référence dans les tests (A3, A5, L8).
 - Étape la plus risquée : 1, lecture des liens et tolérance aux erreurs de `gh` sous `set -e` (`gh pr checks` sort en 1 ou 8 quand des checks échouent ou tournent). Parade : cas L2–L6 dans les tests.
-- Question reportée par l'intent : longueur maximale de la raison, fixée à l'étape 1 avec les premiers essais.
+- Question reportée par l'intent : longueur maximale de la raison. Fixée à 120 caractères à l'étape 1 (au-delà, coupée et terminée par « … ») ; à confirmer par le développeur.
+- Références `fixtures/attendu-*.txt` : produites par la version de `main` d'avant ce besoin (`GIT_SDLC=<ancienne version> ATTENDU_ECRIRE=1 bash run.sh`) ; cette version échoue à 9 cas du test.
 - Options écartées :
   - ajouter les champs à `JQ_PRS` : `statusCheckRollup` ne porte pas la raison, et `board` changerait ;
   - GraphQL `checkRun.annotations` : requête dédiée plus lourde que deux appels REST ;
