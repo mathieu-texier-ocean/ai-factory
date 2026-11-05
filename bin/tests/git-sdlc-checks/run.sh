@@ -30,6 +30,7 @@ for a in "$@"; do [ "$prev" != --jq ] || jqp=$a; prev=$a; done
 case "$1 $2" in
   "pr list")   f=$GH_FIX/prs-$GH_CAS.json ;;
   "pr checks") [ -z "${GH_CHECKS_KO:-}" ] || { echo "unknown flag: --json" >&2; exit 1; }  # gh trop ancien
+               [ -z "${GH_CHECKS_403:-}" ] || { echo "GraphQL: Resource not accessible by personal access token (repository.pullRequest)" >&2; exit 1; }
                f=$GH_FIX/checks-${GH_CHECKS:-$GH_CAS}.json; rc=1 ;;  # gh sort en 1 quand des checks échouent
   "api "*)     p=${2#repos/\{owner\}/\{repo\}/check-runs/}; p=${p%%\?*}; f=$GH_FIX/run-${p//\//-}.json ;;
   *) echo "faux gh : appel non prévu : $*" >&2; exit 3 ;;
@@ -119,8 +120,32 @@ sdlc rouges status x-1
 verif "gh trop ancien : code 0" [ "$RC" -eq 0 ]
 verif "gh trop ancien : « checks rouges » affiché" a_ligne "$OUT" "  checks       rouges"
 verif "gh trop ancien : signalé sur la sortie d'erreur" \
-  [ "$(printf '%s\n' "$ERR" | grep -c 'détail des checks rouges illisible')" = 1 ]
+  a_ligne "$ERR" "git-sdlc : PR #7 : détail des checks rouges illisible (gh pr checks --json : gh à mettre à jour)"
 unset GH_CHECKS_KO
+
+# --- autre erreur de gh : son message, pas « gh à mettre à jour » ---
+export GH_CHECKS_403=1
+sdlc rouges status x-1
+verif "erreur gh : code 0" [ "$RC" -eq 0 ]
+verif "erreur gh : première ligne de gh signalée" \
+  a_ligne "$ERR" "git-sdlc : PR #7 : détail des checks rouges illisible (GraphQL: Resource not accessible by personal access token (repository.pullRequest))"
+unset GH_CHECKS_403
+
+# --- gh pr checks ne voit aucun check rouge : dit tel quel ---
+export GH_CHECKS=vide
+sdlc rouges status x-1
+verif "aucun check rouge selon gh : signalé tel quel" \
+  a_ligne "$ERR" "git-sdlc : PR #7 : aucun check rouge selon gh pr checks"
+unset GH_CHECKS
+
+# --- seule la dernière exécution d'un check compte (exécution annulée puis relancée) ---
+sdlc relance status x-1
+verif "relance : annulée puis réussie = verts" a_ligne "$OUT" "  checks       verts"
+verif "relance : ni gh pr checks ni gh api" sans_appel
+export GH_CHECKS=rouges
+sdlc relance-rouge status x-1
+verif "relance : réussie puis en échec = rouges" a_ligne "$OUT" "  checks       rouges"
+unset GH_CHECKS
 
 # --- sans check rouge : sortie inchangée, aucun appel de plus (A3, C5) ---
 for cas in verts en-cours aucun; do

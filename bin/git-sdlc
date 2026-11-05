@@ -153,10 +153,14 @@ def nz: if . == null or . == "" then "-" else tostring end;
 # Une ligne TSV par PR de need/<id>/<étape> vers main, de la plus ancienne à la plus récente.
 # Colonnes : id étape numéro état brouillon décision auteur assignés relecteurs checks
 #            maj fusionnée_le fusionnée_par commit_de_fusion étiquettes url
+# Checks : seule la dernière exécution de chaque check compte, comme gh pr checks et l'interface
+# GitHub ; une exécution annulée par concurrency puis relancée n'est pas rouge.
 JQ_PRS=$JQ_DEFS'
 [ .[] | select(.headRefName | test("^need/[^/]+/(intent|spec|build)$")) ] | sort_by(.number) | .[]
 | (.headRefName | split("/")) as $p
-| [ .statusCheckRollup[]? | (.conclusion // .state // .status // "PENDING") ] as $c
+| ( [ .statusCheckRollup[]? ]
+    | group_by([.__typename, .workflowName // "", .name // .context // ""])
+    | [ .[] | max_by(.startedAt // .completedAt // "") | (.conclusion // .state // .status // "PENDING") ] ) as $c
 | [ $p[1], $p[2], .number, .state,
     (if .isDraft then "draft" else "ready" end),
     .reviewDecision, .author.login,
@@ -274,14 +278,20 @@ check_reason() {
 # Champs séparés par \037 : @tsv doublerait les antislashs, et un séparateur blanc
 # fusionnerait les champs vides. Seul un lien GitHub de check run mène à son API.
 red_checks() {
-  local rows name state desc link
+  local rows name state desc link err e
   line_def
+  e=$(mktemp)
   rows=$(gh pr checks "$1" --json name,state,description,link \
            --jq "$JQ_DEFS$JQ_LINE"' .[] | select(.state | red)
                  | [.name, .state, (.description // "" | line), (.link // "")] | join("\u001f")' \
-           2>/dev/null) || true
+           2>"$e") || true
+  err=$(sed -n '/./{p;q;}' "$e"); rm -f "$e"
   if [ -z "$rows" ]; then
-    warn "PR #$1 : détail des checks rouges illisible (gh pr checks --json : gh à mettre à jour ?)"
+    case $err in
+      *"unknown flag: --json"*) warn "PR #$1 : détail des checks rouges illisible (gh pr checks --json : gh à mettre à jour)" ;;
+      ?*) warn "PR #$1 : détail des checks rouges illisible ($err)" ;;
+      *)  warn "PR #$1 : aucun check rouge selon gh pr checks" ;;
+    esac
     return 0
   fi
   while IFS=$'\037' read -r name state desc link; do
