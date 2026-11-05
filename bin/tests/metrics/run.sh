@@ -53,6 +53,30 @@ besoin() {
   [ $# -lt 7 ] || fusion "$6" "$7" "$1" build plan.md
 }
 
+
+# Réponses GitHub à la forme réelle, écrites avec jq dans $GH_DATA.
+# pr_gh <n> <branche> <création> <fusion> <auteur> : ajoute une PR fusionnée à prs.json.
+pr_gh() {
+  local f="$GH_DATA/prs.json"; [ -f "$f" ] || echo '[]' > "$f"
+  jq --argjson n "$1" --arg b "$2" --arg c "$3" --arg m "$4" --arg a "$5" \
+    '. + [{number: $n, headRefName: $b, state: "MERGED", createdAt: $c, mergedAt: $m,
+           mergeCommit: {oid: "-"}, labels: [], author: {login: $a}}]' "$f" > "$f.t" && mv "$f.t" "$f"
+}
+# gql_pr <n> <création> [<ready for review>…] : nœud GraphQL de la PR, sans revue ni commit.
+gql_pr() {
+  local n=$1 c=$2; shift 2
+  jq -n --argjson n "$n" --arg c "$c" --args '{number: $n, createdAt: $c,
+    timelineItems: {nodes: [$ARGS.positional[] | {createdAt: .}]},
+    reviews: {pageInfo: {hasNextPage: false, endCursor: null}, nodes: []},
+    commits: {pageInfo: {hasNextPage: false, endCursor: null}, nodes: []}}' ${@+"$@"} > "$GH_DATA/pr-$n.json"
+}
+gql() { local f="$GH_DATA/pr-$1.json"; shift; jq "$@" "$f" > "$f.t" && mv "$f.t" "$f"; }
+gql_revue()  { gql "$1" --arg t "$2" --arg a "$3" '.reviews.nodes += [{author: {login: $a}, submittedAt: $t}]'; }
+gql_commit() { gql "$1" --arg t "$2" '.commits.nodes += [{commit: {oid: ("o" + $t), committedDate: $t,
+  checkSuites: {pageInfo: {hasNextPage: false, endCursor: null}, nodes: []}}}]'; }
+# gql_run <n> <démarrage> <conclusion> : run sdlc-conventions sur le dernier commit de la PR.
+gql_run() { gql "$1" --arg t "$2" --arg c "$3" '.commits.nodes[-1].commit.checkSuites.nodes += [{checkRuns: {nodes: [{startedAt: $t, conclusion: $c}]}}]'; }
+
 # ---------------------------------------------------------------- étape 1
 
 depot vide
@@ -230,5 +254,85 @@ verifie "C21 commits de CLAUDE.md à la racine, par mois" \
 lance metrics --since 2026-07-02 --porcelain --no-fetch
 verifie "C21 restreint à la fenêtre --since" eval '[ "$(printf "%s\n" "$out" | grep "^claude" | tr "\t\n" ":;")" = "claude:2026-07:1;" ]'
 unset SDLC_NOW
+
+
+# ---------------------------------------------------------------- étape 4
+
+depot revues
+besoin rv 2026-09-01T08:00:00Z 2026-09-01T09:00:00Z 2026-09-01T10:00:00Z 2026-09-02T10:00:00Z 2026-09-03T08:00:00Z 2026-09-03T18:00:00Z
+pr_gh 11 need/rv/build 2026-09-03T08:00:00Z 2026-09-03T18:00:00Z dina
+gql_pr 11 2026-09-03T08:00:00Z 2026-09-03T09:00:00Z 2026-09-03T10:00:00Z
+gql_commit 11 2026-09-03T08:30:00Z
+gql_commit 11 2026-09-03T11:00:00Z
+gql_revue 11 2026-09-03T12:00:00Z lea
+gql_commit 11 2026-09-03T13:00:00Z
+gql_run 11 2026-09-03T13:01:00Z SUCCESS
+lance metrics --porcelain --no-fetch
+verifie "A11 deux commits après le brouillon, séparés par une revue : non, 2 cycles" \
+  eval '[ "$(ligne pr rv build | cut -f5,6)" = "$(printf "non\t2")" ]'
+verifie "L7 dernier « ready for review » retenu : C16 = 2.0, C17 = 8.0" \
+  eval '[ "$(ligne pr rv build | cut -f8,9)" = "$(printf "2.0\t8.0")" ]'
+verifie "C18 la ligne du besoin reprend la PR build" eval '[ "$(ligne need rv | cut -f10,11)" = "$(printf "non\t2")" ]'
+verifie "A10 la requête GraphQL est une query" eval '! grep -qi mutation "$GH_LOG" && grep -q "^api graphql .*query=query" "$GH_LOG"'
+
+depot ci
+besoin ci 2026-09-01T08:00:00Z 2026-09-01T09:00:00Z
+pr_gh 21 need/ci/intent 2026-09-01T08:00:00Z 2026-09-01T09:00:00Z jade
+gql_pr 21 2026-09-01T08:00:00Z
+gql_commit 21 2026-09-01T07:59:00Z
+gql_run 21 2026-09-01T08:01:00Z FAILURE
+gql_run 21 2026-09-01T08:05:00Z SUCCESS
+pr_gh 22 need/ci/intent 2026-09-05T08:00:00Z 2026-09-05T09:00:00Z jade
+gql_pr 22 2026-09-05T08:00:00Z
+gql_commit 22 2026-09-05T07:59:00Z
+gql_run 22 2026-09-05T08:01:00Z SUCCESS
+pr_gh 23 need/ci/intent 2026-09-06T08:00:00Z 2026-09-06T09:00:00Z jade
+gql_pr 23 2026-09-06T08:00:00Z
+gql_commit 23 2026-09-06T07:59:00Z
+gql_run 23 2026-09-06T08:01:00Z CANCELLED
+gql_run 23 2026-09-06T08:02:00Z SUCCESS
+pr_gh 24 need/ci/intent 2026-09-07T08:00:00Z 2026-09-07T09:00:00Z jade
+gql_pr 24 2026-09-07T08:00:00Z
+gql_commit 24 2026-09-07T07:59:00Z
+lance metrics --porcelain --no-fetch
+verifie "A12 premier run en échec puis en succès : non ; premier run en succès : oui" \
+  eval '[ "$(ligne pr ci intent | cut -f4,7 | tr "\t\n" ":;")" = "21:non;22:oui;23:oui;24:—;" ]'
+verifie "A15 run annulé ignoré (L17) ; L9 sans run : —, hors de la part" \
+  eval '[ "$(ligne agg ci_premier_passage intent | cut -f4,5)" = "$(printf "0.67\t3")" ]'
+verifie "A19 PR intent refusionnée : une ligne pr par PR ; L6 PR créée hors brouillon" \
+  eval '[ "$(ligne pr ci intent | wc -l | tr -d " ")" = 4 ] && [ "$(ligne pr ci intent | sed -n 1p | cut -f5,9)" = "$(printf "oui\t1.0")" ]'
+
+depot brouillon
+besoin br 2026-09-01T08:00:00Z 2026-09-01T09:00:00Z 2026-09-01T10:00:00Z 2026-09-02T10:00:00Z 2026-09-03T08:00:00Z 2026-09-03T18:00:00Z
+pr_gh 31 need/br/build 2026-09-03T08:00:00Z 2026-09-03T18:00:00Z dina
+gql_pr 31 2026-09-03T08:00:00Z 2026-09-03T10:00:00Z
+gql_revue 31 2026-09-03T09:00:00Z lea
+gql_revue 31 2026-09-03T11:00:00Z lea
+gql_commit 31 2026-09-03T12:00:00Z
+gql_revue 31 2026-09-03T12:30:00Z dina
+gql_commit 31 2026-09-03T13:00:00Z
+lance metrics --porcelain --no-fetch
+verifie "A16 revue du brouillon et réponses de l'auteur ignorées : C16 = 1.0, 1 cycle" \
+  eval '[ "$(ligne pr br build | cut -f6,8)" = "$(printf "1\t1.0")" ]'
+
+depot pagination
+besoin pg 2026-09-01T08:00:00Z 2026-09-01T09:00:00Z 2026-09-01T10:00:00Z 2026-09-02T10:00:00Z 2026-09-03T08:00:00Z 2026-09-03T18:00:00Z
+pr_gh 41 need/pg/build 2026-09-03T08:00:00Z 2026-09-03T18:00:00Z dina
+gql_pr 41 2026-09-03T08:00:00Z
+gql_commit 41 2026-09-03T07:00:00Z
+gql 41 '.commits.pageInfo = {hasNextPage: true, endCursor: "C1"}'
+cat > "$GH_DATA/after-C1.json" <<'JSON'
+{"data": {"repository": {"c41": {"commits": {"pageInfo": {"hasNextPage": false, "endCursor": null}, "nodes": [
+  {"commit": {"oid": "o2", "committedDate": "2026-09-03T12:00:00Z", "checkSuites": {
+    "pageInfo": {"hasNextPage": true, "endCursor": "S1"},
+    "nodes": [{"checkRuns": {"nodes": [{"startedAt": "2026-09-03T12:01:00Z", "conclusion": "CANCELLED"}]}}]}}}]}}}}}
+JSON
+cat > "$GH_DATA/after-S1.json" <<'JSON'
+{"data": {"repository": {"s_41": {"oid": "o2", "checkSuites": {"pageInfo": {"hasNextPage": false, "endCursor": null},
+  "nodes": [{"checkRuns": {"nodes": [{"startedAt": "2026-09-03T12:02:00Z", "conclusion": "FAILURE"}]}}]}}}}}
+JSON
+lance metrics --porcelain --no-fetch
+verifie "L18 commits et suites au-delà de leur borne : complétés par pagination" \
+  eval '[ "$(ligne pr pg build | cut -f5-7)" = "$(printf "non\t1\tnon")" ] && [ "$(grep -c "after: " "$GH_LOG")" = 2 ]'
 
 exit $fail

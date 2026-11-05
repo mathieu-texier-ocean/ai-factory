@@ -3,6 +3,8 @@
 # les réponses JSON de $GH_DATA, filtrées par le vrai --jq de git-sdlc (jq requis) :
 #   pr list      → $GH_DATA/prs.json
 #   release list → $GH_DATA/releases.json
+#   api graphql  → requête d'un lot : {"data": {"repository": {"p<n>": $GH_DATA/pr-<n>.json…}}} ;
+#                  requête de complément (after: "<curseur>") : $GH_DATA/after-<curseur>.json
 # Fichier absent : liste vide. GH_FAIL=1 simule un gh non authentifié. Toute autre
 # commande échoue : une écriture ne passe jamais inaperçue.
 set -u
@@ -20,8 +22,25 @@ serve() {
   if [ -f "$f" ]; then jq -r "$jq_filter" "$f"; else echo '[]' | jq -r "$jq_filter"; fi
 }
 
+graphql() {
+  local q="" a cursor n f entries=""
+  for a in "${args[@]}"; do case $a in query=*) q=${a#query=} ;; esac; done
+  case $q in query*) ;; *) echo "gh factice : pas une query : $q" >&2; exit 1 ;; esac
+  cursor=$(printf '%s' "$q" | grep -o 'after: "[^"]*"' | sed -n '1s/after: "\(.*\)"/\1/p')
+  if [ -n "$cursor" ]; then
+    jq -r "$jq_filter" "$GH_DATA/after-$cursor.json"
+    return
+  fi
+  for n in $(printf '%s' "$q" | grep -o 'p[0-9]*: pullRequest' | sed 's/^p\([0-9]*\):.*/\1/'); do
+    f="$GH_DATA/pr-$n.json"
+    entries+="${entries:+,}\"p$n\": $(if [ -f "$f" ]; then cat "$f"; else echo null; fi)"
+  done
+  printf '{"data": {"repository": {%s}}}' "$entries" | jq -r "$jq_filter"
+}
+
 case "${1:-} ${2:-}" in
   "pr list")      serve prs.json ;;
   "release list") serve releases.json ;;
+  "api graphql")  graphql ;;
   *) echo "gh factice : commande non prévue : $*" >&2; exit 1 ;;
 esac

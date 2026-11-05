@@ -683,7 +683,122 @@ m_need() {
   printf 'need\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t—\t—\n' "$id" "$surv" "$c5" "$c8" "$c9" "$c10" "$c11" "$c19"
 }
 
-# Lignes need (durées en secondes) sur stdin → lignes need et agg du contrat --porcelain :
+# Lecture GraphQL des PR fusionnées. GitHub refuse avant exécution une requête dont le nombre
+# maximal de nœuds (produit des first/last imbriqués) dépasse 500 000 : chaque niveau a sa
+# borne. 100 revues, 100 commits, 10 suites sdlc-conventions par commit, 1 run par suite
+# (sdlc.yml n'a qu'un job), soit 2 201 nœuds par PR et 110 050 par lot de 50.
+M_GQL_SUITES='checkSuites(first: 10%s, filterBy: {checkName: "sdlc-conventions"}) {
+  pageInfo { hasNextPage endCursor }
+  nodes { checkRuns(first: 1, filterBy: {checkName: "sdlc-conventions"}) { nodes { startedAt conclusion } } } }'
+M_GQL_COMMITS="commits(first: 100%s) { pageInfo { hasNextPage endCursor }
+  nodes { commit { oid committedDate $(printf "$M_GQL_SUITES" '') } } }"
+M_GQL_REVIEWS='reviews(first: 100%s) { pageInfo { hasNextPage endCursor } nodes { author { login } submittedAt } }'
+
+# Réponse GraphQL → une ligne TSV par fait. P numéro sortie_du_brouillon (dernier « ready for
+# review », sinon création) ; R numéro date auteur ; C numéro date_de_committer ;
+# K numéro démarrage conclusion. Une liste qui atteint sa borne donne MR/MC (curseur) ou
+# MS (oid, curseur), complétées par m_gql_more.
+M_JQ_GQL='
+def ep: if . == null then "-" else fromdateiso8601 | tostring end;
+def suites($n; $oid): .pageInfo as $pi
+  | (.nodes[] | .checkRuns.nodes[] | "K\t\($n)\t\(.startedAt | ep)\t\(.conclusion // "-")"),
+    (if $pi.hasNextPage then "MS\t\($n)\t\($oid)\t\($pi.endCursor)" else empty end);
+def commits($n): .pageInfo as $pi
+  | (.nodes[] | .commit | .oid as $o | "C\t\($n)\t\(.committedDate | ep)", (.checkSuites | suites($n; $o))),
+    (if $pi.hasNextPage then "MC\t\($n)\t\($pi.endCursor)" else empty end);
+def reviews($n): .pageInfo as $pi
+  | (.nodes[] | select(.submittedAt != null) | "R\t\($n)\t\(.submittedAt | ep)\t\(.author.login // "-")"),
+    (if $pi.hasNextPage then "MR\t\($n)\t\($pi.endCursor)" else empty end);
+.data.repository | to_entries[] | .key as $k | .value | select(. != null)
+| if $k | startswith("p") then
+    .number as $n
+    | "P\t\($n)\t\((.timelineItems.nodes | last | .createdAt) // .createdAt | ep)",
+      (.reviews | reviews($n)), (.commits | commits($n))
+  elif $k | startswith("r") then .reviews | reviews($k[1:])
+  elif $k | startswith("c") then .commits | commits($k[1:])
+  else ($k | split("_")) as $s | .oid as $o | .checkSuites | suites($s[1]; $o)
+  end'
+
+# m_gql <champs de repository> : une requête en lecture, faits sur stdout.
+m_gql() {
+  gh api graphql -F owner='{owner}' -F name='{repo}' \
+    -f query="query(\$owner: String!, \$name: String!) { repository(owner: \$owner, name: \$name) { $1 } }" \
+    --jq "$M_JQ_GQL" || die "lecture GraphQL des pull requests impossible (vérifiez gh auth status)"
+}
+
+# Faits des PR dont les numéros sont sur stdin, par lots de 50 ; listes complétées jusqu'au bout.
+m_gql_prs() {
+  local n q="" k=0 more
+  while read -r n; do
+    q+="p$n: pullRequest(number: $n) { number createdAt
+      timelineItems(itemTypes: [READY_FOR_REVIEW_EVENT], last: 1) { nodes { ... on ReadyForReviewEvent { createdAt } } }
+      $(printf "$M_GQL_REVIEWS" '') $(printf "$M_GQL_COMMITS" '') } "
+    k=$((k + 1))
+    if [ "$k" = 50 ]; then m_gql "$q"; q="" k=0; fi
+  done
+  [ -z "$q" ] || m_gql "$q"
+} 
+
+# Complète, PR par PR ou commit par commit, les listes qui ont atteint leur borne (lignes M*
+# de $1), jusqu'à ce qu'il n'en reste plus. Les faits obtenus s'ajoutent à $1.
+m_gql_more() {
+  local f=$1 todo kind n a b
+  todo=$(grep '^M' "$f" || true)
+  while [ -n "$todo" ]; do
+    sed -i.bak '/^M/d' "$f" && rm -f "$f.bak"
+    while IFS=$'\t' read -r kind n a b; do
+      case $kind in
+        MR) m_gql "r$n: pullRequest(number: $n) { $(printf "$M_GQL_REVIEWS" ", after: \"$a\"") }" ;;
+        MC) m_gql "c$n: pullRequest(number: $n) { $(printf "$M_GQL_COMMITS" ", after: \"$a\"") }" ;;
+        MS) m_gql "s_$n: object(oid: \"$a\") { ... on Commit { oid $(printf "$M_GQL_SUITES" ", after: \"$b\"") } }" ;;
+      esac
+    done <<<"$todo" >> "$f"
+    todo=$(grep '^M' "$f" || true)
+  done
+}
+
+# Faits GraphQL (fichier 2), avec la liste des PR (fichier 1) → une ligne pr par PR fusionnée,
+# durées en secondes. Revue retenue : soumise après la sortie du brouillon, par un autre compte
+# que l'auteur. Colonnes : id étape numéro premier_passage rework ci délai_1re_revue durée_revue
+M_AWK_PR='
+function sort1(a, m,   i, j, x) { for (i = 2; i <= m; i++) { x = a[i]; for (j = i - 1; j >= 1 && a[j] > x; j--) a[j + 1] = a[j]; a[j + 1] = x } }
+FILENAME == ARGV[1] { if ($4 == "MERGED") { id[$3] = $1; st[$3] = $2; mg[$3] = $6; au[$3] = $9 } next }
+$1 == "P" { ready[$2] = $3 }
+$1 == "R" { if ($3 != "-") { nr[$2]++; rv[$2, nr[$2]] = $3; ra[$2, nr[$2]] = $4 } }
+$1 == "C" { if ($3 != "-") { nc[$2]++; cm[$2, nc[$2]] = $3 } }
+$1 == "K" { if ($3 != "-") { nk[$2]++; ks[$2, nk[$2]] = $3 "\t" $4 } }
+END {
+  for (n in ready) {
+    if (!(n in id)) continue
+    r = ready[n] + 0; m = mg[n] + 0
+    split("", b); nb = 1; b[1] = r
+    split("", t); k = 0
+    for (i = 1; i <= nr[n]; i++) if (rv[n, i] + 0 > r && ra[n, i] != au[n]) t[++k] = rv[n, i] + 0
+    sort1(t, k)
+    for (i = 1; i <= k; i++) b[++nb] = t[i]
+    b[++nb] = m
+    fp = "oui"; split("", used); rw = 0
+    for (i = 1; i <= nc[n]; i++) {
+      c = cm[n, i] + 0
+      if (c <= r) continue
+      fp = "non"
+      for (j = 1; j < nb - 1 && c > b[j + 1]; j++) ;
+      if (!(j in used)) { used[j] = 1; rw++ }
+    }
+    split("", s); q = 0
+    for (i = 1; i <= nk[n]; i++) { split(ks[n, i], x, "\t"); if (x[1] + 0 >= r) s[++q] = sprintf("%012d\t%s", x[1], x[2]) }
+    sort1(s, q); ci = "—"
+    for (i = 1; i <= q; i++) {
+      split(s[i], x, "\t")
+      if (x[2] == "SUCCESS") { ci = "oui"; break }
+      if (x[2] ~ /^(FAILURE|TIMED_OUT|STARTUP_FAILURE|ACTION_REQUIRED)$/) { ci = "non"; break }
+    }
+    printf "pr\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n", id[n], st[n], n, fp, rw, ci, k ? t[1] - r : "—", m - r
+  }
+}'
+
+# Lignes pr (fichier 1) et need (fichier 2), durées en secondes → lignes need, pr et agg du
+# contrat --porcelain. La ligne need reprend la première PR build fusionnée. Format :
 # durées en heures à une décimale, taux à deux décimales, médianes avec leur effectif n.
 M_AWK_PORCELAIN='
 function hours(v) { return v == "—" ? v : sprintf("%.1f", v / 3600) }
@@ -695,13 +810,27 @@ function med(name, step, k, scale,   m, i, j, x, v) {
   printf "agg\t%s\t%s\t%.1f\t%d\n", name, step, v / scale, m
 }
 function add(k, v) { if (v != "—") val[k, ++cnt[k]] = v + 0 }
+function rate(name, step, yes, all) {
+  if (all) printf "agg\t%s\t%s\t%.2f\t%d\n", name, step, yes / all, all
+  else print "agg\t" name "\t" step "\t—\t0"
+}
+FILENAME == ARGV[1] {
+  pr[++np] = $0
+  if ($3 == "build" && !($2 in bfp)) { bfp[$2] = $5; brw[$2] = $6 }
+  tot[$3]++; if ($5 == "oui") fpy[$3]++
+  if ($7 == "oui") ciy[$3]++; if ($7 != "—") cin[$3]++
+  add("rw" $3, $6); add("rv" $3, $8); add("du" $3, $9)
+  next
+}
 $1 == "need" {
+  if ($2 in bfp) { $10 = bfp[$2]; $11 = brw[$2] }
   add("c5", $4); add("c8", $5); add("c9", $6); add("c10", $7); add("c11", $8); add("c19", $9)
   if ($3 == "accepté") acc++; else if ($3 == "rejeté") rej++
   $4 = hours($4); $6 = hours($6); $8 = hours($8); $9 = hours($9)
   print
 }
 END {
+  for (i = 1; i <= np; i++) { $0 = pr[i]; $8 = hours($8); $9 = hours($9); print }
   med("delai_intent", "—", "c5", 3600)
   if (acc + rej) printf "agg\tsurvie\t—\t%.2f\t%d\n", acc / (acc + rej), acc + rej
   else print "agg\tsurvie\t—\t—\t0"
@@ -710,6 +839,12 @@ END {
   med("retouches_spec", "—", "c10", 1)
   med("delai_spec_build", "—", "c11", 3600)
   med("delai_build_release", "—", "c19", 3600)
+  split("intent spec build", steps, " ")
+  for (i = 1; i <= 3; i++) rate("premier_passage", steps[i], fpy[steps[i]], tot[steps[i]])
+  for (i = 1; i <= 3; i++) med("rework", steps[i], "rw" steps[i], 1)
+  for (i = 1; i <= 3; i++) rate("ci_premier_passage", steps[i], ciy[steps[i]], cin[steps[i]])
+  for (i = 1; i <= 3; i++) med("delai_premiere_revue", steps[i], "rv" steps[i], 3600)
+  for (i = 1; i <= 3; i++) med("duree_revue", steps[i], "du" steps[i], 3600)
 }'
 
 # Ligne agg de la fréquence des releases (C20). Fenêtre du jour de --since, à défaut du jour
@@ -774,8 +909,14 @@ cmd_metrics() {
   M_SINCE=$since_ep
   m_load_releases
   for id in $(list_ids); do m_need "$id"; done > "$M_TMP/needs"
+  # PR fusionnées des besoins retenus : seules à passer par GraphQL (C26).
+  cut -f2 "$M_TMP/needs" \
+    | awk -F'\t' 'FILENAME == ARGV[1] { keep[$1] = 1; next } $4 == "MERGED" && ($1 in keep) { print $3 }' - "$PRS" \
+    | m_gql_prs > "$M_TMP/facts"
+  m_gql_more "$M_TMP/facts"
+  LC_ALL=C awk -F'\t' "$M_AWK_PR" "$PRS" "$M_TMP/facts" | LC_ALL=C sort -t "$(printf '\t')" -k4,4n > "$M_TMP/pr_rows"
   {
-    LC_ALL=C awk -F'\t' -v OFS='\t' "$M_AWK_PORCELAIN" "$M_TMP/needs"
+    LC_ALL=C awk -F'\t' -v OFS='\t' "$M_AWK_PORCELAIN" "$M_TMP/pr_rows" "$M_TMP/needs"
     m_release_rate
     m_claude
   } > "$M_TMP/porcelain"
