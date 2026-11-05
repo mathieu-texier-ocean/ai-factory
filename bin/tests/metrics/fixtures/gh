@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# gh factice des tests de git sdlc metrics. Journalise ses arguments dans $GH_LOG et sert
+# les réponses JSON de $GH_DATA, filtrées par le vrai --jq de git-sdlc (jq requis) :
+#   pr list      → $GH_DATA/prs.json
+#   release list → $GH_DATA/releases.json
+# Fichier absent : liste vide. GH_FAIL=1 simule un gh non authentifié. Toute autre
+# commande échoue : une écriture ne passe jamais inaperçue.
+set -u
+# Une ligne par appel : les filtres --jq multilignes sont aplatis.
+printf '%s' "$*" | tr '\n' ' ' >> "${GH_LOG:-/dev/null}"; echo >> "${GH_LOG:-/dev/null}"
+[ "${GH_FAIL:-0}" = 0 ] || { echo "gh factice : non authentifié" >&2; exit 1; }
+
+jq_filter="."
+args=("$@")
+for ((i = 0; i < ${#args[@]}; i++)); do
+  [ "${args[i]}" != --jq ] || jq_filter=${args[i + 1]}
+done
+serve() {
+  local f="$GH_DATA/$1"
+  if [ -f "$f" ]; then jq -r "$jq_filter" "$f"; else echo '[]' | jq -r "$jq_filter"; fi
+}
+
+case "${1:-} ${2:-}" in
+  "pr list")      serve prs.json ;;
+  "release list") serve releases.json ;;
+  *) echo "gh factice : commande non prévue : $*" >&2; exit 1 ;;
+esac
