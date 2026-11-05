@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-`git sdlc status` et le refus de `git sdlc merge` disent seulement « checks rouges » : pour savoir quel check échoue et pourquoi, il faut ouvrir la PR sur GitHub. Le besoin ajoute, pour chaque check rouge, son nom, sa conclusion, la raison donnée par GitHub et son lien. La spec fixe 9 comportements (C1–C9), 9 cas limites et 9 critères d'acceptation ; sa révision du 2026-11-05 lit la raison d'un check GitHub Actions dans ses annotations, son titre et son résumé étant vides. Étape en cours : révision de la spec, avant le build.
+`git sdlc status` et le refus de `git sdlc merge` disent seulement « checks rouges » : pour savoir quel check échoue et pourquoi, il faut ouvrir la PR sur GitHub. Le besoin ajoute, pour chaque check rouge, son nom, sa conclusion, la raison donnée par GitHub et son lien. La spec fixe 9 comportements (C1–C9), 9 cas limites et 9 critères d'acceptation ; sa révision du 2026-11-05 lit la raison d'un check GitHub Actions dans ses annotations, son titre et son résumé étant vides. Étape en cours : build, en trois étapes (détail dans `status`, détail au refus de `merge`, tests avec un faux `gh`).
 
 ## Décisions
 
@@ -27,3 +27,6 @@
 - 2026-11-04 · intent · Raison illisible : check affiché sans raison, la commande n'échoue pas (Mathieu Texier)
 - 2026-11-04 · intent · Longueur maximale de la raison : reportée au build, à fixer avec les premiers essais (Mathieu Texier)
 - 2026-11-05 · spec · Raison d'un check Actions lue dans ses annotations : titre et résumé vides (Mathieu Texier)
+- 2026-11-05 · build · À risque : non (Mathieu Texier)
+- 2026-11-05 · build · Tests automatisés avec un faux `gh` ; tests manuels seuls écartés (Mathieu Texier)
+- 2026-11-05 · build · Champs ajoutés à `JQ_PRS` et GraphQL des annotations écartés : lecture REST seulement pour un check rouge (Mathieu Texier)
