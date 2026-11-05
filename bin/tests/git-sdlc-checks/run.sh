@@ -80,6 +80,21 @@ verif "raison illisible : ligne sans raison (A8, L6, C8)" \
 l=$(printf '%s\n' "$OUT" | sed -n 's/^    long  FAILURE  //p')
 verif "raison longue : 120 caractères, terminée par …" \
   [ "$(printf '%s' "$l" | jq -R length)" = 120 -a "${l%…}" != "$l" ]
+git config sdlc.checkReasonMax 20
+sdlc rouges status x-1
+l=$(printf '%s\n' "$OUT" | sed -n 's/^    long  FAILURE  //p')
+verif "checkReasonMax = 20 : raison coupée à 20 caractères" [ "$(printf '%s' "$l" | jq -R length)" = 20 ]
+git config sdlc.checkReasonMax 0
+sdlc rouges status x-1
+l=$(printf '%s\n' "$OUT" | sed -n 's/^    long  FAILURE  //p')
+verif "checkReasonMax = 0 : raison entière" [ "$(printf '%s' "$l" | jq -R length)" = 200 ]
+git config sdlc.checkReasonMax abc
+sdlc rouges status x-1
+l=$(printf '%s\n' "$OUT" | sed -n 's/^    long  FAILURE  //p')
+verif "checkReasonMax invalide : 120 retenu et signalé" \
+  [ "$(printf '%s' "$l" | jq -R length)" = 120 -a "$(printf '%s\n' "$ERR" | grep -c 'checkReasonMax invalide')" = 1 ]
+git config --unset sdlc.checkReasonMax
+sdlc rouges status x-1
 verif "checks verts et en cours non détaillés (L1)" \
   [ "$(printf '%s\n' "$OUT" | grep -cE '^    (lint|vert) ')" = 0 ]
 verif "une ligne par check rouge (A2)" [ "$(printf '%s\n' "$OUT" | grep -c '^    [^ ]')" = 6 ]

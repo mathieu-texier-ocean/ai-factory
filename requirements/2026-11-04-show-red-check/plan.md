@@ -31,6 +31,7 @@
 |---|---|---|
 | `bin/git-sdlc` | modifié | 1, 2 |
 | `README.md` | modifié | 1 |
+| `.sdlc/config` | modifié | 1 |
 | `bin/tests/git-sdlc-checks/run.sh` | nouveau | 3 |
 | `bin/tests/git-sdlc-checks/fixtures/*` | nouveau | 3 |
 
@@ -94,7 +95,7 @@ Couvre : A1, A2, A3, A4, A5, A6, A7, A8, A9, L8.
 
 - Peut casser : la sortie de `status` sans check rouge, `--porcelain`, `board`, et le refus de `merge`. Parade : comparaison à une référence dans les tests (A3, A5, L8).
 - Étape la plus risquée : 1, lecture des liens et tolérance aux erreurs de `gh` sous `set -e` (`gh pr checks` sort en 1 ou 8 quand des checks échouent ou tournent). Parade : cas L2–L6 dans les tests.
-- Question reportée par l'intent : longueur maximale de la raison. Fixée à 120 caractères à l'étape 1 (au-delà, coupée et terminée par « … ») ; à confirmer par le développeur.
+- Question reportée par l'intent : longueur maximale de la raison. Clé `checkReasonMax` de `.sdlc/config` (défaut 120, 0 : sans limite, valeur invalide signalée et remplacée par 120) ; au-delà, la raison est coupée et terminée par « … ».
 - Références `fixtures/attendu-*.txt` : produites par la version de `main` d'avant ce besoin (`GIT_SDLC=<ancienne version> ATTENDU_ECRIRE=1 bash run.sh`) ; cette version échoue à 9 cas du test.
 - Options écartées :
   - ajouter les champs à `JQ_PRS` : `statusCheckRollup` ne porte pas la raison, et `board` changerait ;

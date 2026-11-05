@@ -31,6 +31,8 @@ MAIN=${SDLC_MAIN:-$(cfg main main)}
 IDIR=${SDLC_INTENT_DIR:-$(cfg intentDir requirements)}
 PR_LIMIT=$(cfg prLimit 300)
 MERGE_ARGS=$(cfg mergeArgs "--rebase --delete-branch")
+REASON_MAX=$(cfg checkReasonMax 120)
+[[ $REASON_MAX =~ ^[0-9]+$ ]] || { warn "sdlc.checkReasonMax invalide ($REASON_MAX) : 120 retenu"; REASON_MAX=120; }
 FETCH=1
 RELEASE_META=1
 PRS=""
@@ -241,9 +243,9 @@ open_state() {
   fi
 }
 
-# Raison d’un check rouge sur une ligne, au plus 120 caractères.
+# Raison d’un check rouge sur une ligne, au plus checkReasonMax caractères (0 : sans limite).
 JQ_LINE='def line: tostring | gsub("[[:space:]]+"; " ") | ltrimstr(" ") | rtrimstr(" ")
-                   | if length > 120 then .[0:119] + "…" else . end;'
+                   | if '$REASON_MAX' > 0 and length > '$REASON_MAX' then .[0:'$REASON_MAX' - 1] + "…" else . end;'
 
 # Raison du check run $1 : titre, sinon résumé, sinon première annotation « failure »
 # (un job GitHub Actions n’a ni titre ni résumé). Vide si GitHub ne répond pas.

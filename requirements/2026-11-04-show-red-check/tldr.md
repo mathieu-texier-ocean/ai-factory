@@ -30,3 +30,4 @@
 - 2026-11-05 · build · À risque : non (Mathieu Texier)
 - 2026-11-05 · build · Tests automatisés avec un faux `gh` ; tests manuels seuls écartés (Mathieu Texier)
 - 2026-11-05 · build · Champs ajoutés à `JQ_PRS` et GraphQL des annotations écartés : lecture REST seulement pour un check rouge (Mathieu Texier)
+- 2026-11-05 · build · Longueur maximale de la raison réglable par `checkReasonMax` dans `.sdlc/config` : 120 par défaut, 0 sans limite (Mathieu Texier)

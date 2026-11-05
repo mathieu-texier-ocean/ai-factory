@@ -152,7 +152,7 @@ L’ordre de priorité est le suivant :
 4. PR spec fusionnée → **Spec acceptée** ; sinon PR spec ouverte, puis branche spec sans PR.
 5. PR intent fusionnée → **Intent accepté** ; sinon PR intent ouverte, puis branche intent sans PR.
 
-`status` affiche aussi les preuves : chaque gate franchi (date, PR, auteur de la fusion), l’état des checks (pour chaque check rouge : nom, conclusion, raison donnée par GitHub et lien), et les incidents enfants (`Parent: <id>`).
+`status` affiche aussi les preuves : chaque gate franchi (date, PR, auteur de la fusion), l’état des checks (pour chaque check rouge : nom, conclusion, raison donnée par GitHub et lien ; raison coupée à `checkReasonMax` caractères de `.sdlc/config`, 120 par défaut, 0 pour aucune limite), et les incidents enfants (`Parent: <id>`).
 
 ## Mesurer le SDLC
 
