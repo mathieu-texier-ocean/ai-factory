@@ -9,7 +9,7 @@
 
 - Spec : [spec.md](spec.md) · Plan : [plan.md](plan.md)
 - Branche : `need/2026-11-04-show-red-check/build`
-- Commit recetté : `f23e5ab` (à remplacer à chaque nouvelle recette)
+- Commit recetté : `db0094d` (à remplacer à chaque nouvelle recette) ; première recette manuelle au commit `39dfdf1`
 - Recetteur : <à désigner>
 
 ## Critères automatisés
@@ -21,7 +21,7 @@ bash bin/tests/git-sdlc-checks/run.sh   # une ligne PASS/FAIL par cas
 bash scripts/verify.sh                  # tous les run.sh du dépôt
 ```
 
-Constat du 2026-11-05, au commit `f23e5ab` : 35 cas PASS, 0 FAIL ; `verify.sh` : 7 run.sh lancés, 0 en échec.
+Constat du 2026-11-05, au commit `db0094d` : 35 cas PASS, 0 FAIL ; `verify.sh` : 7 run.sh lancés, 0 en échec.
 
 Le banc rejoue des réponses de GitHub avec un faux `gh` qui applique `--jq` avec `jq`. Le vrai `gh` utilise son propre moteur jq : les critères marqués `Manuel` dans la spec se rejouent aussi contre GitHub (section suivante).
 
@@ -67,6 +67,7 @@ Ces essais demandent un jeton `gh` qui lit les PR et les check runs d'ai-factory
 
 | Date | Commit | Ligne affichée | Constat |
 |---|---|---|---|
+| 2026-11-05 | `39dfdf1` | `sdlc-conventions  FAILURE  Process completed with exit code 1.  https://github.com/mathieu-texier-ocean/ai-factory/actions/runs/42028214103/job/127247681157` (PR #8) | KO : lien correct, mais la raison est la dernière annotation, pas la première erreur du log (`commit 8e2d7ad : trailer Need: manquant`). L'API liste les annotations de la plus récente à la plus ancienne. Test de reproduction `c9bcd77`, correctif `db0094d`. À refaire. |
 | | | | |
 
 ### A4 Détail au refus de `merge`
@@ -76,6 +77,7 @@ Ces essais demandent un jeton `gh` qui lit les PR et les check runs d'ai-factory
 
 | Date | Commit | Sortie d'erreur | Code | Constat |
 |---|---|---|---|---|
+| 2026-11-05 | `39dfdf1` | `git-sdlc : PR #8 : checks rouges`, puis la ligne de détail (même raison erronée que A1) | non relevé | OK pour le message et le détail, aucune fusion ; code de retour à relever. À refaire avec `db0094d` pour la raison. |
 | | | | | |
 
 ### A3, A5 Sorties inchangées
@@ -96,9 +98,11 @@ Ces essais demandent un jeton `gh` qui lit les PR et les check runs d'ai-factory
 
 | Date | Commit | Constat |
 |---|---|---|
-| | | |
+| 2026-11-05 | `39dfdf1` | OK : à 10, `Process c…` (10 caractères, `…` compris) ; à 1000, raison entière. |
 
 ## Écarts connus, à signaler dans la PR
+
+- **Ordre des annotations.** Constaté en recette le 2026-11-05 : l'API GitHub liste les annotations d'un check run de la plus récente à la plus ancienne. La « première annotation » de C9 s'entend dans l'ordre du log (`start_line`), corrigé en `db0094d`.
 
 - **Tests automatisés.** La spec marque A1 à A8 `Manuel` ; le développeur a retenu un faux `gh` au build (décision du 2026-11-05), ils sont donc aussi automatisés. Les essais manuels ci-dessus restent la preuve contre GitHub.
 - **Longueur de la raison.** Fixée par la clé `checkReasonMax` de `.sdlc/config` (120 par défaut), question reportée au build par l'intent.
