@@ -31,7 +31,7 @@ case "$1 $2" in
   "pr list")   f=$GH_FIX/prs-$GH_CAS.json ;;
   "pr checks") [ -z "${GH_CHECKS_KO:-}" ] || { echo "unknown flag: --json" >&2; exit 1; }  # gh trop ancien
                f=$GH_FIX/checks-${GH_CHECKS:-$GH_CAS}.json; rc=1 ;;  # gh sort en 1 quand des checks échouent
-  "api "*)     p=${2#repos/\{owner\}/\{repo\}/check-runs/}; f=$GH_FIX/run-${p//\//-}.json ;;
+  "api "*)     p=${2#repos/\{owner\}/\{repo\}/check-runs/}; p=${p%%\?*}; f=$GH_FIX/run-${p//\//-}.json ;;
   *) echo "faux gh : appel non prévu : $*" >&2; exit 3 ;;
 esac
 [ -f "$f" ] || { echo "HTTP 404: Not Found" >&2; exit 1; }
@@ -69,7 +69,7 @@ sdlc rouges status x-1
 verif "status rouges : code 0" [ "$RC" -eq 0 ]
 verif "status rouges : détail juste sous « checks rouges » (C1)" \
   [ "$(printf '%s\n' "$OUT" | grep -A1 -xF '  checks       rouges' | tail -n1)" = "    sdlc-conventions  FAILURE  Trailer Need absent sur 1 commit  https://github.com/o/r/actions/runs/1/job/101" ]
-verif "check Actions : raison = 1re annotation failure (A1, A9, L9)" \
+verif "check Actions : raison = 1re annotation failure du log, pas la plus récente (A1, A9, L9)" \
   a_ligne "$OUT" "    sdlc-conventions  FAILURE  Trailer Need absent sur 1 commit  https://github.com/o/r/actions/runs/1/job/101"
 verif "check run avec titre : raison = titre (A6)" \
   a_ligne "$OUT" "    tests  FAILURE  3 tests en échec  https://github.com/o/r/runs/102"

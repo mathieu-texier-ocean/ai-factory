@@ -1,1 +1,1 @@
-[{"annotation_level":"warning","message":"avertissement"},{"annotation_level":"failure","message":"Trailer Need absent sur 1 commit"}]
+[{"annotation_level":"failure","message":"Process completed with exit code 1.","start_line":15},{"annotation_level":"failure","message":"PR build : fichier hors périmètre","start_line":11},{"annotation_level":"failure","message":"Trailer Need absent sur 1 commit","start_line":10},{"annotation_level":"notice","message":"avertissement","start_line":1}]
