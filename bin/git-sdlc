@@ -422,7 +422,9 @@ Suivi
   board [--all] [--by-person] [--porcelain] [--no-fetch]
                                            tableau de bord de tous les besoins
   metrics [--since <AAAA-MM-JJ>] [--porcelain] [--no-fetch]
-                                           mesures du SDLC par besoin, par PR et en agrégé
+                                           mesures du SDLC par besoin, par PR et en agrégé ;
+                                           un rebase force-poussé après la sortie du brouillon
+                                           compte comme du rework
 
 Cycle d’un besoin (chaque étape = une PR vers $MAIN)
   new <slug> [--id <id>] [--parent <id>] [--origin <origine>]

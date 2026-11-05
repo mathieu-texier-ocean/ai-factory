@@ -91,6 +91,7 @@ git sdlc status 2026-10-28-claims-status
 git sdlc board                    # besoins en cours, triés par étape
 git sdlc board --by-person        # regroupés par personne ou équipe
 git sdlc board --all              # y compris livrés et rejetés
+git sdlc metrics --since 2026-10-01   # mesures du SDLC depuis cette date (défaut : tout l’historique)
 ```
 
 `new`, `claim`, `ready`, `merge` et `reject` affichent ensuite la ligne de `git sdlc board` du besoin, relue sur GitHub.
@@ -153,6 +154,33 @@ L’ordre de priorité est le suivant :
 
 `status` affiche aussi les preuves : chaque gate franchi (date, PR, auteur de la fusion), l’état des checks, et les incidents enfants (`Parent: <id>`).
 
+## Mesurer le SDLC
+
+`git sdlc metrics [--since <AAAA-MM-JJ>] [--porcelain] [--no-fetch]` recalcule à chaque appel, depuis git et les PR GitHub, les indicateurs « How to measure it » du playbook, en lecture seule :
+
+| Étape | Indicateurs |
+|---|---|
+| Plan | délai de rédaction de l’intent, survie des intents, retouches de l’intent après le début de la spec |
+| Design | délai intent → spec, retouches de la spec après le début du plan |
+| Build | délai spec → build, premier passage (aucun commit après la sortie du brouillon), cycles de rework |
+| Test et Deploy | CI `sdlc-conventions` au premier passage, délai jusqu’à la première revue, durée de revue |
+| DORA partiel | délai build → release, releases par semaine |
+| CLAUDE.md | commits de `CLAUDE.md` par mois |
+
+La sortie lisible donne trois tableaux : Besoins, PR fusionnées et Agrégats. Les agrégats sont des médianes, des taux ou une fréquence, avec leur effectif `n`. `--since` ne retient que les besoins commencés à partir de cette date : premier commit de l’intent, sinon création de la première PR. `--porcelain` produit un TSV sans en-tête pour un tableur : lignes `need`, `pr`, `agg` et `claude`, durées en heures décimales (`26.5`), taux entre 0 et 1.
+
+Comment c’est mesuré :
+
+- **Dates à la seconde, en UTC.** Le premier commit d’un artefact est daté par sa date d’auteur, que la fusion par rebase conserve. La fusion d’une étape est sa première fusion : la plus ancienne date entre la première PR fusionnée et le premier commit de `main` qui porte ses trailers. Une étape refusionnée (intent corrigé par une seconde PR) ne décale donc pas les délais.
+- **Revues.** Seules comptent les revues soumises après la sortie du brouillon par un autre compte que l’auteur. Un cycle de rework est un intervalle, borné par la sortie du brouillon, les revues et la fusion, qui contient au moins un commit.
+- **CI.** Un run annulé, ignoré ou neutre ne tranche pas : le suivant est pris.
+- **Lecture GitHub.** Une requête GraphQL par lot de 50 PR fusionnées de branches `need/*`, avec une borne par niveau pour rester sous la limite de 500 000 nœuds de GitHub. Elle coûte environ 550 points par lot, sur les 5 000 de l’heure. Les dates de release viennent d’un seul `gh release list`.
+
+Limites :
+
+- **Rebase force-poussé.** Git n’enregistre pas l’heure d’un push : un rebase force-poussé après la sortie du brouillon donne des dates de committer récentes, qui comptent comme du rework.
+- **Volume.** Seules les `prLimit` PR les plus récentes sont lues, et un avertissement s’affiche quand cette limite est atteinte.
+
 ## La revue par Claude
 
 `REVIEW.md` est écrit pour être lu par Claude comme par les humains. Deux intégrations décrites dans le playbook s’y branchent sans modifier le kit :
@@ -176,5 +204,5 @@ Il produit de même le `README.md` depuis `templates/projet/README.md` : mode d�
 - **Mode de fusion.** Seul le rebase garde les trailers `Need:`/`Stage:` sur chaque commit ; un squash les fusionnerait au gré du message. `setup` désactive squash et merge commit. `git sdlc merge` appelle `gh pr merge --rebase --delete-branch` (clé `mergeArgs` de `.sdlc/config`) : la branche distante et la branche locale sont supprimées. L’auteur de la fusion n’est connu que par l’API GitHub : sans elle (hors ligne, PR au-delà de `prLimit`), `status` retrouve l’étape par les trailers mais pas qui l’a fusionnée.
 - **Recette.** La checklist de la PR build demande une recette validée, refaite après toute modification. C’est déclaratif : rien ne la vérifie.
 - **Branches hors besoin.** `Need:` n’est exigé que sur `need/*` ; ailleurs le hook ajoute `Need: none` et le check vérifie seulement que `requirements/` (`intentDir`) n’est pas touché.
-- **Volume.** `status` et `board` lisent les `prLimit` (300) PR les plus récentes ciblant `main`. Augmentez la valeur dans `.sdlc/config` si besoin.
+- **Volume.** `status`, `board` et `metrics` lisent les `prLimit` (300) PR les plus récentes ciblant `main`. Augmentez la valeur dans `.sdlc/config` si besoin.
 - **Validation.** Le kit a été testé de bout en bout contre un GitHub simulé (PR, revues, fusions, releases, check CI réellement exécuté). Lancez `git sdlc setup --dry-run` puis vérifiez les rulesets créés dans *Settings → Rules* lors de la première installation.

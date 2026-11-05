@@ -87,6 +87,8 @@ git sdlc status <id>          # étape, qui a la main, prochaine action, preuves
 git sdlc board                # besoins en cours, triés par étape
 git sdlc board --by-person    # regroupés par personne ou équipe
 git sdlc board --all          # y compris livrés et rejetés
+git sdlc metrics              # mesures du SDLC : délais, survie, rework, revue, releases
+git sdlc metrics --since 2026-10-01 --porcelain > mesures.tsv   # pour un tableur
 ```
 
 Toutes les actions restent possibles dans l’interface GitHub : `git sdlc` lit l’état réel des branches, des PR et des tags.

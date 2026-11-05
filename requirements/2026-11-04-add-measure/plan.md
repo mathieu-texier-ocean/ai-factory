@@ -31,7 +31,7 @@
 | `bin/git-sdlc` | modifié | 1 à 6 |
 | `bin/tests/metrics/run.sh` | nouveau | 1 à 5 |
 | `bin/tests/metrics/fixtures/gh` (gh factice) | nouveau | 1, 3, 4 |
-| `bin/tests/metrics/fixtures/*.json` (PR, GraphQL, releases) | nouveau | 1 à 5 |
+| `bin/tests/metrics/fixtures/livre.attendu` (sortie `--porcelain` attendue de A2) | nouveau | 5 |
 | `README.md` | modifié | 6 |
 | `templates/projet/README.md` | modifié | 6 |
 | `CLAUDE.md` | modifié | 6 |
@@ -149,6 +149,12 @@ Couvre : C27, A9, A13, A18.
 - **`bin/git-sdlc` est déployé sur chaque poste.** Un défaut dans l'aiguillage ou l'aide toucherait toutes les commandes. Parades : aucune fonction existante modifiée, `bash -n`, et les autres `run.sh` doivent passer.
 - **Coût GitHub.** 552 points par lot de 50 PR, soit environ 450 PR par heure dans le quota de 5 000 points.
 - **Taille.** 6 étapes chaînées, sans branche parallèle : pas de découpage. L'étape 4 est la plus grosse.
+
+Écarts constatés au build :
+
+- **Données de test.** Les réponses JSON des cas sont écrites par `run.sh`, à côté des commits qu'elles décrivent, avec des aides jq à la forme des réponses GitHub. Seule la sortie attendue de A2 est un fichier de `fixtures/`.
+- **A18 préparé.** La requête d'un lot de 50 PR produite par la commande a passé le dry-run contre GitHub, sur le dépôt public `cli/cli` : 110 050 nœuds, coût 552. Les trois requêtes de complément sont acceptées aussi. Reste à refaire la mesure sur ai-factory à la recette.
+- **Locale.** Sous une locale POSIX, `column` échappe les caractères non ASCII, comme pour `board`. Les tests de la sortie lisible prennent donc une locale UTF-8 (`C.UTF-8` ou `en_US.UTF-8`).
 
 Options écartées :
 

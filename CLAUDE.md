@@ -20,14 +20,14 @@ PASS session, absent : signalé
 OK .claude/hooks/tests/hook-activation/run.sh
 …
 
-5 run.sh lancés, 0 en échec
+6 run.sh lancés, 0 en échec
 ```
 
 - Avant de déclarer une tâche finie, lancer la commande et coller sa sortie, même si la tâche ne touche aucun fichier testé.
 - Sortie en erreur sans changement volontaire : la tâche n'est pas finie ; coller la sortie et corriger le code.
 - Pendant un correctif, corriger le code, pas le test.
 - Si le comportement change volontairement, mettre à jour le test et le signaler explicitement.
-- `bin/git-sdlc` n'a pas de test automatisé : `bash -n bin/git-sdlc`, et le décrire dans le commit s'il a été essayé contre un dépôt GitHub.
+- Dans `bin/git-sdlc`, seule `metrics` a un test automatisé (`bin/tests/metrics/run.sh`, gh factice, `jq` requis). Pour le reste : `bash -n bin/git-sdlc`, et le décrire dans le commit s'il a été essayé contre un dépôt GitHub.
 
 ## SDLC
 
