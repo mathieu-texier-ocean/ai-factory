@@ -52,7 +52,7 @@ Sans signal, les correctifs et évolutions du kit restent inutilisés, et des po
 ## Résultat attendu
 
 - La référence est la dernière release GitHub du dépôt du kit (tag `YY.MM.DD[.V]`) : clé `sdlc.kitRepo` de `.sdlc/config`, surchargeable par `git config`, par défaut `ocean-shiftmove/ai-factory`.
-- `git-sdlc` porte sa version dans une variable (« dev » dans le dépôt du kit). Chaque release du kit joint en fichier un `git-sdlc` dont la variable vaut le tag ; c'est ce fichier qu'un poste installe. `.sdlc/manifeste` enregistre, en plus du SHA, le tag de la release installée ; un manifeste ancien, sans tag, est comparé par le SHA que vise le tag.
+- `git-sdlc` porte sa version dans une variable (« dev » dans le dépôt du kit). À chaque release du kit, un workflow GitHub Actions du dépôt du kit, déclenché par le tag, joint en fichier un `git-sdlc` dont la variable vaut le tag ; c'est ce fichier qu'un poste installe. `.sdlc/manifeste` enregistre, en plus du SHA, le tag de la release installée ; un manifeste ancien, sans tag, est comparé par le SHA que vise le tag.
 - Les commandes `git sdlc` comparent à cette release la version de `git-sdlc` installée sur le poste et celle du kit installé dans le dépôt courant. Si l'une est en retard, elles affichent un avis d'une ligne qui nomme la version disponible et la façon de se mettre à jour à la main : télécharger le `git-sdlc` de la release, lancer `deploy.sh update` depuis un clone du kit à ce tag.
 - La vérification interroge GitHub au plus une fois par jour et par dépôt ; le résultat est mis en cache dans le `.git` du dépôt.
 - GitHub injoignable ou dépôt du kit illisible : un avis discret « vérification impossible », la commande s'exécute normalement.
@@ -67,6 +67,7 @@ Sans signal, les correctifs et évolutions du kit restent inutilisés, et des po
 
 - Bash 3.2 ; chemins lus en `-z`.
 - Prérequis de chaque utilisateur : accès en lecture au dépôt du kit avec le `gh` déjà authentifié.
+- Le workflow de release est propre au kit : `scripts/deploy.sh` ne le copie pas dans un dépôt produit.
 - La première release du kit est publiée par le mainteneur avant le build de ce besoin, pour servir de référence réelle.
 - Fonctionne seul dans un dépôt produit, sans clone du kit ni fichier propre au kit (`scripts/deploy.sh` n'y est pas copié).
 - Lecture seule côté GitHub ; la vérification n'écrit dans le dépôt que son cache, sous `.git`.
@@ -84,7 +85,8 @@ Sans signal, les correctifs et évolutions du kit restent inutilisés, et des po
 
 Mesurables, pour que les tests et la revue puissent les vérifier.
 
-- [ ] Chaque release du kit contient en fichier un `git-sdlc` dont la version affichée vaut le tag ; le `git-sdlc` du dépôt du kit affiche « dev ».
+- [ ] Chaque release du kit contient en fichier, sans action manuelle, un `git-sdlc` dont la version affichée vaut le tag ; le `git-sdlc` du dépôt du kit affiche « dev ».
+- [ ] `deploy.sh install` et `update` ne copient pas le workflow de release dans le dépôt produit.
 - [ ] `deploy.sh install` et `update` à partir d'un tag écrivent ce tag dans `.sdlc/manifeste`.
 - [ ] La référence suit `sdlc.kitRepo` quand elle est définie, `ocean-shiftmove/ai-factory` sinon.
 - [ ] Avec une release plus récente que `git-sdlc` installé, une commande `git sdlc` affiche un avis nommant la version disponible et la mise à jour à faire ; à jour, aucun avis.
@@ -99,5 +101,4 @@ Mesurables, pour que les tests et la revue puissent les vérifier.
 
 Elles doivent être tranchées ou reportées explicitement dans spec.md.
 
-- Ce qui produit et joint le fichier `git-sdlc` à la release du kit (`git sdlc release`, workflow CI sur le tag…) : à préciser en spec.
-- Les autres questions ont été tranchées le 2026-11-05 (voir `tldr.md`).
+- Aucune : toutes ont été tranchées le 2026-11-05 (voir `tldr.md`).

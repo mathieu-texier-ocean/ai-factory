@@ -30,3 +30,4 @@ Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié 
 - 2026-11-05 · intent · Dossier de `git-sdlc` non inscriptible : refus expliqué, kit mis à jour quand même si confirmé (Mathieu Texier)
 - 2026-11-05 · intent · Version de `git-sdlc` : fichier joint à chaque release du kit, variable = tag ; précise la ligne sur la variable renseignée avec le tag (Mathieu Texier)
 - 2026-11-05 · intent · Découpage après contrôle de taille : ce besoin garde la détection et l'avis ; la commande de mise à jour et la décision « dossier non inscriptible » passent dans `2026-11-05-sdlc-self-update` (Mathieu Texier)
+- 2026-11-05 · intent · Le fichier `git-sdlc` versionné est joint à la release par un workflow GitHub Actions déclenché par le tag, propre au kit et non copié par `deploy.sh` (Mathieu Texier)
