@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le besoin ajoute `git sdlc metrics`, qui calcule depuis git et GitHub, par besoin et en agrégé, les indicateurs « How to measure it » du playbook : délais par étape, survie des intents, retouches, rework, CI au premier passage, revue, fréquence de release. La spec fixe 28 comportements, 20 cas limites, la sortie `--porcelain` (lignes `need`, `pr`, `agg`, `claude`) et 19 critères d'acceptation, testés avec un `gh` factice. Étape en cours : spec, arbitrages P1 à P4 tranchés.
+Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le besoin ajoute `git sdlc metrics`, qui calcule depuis git et GitHub, par besoin et en agrégé, les indicateurs « How to measure it » du playbook : délais par étape, survie des intents, retouches, rework, CI au premier passage, revue, fréquence de release. La spec fixe 28 comportements, 20 cas limites, la sortie `--porcelain` (lignes `need`, `pr`, `agg`, `claude`) et 19 critères d'acceptation, testés avec un `gh` factice. Étape en cours : build, plan en 6 étapes (squelette, délais git, releases, lecture GraphQL, affichage, documentation).
 
 ## Décisions
 
@@ -40,3 +40,8 @@ Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le bes
 - 2026-11-04 · spec · Précise P3 : PR choisies d'après gh pr list, listes imbriquées au-delà de 100 complétées par PR (C26, revue de la spec)
 - 2026-11-05 · spec · Révise la décision C26 du 2026-11-04 : bornes par niveau (100 revues, 100 commits, 10 suites, 1 run), 110 050 nœuds par lot de 50 PR, sous la limite GitHub de 500 000 (revue de vkphan)
 - 2026-11-05 · spec · Étape fusionnée plusieurs fois : les délais partent de sa première fusion (C4, L20, revue de vkphan)
+- 2026-11-05 · build · À risque : non, sous-commande neuve en lecture seule, sans modification des fonctions existantes (Mathieu Texier)
+- 2026-11-05 · build · Étape la plus risquée : la lecture GraphQL des PR, vérifiable contre GitHub seulement à la recette (A18, A13) (Mathieu Texier)
+- 2026-11-05 · build · Le gh factice des tests applique les filtres --jq avec jq : jq requis pour les tests, pas pour git-sdlc (Mathieu Texier)
+- 2026-11-05 · build · Dates de release lues par gh release list en un appel, plutôt que gh release view par tag (Mathieu Texier)
+- 2026-11-05 · build · Écartés : réutiliser load_prs et merge_info, gh pr view par PR, gh run list (API Actions), gh factice à sorties préfiltrées, jq comme dépendance, date -d de GNU (Mathieu Texier)
