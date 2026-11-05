@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le besoin ajoute `git sdlc metrics`, qui calcule depuis git et GitHub, par besoin et en agrégé, les indicateurs « How to measure it » du playbook : délais par étape, survie des intents, retouches, rework, CI au premier passage, revue, fréquence de release. La spec fixe 28 comportements, 20 cas limites, la sortie `--porcelain` (lignes `need`, `pr`, `agg`, `claude`) et 19 critères d'acceptation, testés avec un `gh` factice. Étape en cours : build, codé en 6 étapes et testé par `bin/tests/metrics/run.sh` (45 cas) ; reste la recette A9, A13 et A18 sur ai-factory.
+Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le besoin ajoute `git sdlc metrics`, qui calcule depuis git et GitHub, par besoin et en agrégé, les indicateurs « How to measure it » du playbook : délais par étape, survie des intents, retouches, rework, CI au premier passage, revue, fréquence de release. La spec fixe 28 comportements, 20 cas limites, la sortie `--porcelain` (lignes `need`, `pr`, `agg`, `claude`) et 19 critères d'acceptation, testés avec un `gh` factice. Étape en cours : build, codé en 6 étapes et testé par `bin/tests/metrics/run.sh` (45 cas) ; reste la recette A9, A13 et A18 sur ai-factory, tracée dans `validation.md`.
 
 ## Décisions
 
