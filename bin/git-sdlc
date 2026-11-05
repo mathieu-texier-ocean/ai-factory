@@ -254,14 +254,17 @@ line_def() {
 }
 
 # Raison du check run $1 : titre, sinon résumé, sinon première annotation « failure »
-# (un job GitHub Actions n’a ni titre ni résumé). Vide si GitHub ne répond pas.
+# (un job GitHub Actions n’a ni titre ni résumé). GitHub liste les annotations de la plus
+# récente à la plus ancienne : « première » = plus petite ligne du log ; la dernière est
+# souvent « Process completed with exit code N. ». Vide si GitHub ne répond pas.
 check_reason() {
   local r
   r=$(gh api "repos/{owner}/{repo}/check-runs/$1" \
         --jq "$JQ_LINE"' [.output.title, .output.summary] | map(select(. != null and . != "") | line) | first // ""' \
         2>/dev/null) || r=""
-  [ -n "$r" ] || r=$(gh api "repos/{owner}/{repo}/check-runs/$1/annotations" \
-        --jq "$JQ_LINE"' [.[] | select(.annotation_level == "failure") | .message | line] | first // ""' \
+  [ -n "$r" ] || r=$(gh api "repos/{owner}/{repo}/check-runs/$1/annotations?per_page=100" \
+        --jq "$JQ_LINE"' [.[] | select(.annotation_level == "failure")] | sort_by(.start_line)
+                       | map(.message | line) | first // ""' \
         2>/dev/null) || r=""
   printf '%s' "$r"
 }
