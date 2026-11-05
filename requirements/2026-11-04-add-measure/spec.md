@@ -73,7 +73,7 @@ Une sous-commande `git sdlc metrics` de `bin/git-sdlc`, en lecture seule. Elle r
 - **C23.** En sortie lisible, une durée s'écrit en heures sous 48 h (« 5 h ») et en jours au-delà (« 3,5 j »). Une valeur absente s'écrit « — ».
 - **C24.** Les agrégats de délais et de comptes (C5, C8 à C11, C14, C16, C17, C19) sont la médiane des valeurs présentes (moyenne des deux valeurs centrales si leur nombre est pair). C7, C13 et C15 sont des taux, C20 une fréquence. Chaque agrégat indique son effectif `n` : le nombre de besoins ou de PR dont la valeur entre dans le calcul, et pour C20 le nombre de tags de la fenêtre. Un agrégat sans aucune valeur vaut « — », sauf C20 avec `--since` (L10).
 - **C25.** Lecture seule : la commande n'appelle aucune commande `gh` qui écrit et aucune mutation GraphQL. En dehors du fetch, elle ne crée, ne déplace ni ne supprime aucune référence git, et ne modifie ni l'index ni la copie de travail.
-- **C26.** Les détails de PR (dernier événement « ready for review », commits, revues, checks) sont lus par GraphQL, et seulement pour les PR fusionnées dont la branche est `need/<id>/<étape>`. GraphQL ne filtre pas les branches par préfixe : les numéros de ces PR viennent de la lecture `gh pr list` (C1), et chaque requête en lit 50 à la fois (un alias `pullRequest(number:)` par PR). Dans une PR, les listes imbriquées sont lues par 100 ; une liste qui en contient davantage (`hasNextPage`) est complétée par des requêtes paginées propres à cette PR, seul cas d'appel PR par PR (L18). Aucun seuil de durée n'est imposé (arbitrage P3).
+- **C26.** Les détails de PR (dernier événement « ready for review », commits, revues, checks) sont lus par GraphQL, et seulement pour les PR fusionnées dont la branche est `need/<id>/<étape>`. GraphQL ne filtre pas les branches par préfixe : les numéros de ces PR viennent de la lecture `gh pr list` (C1), et chaque requête en lit 50 à la fois (un alias `pullRequest(number:)` par PR). GitHub refuse avant exécution une requête dont le nombre maximal de nœuds, produit des `first`/`last` imbriqués, dépasse 500 000 (`MAX_NODE_LIMIT_EXCEEDED`) : chaque niveau a donc sa propre borne. Par PR : dernier événement « ready for review » (`last: 1`), 100 revues, 100 commits ; par commit, 10 suites de checks filtrées sur `sdlc-conventions` ; par suite, 1 run, car le workflow `sdlc.yml` n'a qu'un job et chaque exécution forme sa propre suite. Soit 2 201 nœuds par PR et 110 050 par lot de 50 (mesuré par `rateLimit(dryRun: true)`, coût 552 points sur les 5 000 de l'heure). Une liste qui atteint sa borne (`hasNextPage`) est complétée par des requêtes paginées propres à la PR (revues, commits) ou au commit (suites), avec les mêmes bornes : seul cas d'appel PR par PR (L18). Aucun seuil de durée n'est imposé (arbitrage P3).
 - **C27.** L'aide de la commande et le `README.md` signalent la limite de L8 : un rebase force-poussé après la sortie du brouillon compte comme du rework (arbitrage P2).
 
 ## Cas limites
@@ -97,7 +97,7 @@ Une sous-commande `git sdlc metrics` de `bin/git-sdlc`, en lecture seule. Elle r
 | L15 | Pas de `CLAUDE.md` à la racine | C21 n'affiche aucune ligne mensuelle et indique « — » (C24). |
 | L16 | Revue soumise sur le brouillon, ou réponses de l'auteur dans les fils de revue | Ignorées (C28) : C16 n'est jamais négatif, et les réponses de l'auteur ne découpent pas un lot de corrections en plusieurs cycles (C14). |
 | L17 | Premier run `sdlc-conventions` annulé (description éditée juste après la sortie du brouillon) | Le run annulé est ignoré ; C15 prend le run concluant suivant. |
-| L18 | PR de plus de 100 commits, revues ou runs | Liste complétée par pagination (C26) : C13 à C16 tiennent compte de tous les éléments. |
+| L18 | PR de plus de 100 commits ou revues, ou commit portant plus de 10 runs `sdlc-conventions` (description souvent éditée) | Liste complétée par pagination, sans dépasser les bornes par niveau (C26) : C13 à C16 tiennent compte de tous les éléments. |
 | L19 | Plus ancien tag de release daté du jour de l'appel, sans `--since` | Fenêtre d'un jour, pas de division par zéro (C20). |
 
 ## Contrats
@@ -110,7 +110,7 @@ git sdlc metrics [--since <AAAA-MM-JJ>] [--porcelain] [--no-fetch]
 
 L'aide (`usage`) gagne cette ligne dans la section « Suivi ». Codes de retour : 0 en cas de succès, y compris sans besoin (L11) ; 1 pour une option inconnue, une date invalide (L12) ou une lecture GitHub impossible (L14).
 
-**Sources lues** : `git log`, `git for-each-ref` et `git tag --contains` en local ; `gh pr list` (champs de `load_prs` plus `createdAt`, dates non tronquées, C4) ; des lectures GraphQL des PR `need/*` fusionnées, par 50 PR (C26), qui ne font que des `query` (dernier événement « ready for review », `createdAt`, commits avec date de committer, revues avec auteur et `submittedAt`, runs du check `sdlc-conventions` avec démarrage et conclusion) ; `gh release view` pour les dates de release. Toute lecture GitHub passe par `gh`, de sorte qu'un `gh` factice dans le `PATH` peut simuler GitHub en test.
+**Sources lues** : `git log`, `git for-each-ref` et `git tag --contains` en local ; `gh pr list` (champs de `load_prs` plus `createdAt`, dates non tronquées, C4) ; des lectures GraphQL des PR `need/*` fusionnées, par 50 PR et avec des bornes par niveau (C26), qui ne font que des `query` (dernier événement « ready for review », `createdAt`, commits avec date de committer, revues avec auteur et `submittedAt`, runs du check `sdlc-conventions` avec démarrage et conclusion) ; `gh release view` pour les dates de release. Toute lecture GitHub passe par `gh`, de sorte qu'un `gh` factice dans le `PATH` peut simuler GitHub en test.
 
 **Sortie `--porcelain`** : TSV sans en-tête et sans alignement. Le premier champ donne le type de ligne. Les durées sont en heures décimales avec un point et une décimale (`26.5`), les parts entre 0 et 1 avec deux décimales (`0.75`) ; une valeur absente vaut `—`. L'ordre des colonnes est figé, et toute colonne ajoutée plus tard le sera en fin de ligne.
 
@@ -146,6 +146,7 @@ Les tests automatisés vivent dans `bin/tests/metrics/run.sh` : un dépôt git t
 | A15 | CI au premier passage | Une PR dont le premier run après la sortie du brouillon est `CANCELLED`, puis `SUCCESS` (L17) | `--porcelain` | CI au premier passage `oui` | Automatisé |
 | A16 | Revues retenues | Une PR revue pendant son brouillon, puis, après sa sortie, une revue d'un relecteur suivie de deux commits entre lesquels l'auteur répond dans le fil (L16) | `--porcelain` | Délai jusqu'à la première revue positif, mesuré jusqu'à la revue du relecteur ; cycles de rework `1` | Automatisé |
 | A17 | Fréquence des releases | Un tag de release daté du jour, puis `--since` dans le futur (L19, C20) | `--porcelain`, puis `--since <demain> --porcelain` | Code 0 et `agg releases_par_semaine` à 7.0 (n=1), puis 0.0 (n=0) | Automatisé |
+| A18 | Requête acceptée par GitHub | La requête GraphQL d'un lot de 50 PR produite par la commande | Envoyée avec `rateLimit(dryRun: true) { nodeCount cost }` | Pas d'erreur `MAX_NODE_LIMIT_EXCEEDED` ; `nodeCount` ≤ 500 000 | Manuel |
 
 ## Points d’attention
 
@@ -153,7 +154,7 @@ Arbitrés le 2026-11-04 par Mathieu Texier (voir `tldr.md`) :
 
 - **P1. Cycle de rework.** git n'enregistre pas l'heure d'un push. Un cycle est donc un intervalle entre la sortie du brouillon, les revues successives et la fusion qui contient au moins un commit (C14).
 - **P2. Rebase avant revue.** Le biais est accepté sans détection des force-push, et documenté (L8, C27).
-- **P3. Performance.** Une requête GraphQL paginée par 50, limitée aux PR `need/*` fusionnées, sans seuil de durée (C26). Précisé après la revue de la spec : les PR sont choisies d'après `gh pr list`, et une liste imbriquée de plus de 100 éléments est complétée par des requêtes propres à la PR.
+- **P3. Performance.** Une requête GraphQL paginée par 50, limitée aux PR `need/*` fusionnées, sans seuil de durée (C26). Précisé après la revue de la spec : les PR sont choisies d'après `gh pr list`, et chaque niveau imbriqué a sa borne (100 revues, 100 commits, 10 suites par commit, 1 run par suite) pour rester sous la limite de 500 000 nœuds de GitHub, et une liste qui atteint sa borne est complétée par des requêtes propres à la PR.
 - **P4. Tests de `bin/git-sdlc`.** Premier test automatisé du script, dans `bin/tests/metrics/run.sh`, avec un `gh` factice. Au build, `CLAUDE.md` précisera que seule `metrics` est testée et que le reste garde `bash -n`.
 - **P5. Aucun skill de standards** dans `.claude/skills/` ne couvre le format des sorties CLI ni les conventions de reporting. La forme suit celle de `status` et `board`.
 

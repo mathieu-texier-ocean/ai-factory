@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le besoin ajoute `git sdlc metrics`, qui calcule depuis git et GitHub, par besoin et en agrégé, les indicateurs « How to measure it » du playbook : délais par étape, survie des intents, retouches, rework, CI au premier passage, revue, fréquence de release. La spec fixe 28 comportements, 19 cas limites, la sortie `--porcelain` (lignes `need`, `pr`, `agg`, `claude`) et 17 critères d'acceptation, testés avec un `gh` factice. Étape en cours : spec, arbitrages P1 à P4 tranchés.
+Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le besoin ajoute `git sdlc metrics`, qui calcule depuis git et GitHub, par besoin et en agrégé, les indicateurs « How to measure it » du playbook : délais par étape, survie des intents, retouches, rework, CI au premier passage, revue, fréquence de release. La spec fixe 28 comportements, 19 cas limites, la sortie `--porcelain` (lignes `need`, `pr`, `agg`, `claude`) et 18 critères d'acceptation, testés avec un `gh` factice. Étape en cours : spec, arbitrages P1 à P4 tranchés.
 
 ## Décisions
 
@@ -38,3 +38,4 @@ Le kit applique le SDLC du playbook sans pouvoir mesurer s'il fonctionne. Le bes
 - 2026-11-04 · spec · Revues retenues : après la sortie du brouillon et d'un autre compte que l'auteur (C28, revue de la spec)
 - 2026-11-04 · spec · CI au premier passage : runs annulés, ignorés ou neutres non concluants (C15, revue de la spec)
 - 2026-11-04 · spec · Précise P3 : PR choisies d'après gh pr list, listes imbriquées au-delà de 100 complétées par PR (C26, revue de la spec)
+- 2026-11-05 · spec · Révise la décision C26 du 2026-11-04 : bornes par niveau (100 revues, 100 commits, 10 suites, 1 run), 110 050 nœuds par lot de 50 PR, sous la limite GitHub de 500 000 (revue de vkphan)
