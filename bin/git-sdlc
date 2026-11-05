@@ -1182,7 +1182,11 @@ cmd_merge() {
   local id=$T_ID step=$T_STEP
   need_open_pr "$id" "$step"
   [ "$P_DEC" != CHANGES_REQUESTED ] || die "PR #$P_NUM : corrections demandées"
-  [ "$P_CHECKS" != rouges ] || die "PR #$P_NUM : checks rouges"
+  if [ "$P_CHECKS" = rouges ]; then
+    warn "PR #$P_NUM : checks rouges"
+    red_checks "$P_NUM" | sed 's/^/  /' >&2
+    exit 1
+  fi
   local_work_check "$id" "$step"
   if [ "$P_DRAFT" = draft ]; then
     if [ "$ready" = 0 ]; then
