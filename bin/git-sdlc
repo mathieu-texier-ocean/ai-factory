@@ -618,9 +618,10 @@ m_merge() {
   if [ -n "$c" ] && { [ -z "$MG_EP" ] || [ "${c%%$'\t'*}" -lt "$MG_EP" ]; }; then
     MG_EP=${c%%$'\t'*} MG_OID=${c#*$'\t'}
   fi
-  [ "$MG_OID" != - ] || MG_OID=""
   # git tag --contains demande un commit local : sinon celui qui porte les trailers.
-  [ -z "$MG_OID" ] || has_ref "$MG_OID" || MG_OID=$(printf '%s' "$c" | cut -f2)
+  if [ -n "$MG_EP" ] && { [ "$MG_OID" = - ] || ! has_ref "$MG_OID"; }; then
+    MG_OID=$(printf '%s' "$c" | cut -f2)
+  fi
 }
 
 # Fichier $M_TMP/releases : une ligne « tag date » par tag YY.MM.DD[.V]. Date de publication
@@ -847,6 +848,45 @@ END {
   for (i = 1; i <= 3; i++) med("duree_revue", steps[i], "du" steps[i], 3600)
 }'
 
+# Lignes --porcelain → lignes TSV du tableau $part (need, pr ou agg) de la sortie lisible :
+# durée en heures sous 48 h (« 5 h »), en jours au-delà (« 3,5 j ») ; taux en pourcentage.
+M_AWK_HUMAN='
+function dec(v, p,   s) { s = sprintf("%." p "f", v); sub(/\./, ",", s); return s }
+function dur(v) { if (v == "—") return v; return v < 48 ? sprintf("%d h", int(v + 0.5)) : dec(v / 24, 1) " j" }
+function cnt(v) { if (v == "—") return v; return v == int(v) ? sprintf("%d", v) : dec(v, 1) }
+function pct(v) { return v == "—" ? v : sprintf("%d %%", int(v * 100 + 0.5)) }
+BEGIN {
+  split("delai_intent:Délai intent:d;survie:Survie des intents:p;retouches_intent:Retouches de l’intent:c;" \
+        "delai_intent_spec:Délai intent → spec:d;retouches_spec:Retouches de la spec:c;" \
+        "delai_spec_build:Délai spec → build:d;delai_build_release:Délai build → release:d;" \
+        "premier_passage:Premier passage:p;rework:Cycles de rework:c;ci_premier_passage:CI au premier passage:p;" \
+        "delai_premiere_revue:Délai jusqu’à la 1re revue:d;duree_revue:Durée de revue:d;" \
+        "releases_par_semaine:Releases par semaine:f", defs, ";")
+  for (i in defs) { split(defs[i], d, ":"); lab[d[1]] = d[2]; kind[d[1]] = d[3] }
+  if (part == "need") print "BESOIN\tSURVIE\tINTENT\tRETOUCHES INTENT\tINTENT → SPEC\tRETOUCHES SPEC\tSPEC → BUILD\tBUILD → RELEASE\t1ER PASSAGE\tREWORK"
+  if (part == "pr")   print "BESOIN\tÉTAPE\tPR\t1ER PASSAGE\tREWORK\tCI 1ER PASSAGE\t1RE REVUE\tDURÉE REVUE"
+  if (part == "agg")  print "INDICATEUR\tÉTAPE\tVALEUR\tN"
+}
+part == "need" && $1 == "need" { print $2, $3, dur($4), $5, dur($6), $7, dur($8), dur($9), $10, $11 }
+part == "pr" && $1 == "pr" { print $2, $3, "#" $4, $5, $6, $7, dur($8), dur($9) }
+part == "agg" && $1 == "agg" {
+  k = kind[$2]
+  v = k == "d" ? dur($4) : k == "p" ? pct($4) : k == "c" ? cnt($4) : ($4 == "—" ? $4 : dec($4, 1))
+  print lab[$2], $3, v, $5
+}
+part == "agg" && $1 == "claude" { print "Corrections de CLAUDE.md", $2, $3, "" ; claude = 1 }
+END { if (part == "agg" && !claude) print "Corrections de CLAUDE.md\t—\t—\t" }'
+
+# Sortie lisible : tableaux Besoins, PR et Agrégats, alignés comme status et board.
+m_render() {
+  local part
+  for part in need pr agg; do
+    case $part in need) echo "Besoins" ;; pr) echo; echo "PR fusionnées" ;; agg) echo; echo "Agrégats" ;; esac
+    if [ "$part" = pr ] && ! grep -q '^pr' "$1"; then echo "Aucune PR fusionnée."; continue; fi
+    LC_ALL=C awk -F'\t' -v OFS='\t' -v part="$part" "$M_AWK_HUMAN" "$1" | align
+  done
+}
+
 # Ligne agg de la fréquence des releases (C20). Fenêtre du jour de --since, à défaut du jour
 # du plus ancien tag, jusqu'au jour de l'appel, bornes comprises : jamais de division par zéro.
 m_release_rate() {
@@ -923,7 +963,7 @@ cmd_metrics() {
   if [ "$porcelain" = 1 ]; then
     cat "$M_TMP/porcelain"
   elif [ -s "$M_TMP/needs" ]; then
-    { printf 'BESOIN\n'; cut -f2 "$M_TMP/needs"; } | align
+    m_render "$M_TMP/porcelain"
   else
     echo "Aucun besoin sur la période."
   fi

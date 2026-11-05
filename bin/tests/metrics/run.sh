@@ -335,4 +335,51 @@ lance metrics --porcelain --no-fetch
 verifie "L18 commits et suites au-delà de leur borne : complétés par pagination" \
   eval '[ "$(ligne pr pg build | cut -f5-7)" = "$(printf "non\t1\tnon")" ] && [ "$(grep -c "after: " "$GH_LOG")" = 2 ]'
 
+
+# ---------------------------------------------------------------- étape 5
+
+# Besoin livré : intent en 5 h, spec 3,5 j plus tard, build relu et retouché, release, CLAUDE.md.
+utf8=$(locale -a 2>/dev/null | grep -iE '^(C|en_US)\.utf-?8$' | sed -n 1p)
+export SDLC_NOW=1792152000   # 2026-10-16T12:00:00Z
+depot livre
+echo a > CLAUDE.md && git add CLAUDE.md && commit_le 2026-09-20T10:00:00Z "claude"
+besoin liv 2026-10-01T09:00:00Z 2026-10-01T14:00:00Z 2026-10-01T15:00:00Z 2026-10-05T02:00:00Z 2026-10-05T03:00:00Z 2026-10-06T03:00:00Z
+GIT_COMMITTER_DATE=2026-10-07T03:00:00Z git tag -a 26.10.07 -m livraison
+pr_gh 1 need/liv/intent 2026-10-01T09:30:00Z 2026-10-01T14:00:00Z jade
+gql_pr 1 2026-10-01T09:30:00Z
+gql_commit 1 2026-10-01T09:00:00Z
+gql_run 1 2026-10-01T09:31:00Z SUCCESS
+gql_revue 1 2026-10-01T11:00:00Z paul
+pr_gh 2 need/liv/spec 2026-10-01T15:00:00Z 2026-10-05T02:00:00Z jade
+gql_pr 2 2026-10-01T15:00:00Z 2026-10-02T09:00:00Z
+gql_commit 2 2026-10-01T15:00:00Z
+gql_run 2 2026-10-02T09:01:00Z FAILURE
+gql_commit 2 2026-10-02T10:00:00Z
+gql_run 2 2026-10-02T10:01:00Z SUCCESS
+gql_revue 2 2026-10-03T09:00:00Z paul
+pr_gh 3 need/liv/build 2026-10-05T03:00:00Z 2026-10-06T03:00:00Z dina
+gql_pr 3 2026-10-05T03:00:00Z 2026-10-05T05:00:00Z
+gql_commit 3 2026-10-05T03:00:00Z
+gql_run 3 2026-10-05T05:01:00Z SUCCESS
+gql_revue 3 2026-10-05T06:00:00Z lea
+gql_commit 3 2026-10-05T07:00:00Z
+gql_revue 3 2026-10-05T09:00:00Z lea
+lance metrics --porcelain --no-fetch
+porcelain=$out
+verifie "A2 valeurs égales à la sortie attendue" eval '[ "$porcelain" = "$(cat "$here/fixtures/livre.attendu")" ]'
+lance metrics --porcelain --no-fetch
+verifie "A8 deux appels successifs identiques" eval '[ "$out" = "$porcelain" ]'
+verifie "A8 TSV sans en-tête ni alignement, colonnes du contrat" \
+  eval '[ -z "$(printf "%s\n" "$out" | awk -F"\t" "
+    (\$1 == \"need\" && NF != 11) || (\$1 == \"pr\" && NF != 9) || (\$1 == \"agg\" && NF != 5) ||
+    (\$1 == \"claude\" && NF != 3) || \$1 !~ /^(need|pr|agg|claude)\$/ || /  /")" ]'
+LC_ALL=$utf8 lance metrics --no-fetch
+verifie "A1 sortie lisible : un tableau par niveau, chaque indicateur C5 à C21" eval '(
+  for t in Besoins "PR fusionnées" Agrégats "INTENT → SPEC" "RETOUCHES SPEC" "BUILD → RELEASE" "1ER PASSAGE" \
+           "CI 1ER PASSAGE" "1RE REVUE" "DURÉE REVUE" "Survie des intents" "Releases par semaine" \
+           "Corrections de CLAUDE.md" 2026-09; do contient "$out" "$t" || exit 1; done )'
+verifie "C23 durées en heures sous 48 h, en jours au-delà" \
+  eval '[ "$(printf "%s\n" "$out" | awk "\$1 == \"liv\"" | head -1 | tr -s " ")" = "liv accepté 5 h 0 3,5 j 0 25 h 24 h non 1" ]'
+unset SDLC_NOW
+
 exit $fail

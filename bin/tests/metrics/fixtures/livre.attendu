@@ -1,0 +1,28 @@
+need	liv	accepté	5.0	0	84.0	0	25.0	24.0	non	1
+pr	liv	intent	1	oui	0	oui	1.5	4.5
+pr	liv	spec	2	non	1	non	24.0	65.0
+pr	liv	build	3	non	1	oui	1.0	22.0
+agg	delai_intent	—	5.0	1
+agg	survie	—	1.00	1
+agg	retouches_intent	—	0.0	1
+agg	delai_intent_spec	—	84.0	1
+agg	retouches_spec	—	0.0	1
+agg	delai_spec_build	—	25.0	1
+agg	delai_build_release	—	24.0	1
+agg	premier_passage	intent	1.00	1
+agg	premier_passage	spec	0.00	1
+agg	premier_passage	build	0.00	1
+agg	rework	intent	0.0	1
+agg	rework	spec	1.0	1
+agg	rework	build	1.0	1
+agg	ci_premier_passage	intent	1.00	1
+agg	ci_premier_passage	spec	0.00	1
+agg	ci_premier_passage	build	1.00	1
+agg	delai_premiere_revue	intent	1.5	1
+agg	delai_premiere_revue	spec	24.0	1
+agg	delai_premiere_revue	build	1.0	1
+agg	duree_revue	intent	4.5	1
+agg	duree_revue	spec	65.0	1
+agg	duree_revue	build	22.0	1
+agg	releases_par_semaine	—	0.7	1
+claude	2026-09	1
