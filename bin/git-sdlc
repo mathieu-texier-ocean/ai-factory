@@ -34,6 +34,7 @@ MERGE_ARGS=$(cfg mergeArgs "--rebase --delete-branch")
 FETCH=1
 RELEASE_META=1
 PRS=""
+RED_PR=""
 ID=""
 MAIN_REF=""
 
@@ -141,11 +142,16 @@ at() { [ -z "$1" ] || [ "$1" = - ] || printf '@%s' "${1//,/, @}"; }
 
 # ------------------------------------------------------------ données GitHub
 
+# Conclusions (ou états de statut de commit) d’un check rouge ; nz : vide → « - ».
+JQ_DEFS='
+def red: IN("FAILURE","ERROR","CANCELLED","TIMED_OUT","ACTION_REQUIRED","STARTUP_FAILURE");
+def nz: if . == null or . == "" then "-" else tostring end;
+'
+
 # Une ligne TSV par PR de need/<id>/<étape> vers main, de la plus ancienne à la plus récente.
 # Colonnes : id étape numéro état brouillon décision auteur assignés relecteurs checks
 #            maj fusionnée_le fusionnée_par commit_de_fusion étiquettes url
-JQ_PRS='
-def nz: if . == null or . == "" then "-" else tostring end;
+JQ_PRS=$JQ_DEFS'
 [ .[] | select(.headRefName | test("^need/[^/]+/(intent|spec|build)$")) ] | sort_by(.number) | .[]
 | (.headRefName | split("/")) as $p
 | [ .statusCheckRollup[]? | (.conclusion // .state // .status // "PENDING") ] as $c
@@ -155,7 +161,7 @@ def nz: if . == null or . == "" then "-" else tostring end;
     ([ .assignees[]?.login ] | join(",")),
     ([ .reviewRequests[]? | (.login // .slug // .name) ] | join(",")),
     (if ($c | length) == 0 then "aucun"
-     elif any($c[]; IN("FAILURE","ERROR","CANCELLED","TIMED_OUT","ACTION_REQUIRED","STARTUP_FAILURE")) then "rouges"
+     elif any($c[]; red) then "rouges"
      elif any($c[]; IN("SUCCESS","NEUTRAL","SKIPPED") | not) then "en cours"
      else "verts" end),
     ((.updatedAt // "") | .[0:16] | sub("T"; " ")),
@@ -218,6 +224,8 @@ open_state() {
   lab=$(label_of "$step")
   EVID+=("PR           #$P_NUM  $(nd "$P_URL")")
   EVID+=("checks       $P_CHECKS")
+  # Le détail se lit à l’affichage de status : board passe aussi par ici.
+  [ "$P_CHECKS" != rouges ] || RED_PR=$P_NUM
   WHEN=$(nd "$P_UPD")
   if [ "$P_DRAFT" = draft ]; then
     CODE=$step-draft ORDER=$o STAGE="$lab en cours (PR #$P_NUM, brouillon)"
@@ -231,6 +239,41 @@ open_state() {
     NEXT="$WHO : relire, puis git sdlc merge $ID $step"
     [ "$P_CHECKS" != rouges ] || NEXT="checks rouges : à corriger avant la fusion"
   fi
+}
+
+# Raison d’un check rouge sur une ligne, au plus 120 caractères.
+JQ_LINE='def line: tostring | gsub("[[:space:]]+"; " ") | ltrimstr(" ") | rtrimstr(" ")
+                   | if length > 120 then .[0:119] + "…" else . end;'
+
+# Raison du check run $1 : titre, sinon résumé, sinon première annotation « failure »
+# (un job GitHub Actions n’a ni titre ni résumé). Vide si GitHub ne répond pas.
+check_reason() {
+  local r
+  r=$(gh api "repos/{owner}/{repo}/check-runs/$1" \
+        --jq "$JQ_LINE"' [.output.title, .output.summary] | map(select(. != null and . != "") | line) | first // ""' \
+        2>/dev/null) || r=""
+  [ -n "$r" ] || r=$(gh api "repos/{owner}/{repo}/check-runs/$1/annotations" \
+        --jq "$JQ_LINE"' [.[] | select(.annotation_level == "failure") | .message | line] | first // ""' \
+        2>/dev/null) || r=""
+  printf '%s' "$r"
+}
+
+# Une ligne par check rouge de la PR $1 : nom, conclusion, raison, lien ; un champ vide
+# est omis. gh pr checks sort en erreur quand des checks échouent : seule sa sortie compte.
+red_checks() {
+  local rows name state desc link
+  rows=$(gh pr checks "$1" --json name,state,description,link \
+           --jq "$JQ_DEFS$JQ_LINE"' .[] | select(.state | red)
+                 | [.name, .state, (.description // "" | line), .link] | map(nz) | @tsv' \
+           2>/dev/null) || true
+  [ -n "$rows" ] || return 0
+  while IFS=$'\t' read -r name state desc link; do
+    desc=$(nd "$desc") link=$(nd "$link")
+    if [ -z "$desc" ] && [[ $link =~ /(job|runs)/([0-9]+)$ ]]; then
+      desc=$(check_reason "${BASH_REMATCH[2]}")
+    fi
+    printf '%s  %s%s%s\n' "$name" "$state" "${desc:+  $desc}" "${link:+  $link}"
+  done <<<"$rows"
 }
 
 # Fusion de l’étape $1 du besoin $ID : PR fusionnée, sinon commit portant les trailers.
@@ -270,6 +313,7 @@ compute() {
   local rel br line
   CODE=unknown ORDER=99 STAGE="Inconnu" WHO="—" WHEN="—" NEXT="—"
   EVID=()
+  RED_PR=""
 
   if pr_rejected "$ID"; then
     CODE=rejected ORDER=90 STAGE="Rejeté (PR #$P_NUM)" WHO=$(at "$P_AUTHOR") WHEN=$P_UPD
@@ -469,6 +513,15 @@ cmd_status() {
     return 0
   fi
   gate_evidence
+  if [ -n "$RED_PR" ]; then
+    local ev=() l
+    for e in "${EVID[@]}"; do
+      ev+=("$e")
+      [ "$e" = "checks       rouges" ] || continue
+      while IFS= read -r l; do ev+=("  $l"); done < <(red_checks "$RED_PR")
+    done
+    EVID=("${ev[@]}")
+  fi
   printf 'Besoin    %s\n' "$id"
   p=$(intent_field "$id" Product-Owner)
   case $p in ""|"<"*) ;; *) printf 'PO        %s\n' "$p" ;; esac
