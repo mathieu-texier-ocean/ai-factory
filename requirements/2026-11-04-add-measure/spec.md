@@ -25,7 +25,7 @@ Une sous-commande `git sdlc metrics` de `bin/git-sdlc`, en lecture seule. Elle r
 - **C3.** Avec `--since`, un besoin n'est retenu que si sa date de début est postérieure ou égale à la date, prise à 00:00 UTC. La date de début est la date d'auteur du premier commit de son intent (C5), sinon la date de création de sa plus ancienne PR, sinon la date du tag `rejected/<id>`. Le repli sur la PR couvre le besoin rejeté avant la fusion de son intent : `reject` a supprimé sa branche (`--delete-branch`) et le fetch l'a élaguée (`--prune`), il n'a donc plus de commit d'intent (L2). Sans `--since`, tous les besoins sont retenus.
 - **C4.** Les dates sont lues à la seconde, en ISO 8601 complet (`%aI`, `%cI`, `%(taggerdate:iso-strict)`, `createdAt`, `mergedAt` et `publishedAt` non tronqués), et les durées se calculent en secondes avant d'être converties (C23). `metrics` ne réutilise pas les dates tronquées au jour par `load_prs`, `merge_info` et `compute` (`.[0:10]`, `%cs`, `taggerdate:short`), qui rendraient nulle ou négative une durée de quelques heures. Les dates utilisées survivent à la fusion par rebase (contrainte de l'intent) :
   - premier commit d'un artefact : date d'auteur ;
-  - fusion d'une étape : `mergedAt` de la PR GitHub, sinon date de committer du commit de la branche principale qui porte `Need: <id>` et `Stage: <stage>`, c'est-à-dire la date du rebase, donc de la fusion (repli de `merge_info`) ;
+  - fusion d'une étape : sa **première** fusion, car `claim` permet de reprendre une étape déjà fusionnée (un intent corrigé par une seconde PR intent, L20). C'est la plus ancienne de deux dates : le `mergedAt` de la plus ancienne PR fusionnée de `need/<id>/<étape>`, et la date de committer du plus ancien commit de la branche principale (`--first-parent`) qui porte `Need: <id>` et `Stage: <stage>`, c'est-à-dire la date du rebase, donc de la fusion. `merge_info` ne convient pas tel quel : `pr_get` et `merge_of` (`git log -1`) retiennent la fusion la plus récente ;
   - release : date de publication GitHub, sinon date du tag, sinon date de committer du commit tagué (même ordre que `compute`).
 
 ### Plan
@@ -53,11 +53,11 @@ Une sous-commande `git sdlc metrics` de `bin/git-sdlc`, en lecture seule. Elle r
 - **C15.** **CI au premier passage** d'une PR : `oui` si le premier run concluant du check `sdlc-conventions` démarré après la sortie du brouillon a réussi (`SUCCESS`), `non` s'il a échoué (`FAILURE`, `TIMED_OUT`, `STARTUP_FAILURE`, `ACTION_REQUIRED`), `—` si aucun run concluant n'existe. Un run annulé (`CANCELLED`), ignoré (`SKIPPED`) ou neutre (`NEUTRAL`) n'est pas concluant : le run suivant est pris. `sdlc.yml` annule le run en cours à chaque nouvel événement (`cancel-in-progress`), y compris une édition de la description (L17). Part (agrégée) : `oui` / (`oui` + `non`), par étape.
 - **C16.** **Délai jusqu'à la première revue** : de la sortie du brouillon à la première revue retenue (C28). `—` si la PR n'a reçu aucune revue.
 - **C17.** **Durée de revue** : de la sortie du brouillon à la fusion de la PR.
-- **C18.** C13 à C17 sont calculés pour chaque PR fusionnée des étapes intent, spec et build. La ligne d'un besoin (C22) reprend les valeurs de sa PR build ; les agrégats (C24) sont donnés par étape.
+- **C18.** C13 à C17 sont calculés pour chaque PR fusionnée des étapes intent, spec et build. La ligne d'un besoin (C22) reprend les valeurs de sa première PR build fusionnée ; les agrégats (C24) sont donnés par étape.
 
 ### DORA partiel
 
-- **C19.** **Délai jusqu'à la release** : de la fusion de l'étape build jusqu'à la date (C4) de la première release `YY.MM.DD[.V]` qui contient le commit de fusion, c'est-à-dire la même release que `status` affiche.
+- **C19.** **Délai jusqu'à la release** : de la fusion de l'étape build jusqu'à la date (C4) de la première release `YY.MM.DD[.V]` qui contient le commit de cette première fusion (C4). C'est la release que `status` affiche quand l'étape build n'a été fusionnée qu'une fois.
 - **C20.** **Fréquence des releases** : nombre de tags `YY.MM.DD[.V]` datés (C4) dans la fenêtre, divisé par le nombre de semaines de la fenêtre (jours / 7), à une décimale. La fenêtre va du jour de `--since`, ou à défaut du jour du plus ancien tag de release, jusqu'au jour de l'appel, ces deux jours inclus : elle compte au moins un jour dès que son début n'est pas dans le futur (L19). Si `--since` est postérieur au jour de l'appel, la fenêtre est vide et C20 vaut 0,0 avec n = 0.
 
 ### CLAUDE.md
@@ -99,6 +99,7 @@ Une sous-commande `git sdlc metrics` de `bin/git-sdlc`, en lecture seule. Elle r
 | L17 | Premier run `sdlc-conventions` annulé (description éditée juste après la sortie du brouillon) | Le run annulé est ignoré ; C15 prend le run concluant suivant. |
 | L18 | PR de plus de 100 commits ou revues, ou commit portant plus de 10 runs `sdlc-conventions` (description souvent éditée) | Liste complétée par pagination, sans dépasser les bornes par niveau (C26) : C13 à C16 tiennent compte de tous les éléments. |
 | L19 | Plus ancien tag de release daté du jour de l'appel, sans `--since` | Fenêtre d'un jour, pas de division par zéro (C20). |
+| L20 | Étape fusionnée deux fois (intent corrigé par une seconde PR intent, après la fusion de la spec) | Les délais partent de la première fusion (C4) : C5 n'est pas gonflé et C9 reste positif. Les commits de la seconde PR comptent comme retouches de l'intent (C8), et ses valeurs C13 à C17 figurent dans le tableau PR et les agrégats de l'étape (C18). |
 
 ## Contrats
 
@@ -147,6 +148,7 @@ Les tests automatisés vivent dans `bin/tests/metrics/run.sh` : un dépôt git t
 | A16 | Revues retenues | Une PR revue pendant son brouillon, puis, après sa sortie, une revue d'un relecteur suivie de deux commits entre lesquels l'auteur répond dans le fil (L16) | `--porcelain` | Délai jusqu'à la première revue positif, mesuré jusqu'à la revue du relecteur ; cycles de rework `1` | Automatisé |
 | A17 | Fréquence des releases | Un tag de release daté du jour, puis `--since` dans le futur (L19, C20) | `--porcelain`, puis `--since <demain> --porcelain` | Code 0 et `agg releases_par_semaine` à 7.0 (n=1), puis 0.0 (n=0) | Automatisé |
 | A18 | Requête acceptée par GitHub | La requête GraphQL d'un lot de 50 PR produite par la commande | Envoyée avec `rateLimit(dryRun: true) { nodeCount cost }` | Pas d'erreur `MAX_NODE_LIMIT_EXCEEDED` ; `nodeCount` ≤ 500 000 | Manuel |
+| A19 | Étape fusionnée deux fois | Un besoin dont l'intent est fusionné, puis la spec, puis une seconde PR intent (L20) | `--porcelain` | C5 et C9 calculés depuis la première fusion de l'intent, C9 positif ; deux lignes `pr` pour l'étape intent | Automatisé |
 
 ## Points d’attention
 
