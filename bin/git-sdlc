@@ -13,8 +13,14 @@
 # Installation : placer ce fichier dans le PATH → `git sdlc <commande>`.
 set -euo pipefail
 
+# Version : « dev » dans le dépôt du kit ; le fichier joint à chaque release y porte le tag.
+VERSION=dev
+
 die()  { printf 'git-sdlc : %s\n' "$*" >&2; exit 1; }
 warn() { printf 'git-sdlc : %s\n' "$*" >&2; }
+
+# Sans dépôt ni réseau : la version se lit partout.
+case ${1:-} in version|--version) printf '%s\n' "$VERSION"; exit 0 ;; esac
 
 git rev-parse --git-dir >/dev/null 2>&1 || die "à lancer dans un dépôt git"
 command -v gh >/dev/null 2>&1 || die "gh introuvable : installez GitHub CLI (https://cli.github.com)"
@@ -513,6 +519,7 @@ Cycle d’un besoin (chaque étape = une PR vers $MAIN)
 
 Administration
   setup [--dry-run]                        réglages du dépôt, étiquettes, rulesets
+  version, --version                       version de git-sdlc (dev hors release)
 EOF
 }
 
