@@ -204,6 +204,32 @@ out=$("$D" update "$P" 2>&1)
 verif "update : bit exécutable aligné sur fichier intact" sh -c "[ -x '$P/.githooks/lib/a.sh' ] && printf '%s' \"\$1\" | grep -qx 'Droits alignés :'" _ "$out"
 verif "update : fichier modifié, droits non touchés" [ ! -x "$P/.githooks/lib/b.sh" ]
 
+# --- tag de la release au manifeste ---
+git -C "$K" reset -q --hard "$BASE"; git -C "$K" clean -qfdx
+ecrire "$K/REVIEW.md" 'revue t1'; kit_commit t1; git -C "$K" tag 26.11.05
+P=$tmp/p-tag
+out=$("$D" install "$P" demo 2>&1); rc=$?
+verif "tag : install depuis un tag, ligne tag en 3e ligne" [ $rc -eq 0 -a "$(sed -n 3p "$P/.sdlc/manifeste")" = "tag 26.11.05" ]
+verif "tag : SHA et nom inchangés en tête" [ "$(sed -n 1p "$P/.sdlc/manifeste")" = "sdlc-kit $(git -C "$K" rev-parse HEAD)" -a "$(sed -n 2p "$P/.sdlc/manifeste")" = "projet demo" ]
+verif "tag : empreintes vérifiables après la ligne tag" sh -c "cd '$P' && tail -n +4 .sdlc/manifeste | $(command -v sha256sum >/dev/null && echo sha256sum || echo 'shasum -a 256') -c --status"
+verif "tag : release nommée à l'install" sh -c "printf '%s' \"\$1\" | grep -qF 'release 26.11.05'" _ "$out"
+ecrire "$K/REVIEW.md" 'revue t2'; kit_commit t2; git -C "$K" tag 26.11.05.2; git -C "$K" tag 26.11.05.10
+out=$("$D" update "$P" 2>&1); rc=$?
+verif "tag : update depuis un tag plus récent, deux tags à HEAD : le plus récent" [ $rc -eq 0 -a "$(sed -n 3p "$P/.sdlc/manifeste")" = "tag 26.11.05.10" -a "$(cat "$P/REVIEW.md")" = 'revue t2' ]
+verif "tag : rapport avec les tags" sh -c "printf '%s' \"\$1\" | grep -qF '(26.11.05) -> ' && printf '%s' \"\$1\" | grep -qF '(26.11.05.10)'" _ "$out"
+out=$("$D" update "$P" 2>&1)
+verif "tag : même SHA, même tag : déjà à jour" sh -c "printf '%s' \"\$1\" | grep -qF 'Déjà à jour'" _ "$out"
+ecrire "$K/REVIEW.md" 'revue t3'; kit_commit t3
+"$D" update "$P" > /dev/null 2>&1
+verif "tag : update hors tag, ligne tag retirée" sh -c "! grep -q '^tag ' '$P/.sdlc/manifeste' && [ \"\$(cat '$P/REVIEW.md')\" = 'revue t3' ]"
+git -C "$K" tag 26.11.12
+out=$("$D" update "$P" 2>&1); rc=$?
+verif "tag : manifeste sans tag, même SHA tagué depuis : tag ajouté" [ $rc -eq 0 -a "$(sed -n 3p "$P/.sdlc/manifeste")" = "tag 26.11.12" ]
+verif "tag : manifeste sans tag, rien d'autre écrit" [ "$(cat "$P/REVIEW.md")" = 'revue t3' -a ! -e "$P/REVIEW.md.nouveau" ]
+sed '3s/.*/tag abc/' "$P/.sdlc/manifeste" > "$tmp/m" && cp "$tmp/m" "$P/.sdlc/manifeste"
+refuse "tag : ligne tag illisible refusée" 1 "$D" update "$P"
+git -C "$K" tag -l | while IFS= read -r t; do git -C "$K" tag -d "$t" > /dev/null; done
+
 # --- de bout en bout : le kit réel installé dans un dépôt, commit avec ses hooks ---
 R=$tmp/reel
 mkdir -p "$R" && cd "$repo_root" && git ls-files -z -- bin scripts .claude .github .githooks .sdlc templates REVIEW.md \

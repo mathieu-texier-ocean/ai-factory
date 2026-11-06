@@ -29,6 +29,22 @@ if command -v sha256sum >/dev/null 2>&1; then SHA256="sha256sum"; else SHA256="s
 # Empreinte sha256 du contenu, lue sur l'entrée standard pour ne pas dépendre du nom.
 empreinte() { local h; h=$($SHA256 < "$1") || return 1; echo "${h%% *}"; }
 
+# version_lt <a> <b> : vrai si le tag de release a précède b. Tags YY.MM.DD[.V] comparés
+# champ par champ, numériquement ; sans .V, le tag vaut .1.
+version_lt() {
+  local a b i x y
+  IFS=. read -r -a a <<<"$1"; IFS=. read -r -a b <<<"$2"
+  [ ${#a[@]} -eq 4 ] || a+=(1)
+  [ ${#b[@]} -eq 4 ] || b+=(1)
+  for i in 0 1 2 3; do
+    x=$((10#${a[i]})) y=$((10#${b[i]}))
+    [ "$x" -lt "$y" ] && return 0
+    [ "$x" -gt "$y" ] && return 1
+  done
+  return 1
+}
+est_tag() { [[ $1 =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$ ]]; }
+
 # resoudre <chemin> : chemin physique, même si la fin n'existe pas encore.
 resoudre() {
   local d=$1 reste=""
@@ -36,13 +52,19 @@ resoudre() {
   echo "$(cd -- "$d" && pwd -P)$reste"
 }
 
-# trouver_source : SOURCE = racine du clone du kit qui contient ce script.
+# trouver_source : SOURCE = racine du clone du kit qui contient ce script ; TAG_SOURCE =
+# le plus récent de ses tags de release à HEAD, vide hors release.
 trouver_source() {
-  local m
+  local m t
   SOURCE=$(git -C "$(dirname -- "$0")" rev-parse --show-toplevel 2>/dev/null) || SOURCE=""
   [ -n "$SOURCE" ] || refus "$(dirname -- "$0") n'est pas dans un dépôt Git : lancez le script depuis un clone du kit"
   git -C "$SOURCE" rev-parse -q --verify 'HEAD^{commit}' >/dev/null || refus "$SOURCE n'a aucun commit"
   SHA_SOURCE=$(git -C "$SOURCE" rev-parse HEAD)
+  TAG_SOURCE=""
+  while IFS= read -r t; do
+    est_tag "$t" || continue
+    if [ -z "$TAG_SOURCE" ] || version_lt "$TAG_SOURCE" "$t"; then TAG_SOURCE=$t; fi
+  done < <(git -C "$SOURCE" tag --points-at HEAD)
   if git -C "$SOURCE" cat-file -e "HEAD:$MANIFESTE" 2>/dev/null; then
     refus "$SOURCE contient $MANIFESTE : c'est un dépôt produit, lancez le script depuis un clone du kit"
   fi
@@ -102,16 +124,25 @@ preparer() {
   done
 }
 
-# lire_manifeste <fichier> : ANCIEN, NOM_PROJET, et une empreinte par chemin dans $TMPD/m.
+# lire_manifeste <fichier> : ANCIEN, NOM_PROJET, TAG_ANCIEN (ligne « tag » facultative,
+# vide pour un manifeste sans tag) et une empreinte par chemin dans $TMPD/m.
 lire_manifeste() {
-  local ligne chemin
+  local ligne chemin premiere=1
   mkdir -p "$TMPD/m" || refus "dossier temporaire impossible"
   : > "$TMPD/liste-m"
+  TAG_ANCIEN=""
   {
     IFS= read -r ligne; ANCIEN=${ligne#sdlc-kit }
     IFS= read -r ligne; NOM_PROJET=${ligne#projet }
     while IFS= read -r ligne; do
       [ -n "$ligne" ] || continue
+      if [ $premiere -eq 1 ] && [[ $ligne == "tag "* ]]; then
+        premiere=0
+        TAG_ANCIEN=${ligne#tag }
+        est_tag "$TAG_ANCIEN" || refus "$1 : ligne illisible : $ligne"
+        continue
+      fi
+      premiere=0
       chemin=${ligne#*  }
       case "/$chemin/" in
         //|*/../*|*/./*|//*) refus "$1 : chemin refusé : $chemin" ;;
@@ -193,7 +224,9 @@ appliquer() {
   # Le manifeste n'est réécrit qu'une fois tout le reste fait. Les lignes sont déjà
   # triées par chemin : la boucle suit l'ordre de sort -u.
   mkdir -p -- "$cible/$(dirname -- "$MANIFESTE")" \
-    && { echo "sdlc-kit $SHA_SOURCE"; echo "projet $NOM_PROJET"; cat "$TMPD/f"; } > "$cible/$MANIFESTE.tmp" \
+    && { echo "sdlc-kit $SHA_SOURCE"; echo "projet $NOM_PROJET"
+         [ -z "$TAG_SOURCE" ] || echo "tag $TAG_SOURCE"
+         cat "$TMPD/f"; } > "$cible/$MANIFESTE.tmp" \
     && mv -f -- "$cible/$MANIFESTE.tmp" "$cible/$MANIFESTE" \
     || refus "écriture impossible : $cible/$MANIFESTE"
 }
@@ -231,7 +264,7 @@ cmd_install() {
   mkdir -p -- "$cible" || refus "création impossible : $cible"
   appliquer "$cible"
 
-  echo "Kit installé dans $cible pour « $NOM_PROJET » (kit $SHA_SOURCE)."
+  echo "Kit installé dans $cible pour « $NOM_PROJET » (kit $SHA_SOURCE${TAG_SOURCE:+, release $TAG_SOURCE})."
   rapport
   cat <<FIN
 Marche à suivre (non exécutée) :
@@ -267,7 +300,8 @@ cmd_update() {
   preparer "$NOM_PROJET"
 
   local m deja=0
-  if [ "$SHA_SOURCE" = "$ANCIEN" ]; then
+  # Même SHA mais tag ajouté ou retiré : le manifeste est réécrit.
+  if [ "$SHA_SOURCE" = "$ANCIEN" ] && [ "$TAG_SOURCE" = "$TAG_ANCIEN" ]; then
     deja=1
     for m in "${MODELES[@]}"; do
       [ "$(empreinte "$TMPD/n/$m")" = "$(cat "$TMPD/m/$m" 2>/dev/null)" ] || deja=0
@@ -279,7 +313,7 @@ cmd_update() {
   fi
 
   appliquer "$cible"
-  echo "Kit : $ANCIEN -> $SHA_SOURCE"
+  echo "Kit : $ANCIEN${TAG_ANCIEN:+ ($TAG_ANCIEN)} -> $SHA_SOURCE${TAG_SOURCE:+ ($TAG_SOURCE)}"
   rapport
 }
 
