@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié à la main sur chaque poste, et le kit d'un dépôt produit n'est mis à jour que via `deploy.sh update` depuis un clone. Les commandes `git sdlc` signaleront, au plus une fois par jour, qu'une release plus récente existe et comment se mettre à jour. La commande qui applique la mise à jour est un besoin séparé, `2026-11-05-sdlc-self-update`. Étape en cours : intent.
+Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié à la main sur chaque poste, et le kit d'un dépôt produit n'est mis à jour que via `deploy.sh update` depuis un clone. Les commandes `git sdlc` signaleront, au plus une fois par jour, qu'une release plus récente existe et comment se mettre à jour. `git sdlc version` affiche la version, que chaque release joint en fichier `git-sdlc`, et `.sdlc/manifeste` porte le tag installé. La commande qui applique la mise à jour est un besoin séparé, `2026-11-05-sdlc-self-update`. Étape en cours : spec.
 
 ## Décisions
 
@@ -31,3 +31,10 @@ Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié 
 - 2026-11-05 · intent · Version de `git-sdlc` : fichier joint à chaque release du kit, variable = tag ; précise la ligne sur la variable renseignée avec le tag (Mathieu Texier)
 - 2026-11-05 · intent · Découpage après contrôle de taille : ce besoin garde la détection et l'avis ; la commande de mise à jour et la décision « dossier non inscriptible » passent dans `2026-11-05-sdlc-self-update` (Mathieu Texier)
 - 2026-11-05 · intent · Le fichier `git-sdlc` versionné est joint à la release par un workflow GitHub Actions déclenché par le tag, propre au kit et non copié par `deploy.sh` (Mathieu Texier)
+- 2026-11-06 · spec · `git sdlc version` et `--version` affichent la version ; fichier joint nommé `git-sdlc` ; ligne `tag` optionnelle au manifeste (Mathieu Texier, PO)
+- 2026-11-06 · spec · Workflow déclenché par la publication de la release, plutôt que par le tag ; `contents: write` sur ce seul job (Mathieu Texier, PO)
+- 2026-11-06 · spec · Première release sans fichier joint acceptée ; recette du fichier joint à la release suivante (Mathieu Texier, PO)
+- 2026-11-06 · spec · Manifeste sans tag : SHA différent de celui du tag = en retard (Mathieu Texier, PO)
+- 2026-11-06 · spec · Manifeste illisible par un `deploy.sh` antérieur : accepté (Mathieu Texier, PO)
+- 2026-11-06 · spec · Avis sur la sortie d'erreur, avant la sortie de la commande ; échec de vérification mis en cache pour la journée (Mathieu Texier, PO)
+- 2026-11-06 · spec · Délai de la requête GitHub réglable par `sdlc.updateCheckTimeout`, 5 secondes par défaut (Mathieu Texier, PO)
