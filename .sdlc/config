@@ -14,3 +14,7 @@
 	# Arguments de gh pr merge pour git sdlc merge. Garder --rebase : seul le rebase
 	# conserve les trailers Need:/Stage: sur chaque commit.
 	mergeArgs = --rebase --delete-branch
+	# Avis de mise à jour : dépôt du kit de référence et délai de la requête GitHub (secondes).
+	# Désactivation par poste ou par clone : git config sdlc.updateCheck false
+	# kitRepo = ocean-shiftmove/ai-factory
+	# updateCheckTimeout = 5

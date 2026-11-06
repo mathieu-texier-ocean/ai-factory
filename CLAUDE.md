@@ -20,14 +20,14 @@ PASS session, absent : signalé
 OK .claude/hooks/tests/hook-activation/run.sh
 …
 
-6 run.sh lancés, 0 en échec
+9 run.sh lancés, 0 en échec
 ```
 
 - Avant de déclarer une tâche finie, lancer la commande et coller sa sortie, même si la tâche ne touche aucun fichier testé.
 - Sortie en erreur sans changement volontaire : la tâche n'est pas finie ; coller la sortie et corriger le code.
 - Pendant un correctif, corriger le code, pas le test.
 - Si le comportement change volontairement, mettre à jour le test et le signaler explicitement.
-- Dans `bin/git-sdlc`, seule `metrics` a un test automatisé (`bin/tests/metrics/run.sh`, gh factice, `jq` requis). Pour le reste : `bash -n bin/git-sdlc`, et le décrire dans le commit s'il a été essayé contre un dépôt GitHub.
+- Dans `bin/git-sdlc`, seuls `metrics` (`bin/tests/metrics/run.sh`, `jq` requis), le résumé des checks (`bin/tests/git-sdlc-checks/`), `version` et la vérification des mises à jour (`bin/tests/update-check/`) ont des tests automatisés, avec un gh factice. Pour le reste : `bash -n bin/git-sdlc`, et le décrire dans le commit s'il a été essayé contre un dépôt GitHub.
 
 ## SDLC
 
@@ -55,6 +55,7 @@ OK .claude/hooks/tests/hook-activation/run.sh
 
 - `bin/git-sdlc` : pilote branches `need/<id>/<intent|spec|build>`, PR, fusions et releases ; l'étape se déduit de git et de GitHub.
 - `.github/scripts/sdlc-check.sh` : check CI requis `sdlc-conventions` (trailers, périmètre, amont fusionné, credentials).
+- `.github/workflows/release.yml` → `scripts/release-asset.sh` : joint `git-sdlc` (`VERSION` = tag) à chaque release du kit ; propre au kit, exclu par `deploy.sh`.
 - `.githooks/` : `commit-msg` (trailers), `pre-commit` (sections d'intent, credentials) ; `lib/credential.sh` partagé avec le check CI.
 - `.claude/skills/` : `redaction-intent`, `controle-taille-intent`, `generation-spec`, `generation-plan` ; gabarits dans `templates/`.
 - `scripts/deploy.sh` : installe le kit dans un dépôt produit et le met à jour, avec `.sdlc/manifeste` ; liste blanche en tête du script, `CLAUDE.md` et `README.md` produits depuis `templates/projet/`.

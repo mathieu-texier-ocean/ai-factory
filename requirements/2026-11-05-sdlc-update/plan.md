@@ -90,7 +90,7 @@ Couvre : C14, C15, C16, C17, C18, C19, C20, L10–L13, L16, L19–L21, A9, A10, 
 
 C17, A10 et A11 (avis d'échec) sont déjà posés à l'étape 4 ; cette étape y ajoute la mise en cache de l'échec.
 
-- Cache : `$(git rev-parse --git-common-dir)/sdlc-update-check`, une ligne `<date>\tok\t<tag>\t<sha>` ou `<date>\tko\t<raison>`. Si sa date est le jour local, il sert sans requête. S'il est illisible, il vaut un cache absent.
+- Cache : `$(git rev-parse --git-common-dir)/sdlc-update-check`, une ligne `<date>\tok\t<dépôt du kit>\t<tag>\t<sha>` ou `<date>\tko\t<dépôt du kit>\t<raison>`. Si sa date est le jour local et que son dépôt est `sdlc.kitRepo`, il sert sans requête. Sinon, ou s'il est illisible, il vaut un cache absent. Le dépôt du kit dans la ligne est un ajout du build : changer `sdlc.kitRepo` dans la journée relance la requête.
 - Échec : une ligne « vérification impossible (<raison>) », puis l'échec est mis en cache. Aucun nouvel avis le même jour.
 - Délai : `gh` tourne en arrière-plan, avec un garde-fou `sleep <délai>; kill` en sous-shell. Un dépassement donne la raison « délai dépassé ». `sdlc.updateCheckTimeout` vaut `5` s'il n'est pas un entier positif. Le garde-fou et les fichiers temporaires sont arrêtés ou supprimés par `cleanup`, `die` compris.
 - `sdlc.updateCheck=false` (étape 4) : ni lecture ni écriture du cache non plus.
@@ -114,7 +114,7 @@ Couvre : A15.
 
 ## Tests à écrire
 
-- `bash bin/tests/update-check/run.sh` : version, vérification, avis, cache, échec, délai, désactivation (étapes 1, 4, 5). Il faut `jq` si le `gh` factice en a besoin.
+- `bash bin/tests/update-check/run.sh` : version, vérification, avis, cache, échec, délai, désactivation (étapes 1, 4, 5). Le `gh` factice n'utilise pas `jq`.
 - `bash scripts/tests/release-asset/run.sh` : fichier joint, refus d'un fichier déjà joint, tag hors format (étape 2).
 - `bash scripts/tests/deploy/run.sh` : workflow non copié, tag au manifeste (étapes 2, 3).
 - `bash scripts/verify.sh` : tous les `run.sh` du dépôt, à chaque étape ; `bash -n bin/git-sdlc`.

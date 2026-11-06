@@ -21,6 +21,7 @@ Ce kit met en œuvre le *AI-native SDLC playbook* d’Anthropic avec git et GitH
 | `REVIEW.md` | consignes de revue, pour Claude comme pour les humains |
 | `templates/projet/CLAUDE.md`, `README.md` | modèles du `CLAUDE.md` et du `README.md` du dépôt produit, remplis par `scripts/deploy.sh` ; non copiés tels quels |
 | `scripts/deploy.sh` | installe le kit dans un dépôt produit, puis y répercute ses évolutions ; reste dans le dépôt du kit |
+| `.github/workflows/release.yml`, `scripts/release-asset.sh` | joignent à chaque release du kit le fichier `git-sdlc` dont la version vaut le tag ; propres au kit, non copiés par `deploy.sh` |
 | `scripts/verify.sh` | lance tous les tests du kit (`<livrable>/tests/<nom>/run.sh`) ; reste dans le dépôt du kit |
 
 Prérequis : git 2.30+, bash 3.2+ (celui de macOS convient), GitHub CLI `gh` installé et authentifié (`gh auth login`) sur chaque poste. Les rulesets et les PR brouillon sur un dépôt privé dépendent de votre offre GitHub. Sans PR brouillon, le script se rabat sur une PR simple.
@@ -42,7 +43,7 @@ git sdlc setup              # applique
 
 Le dépôt peut être existant ou vide ; un dossier absent est créé. Le script ne fait aucune opération Git dans le dépôt et lit le kit au commit `HEAD` du clone (les modifications non commitées sont ignorées et signalées). Il copie `.claude/`, `.github/`, `.githooks/`, `.sdlc/`, `templates/` et `REVIEW.md`, sans les dossiers `tests/` du kit ni `templates/projet/`, et produit `CLAUDE.md` et `README.md` depuis `templates/projet/` (nom du projet par défaut : celui du dossier). Un fichier déjà présent avec un autre contenu, par exemple un `.claude/settings.json`, un `CLAUDE.md` ou un `README.md` existant, est conservé : la version du kit est écrite à côté en `<fichier>.nouveau`, à fusionner à la main puis supprimer. Pour `settings.json`, ajoutez les entrées `SessionStart` et `PreToolUse` du kit.
 
-Le script écrit `.sdlc/manifeste` : le SHA du kit installé, le nom du projet et l’empreinte sha256 de chaque fichier copié. Commitez-le : la mise à jour en dépend.
+Le script écrit `.sdlc/manifeste` : le SHA du kit installé, le nom du projet, le tag de la release quand le `HEAD` du clone en porte un (ligne `tag YY.MM.DD[.V]`, le plus récent s’il y en a plusieurs), puis l’empreinte sha256 de chaque fichier copié. Commitez-le : la mise à jour et l’avis de mise à jour en dépendent. Installez de préférence depuis un clone au tag d’une release (`git checkout <tag>`).
 
 **Mettre à jour le kit d’un dépôt produit**, depuis un clone du kit plus récent :
 
@@ -55,10 +56,22 @@ Un fichier intact (même empreinte qu’au manifeste) est remplacé, ou supprim�
 **2. Sur chaque poste** :
 
 ```sh
-cp <clone du kit>/bin/git-sdlc ~/.local/bin/ && chmod +x ~/.local/bin/git-sdlc   # tout dossier du PATH
 gh auth login
+gh release download -R ocean-shiftmove/ai-factory -p git-sdlc -O ~/.local/bin/git-sdlc --clobber \
+  && chmod +x ~/.local/bin/git-sdlc                                                # tout dossier du PATH
 git config core.hooksPath .githooks                                                # dans chaque clone
+git sdlc version                                                                   # tag de la release installée
 ```
+
+Le fichier `git-sdlc` joint à chaque release porte le tag pour version. Copié depuis un clone (`cp <clone du kit>/bin/git-sdlc …`), il affiche `dev` et ne signale jamais de retard pour lui-même.
+
+**Mises à jour.** Avant chaque commande, sauf `help` et `version`, `git sdlc` compare sa version et le kit du dépôt courant (`.sdlc/manifeste` : le tag, ou à défaut le SHA du commit de la release) à la dernière release du dépôt du kit, lue par `gh`. Pour chaque élément en retard, une ligne sur la sortie d’erreur donne la version disponible et la commande de mise à jour ; la sortie standard et le code de retour ne changent pas. GitHub est interrogé au plus une fois par jour et par dépôt, et le résultat est gardé dans `.git/sdlc-update-check`. GitHub injoignable, `gh` non authentifié ou dépôt du kit illisible : une ligne « vérification impossible », une fois par jour, et la commande s’exécute normalement. Rien n’est vérifié pour un `git-sdlc` en `dev` dans un dépôt sans manifeste, comme le dépôt du kit.
+
+| Réglage | Lu dans | Défaut | Effet |
+|---|---|---|---|
+| `sdlc.kitRepo` | `git config`, puis `.sdlc/config` | `ocean-shiftmove/ai-factory` | dépôt du kit dont la dernière release sert de référence |
+| `sdlc.updateCheckTimeout` | `git config`, puis `.sdlc/config` | `5` | délai de la requête GitHub, en secondes |
+| `sdlc.updateCheck` | `git config` (local ou global) | actif | `false` désactive la vérification |
 
 ## Une journée type
 
@@ -83,7 +96,8 @@ git sdlc claim 2026-10-28-claims-status build     # copie templates/plan.md dans
 git sdlc merge 2026-10-28-claims-status build
 
 # Release manager (Rémi)
-git sdlc release                  # release GitHub sur le tag YY.MM.DD du jour (.2, .3… si déjà livré)
+git sdlc release                  # release GitHub sur le tag YY.MM.DD du jour (.2, .3… si déjà livré) ;
+                                  # dans le dépôt du kit, release.yml y joint git-sdlc
 git sdlc release 26.11.04         # ou à la date de mise en production prévue
 
 # Tout le monde

@@ -25,10 +25,12 @@ verifie() { local n=$1; shift; if "$@"; then ok "$n"; else ko "$n"; fi; }
 
 # --- version ---
 cd "$repo_root"
+export GH_LOG="$tmp/version.log"; : > "$GH_LOG"
 lance "$sdlc" version
 verifie "version : dev dans le dépôt du kit" [ "$rc" = 0 -a "$out" = dev -a -z "$err" ]
 lance "$sdlc" --version
 verifie "--version : synonyme de version" [ "$rc" = 0 -a "$out" = dev ]
+verifie "version, --version : aucun appel à gh" [ ! -s "$GH_LOG" ]
 cd "$tmp"
 lance "$sdlc" version
 verifie "version : hors dépôt git, sans gh" [ "$rc" = 0 -a "$out" = dev ]
@@ -252,7 +254,7 @@ debut=$(date +%s)
 lance "$vieux" board
 duree=$(( $(date +%s) - debut ))
 verifie "délai dépassé : avis vérification impossible (délai dépassé)" contient "$err" "vérification des mises à jour impossible (délai dépassé)"
-verifie "délai dépassé : commande terminée en moins de 3 s ($duree s)" [ "$duree" -lt 3 ]
+verifie "délai dépassé : commande terminée en moins de 3 s" [ "$duree" -lt 3 ] || echo "  durée : $duree s"
 verifie "délai dépassé : commande exécutée, code inchangé" [ "$rc" = 0 -a "$out" = "Aucun besoin en cours." ]
 verifie "délai dépassé : échec mis en cache" grep -q '	ko	.*délai dépassé' "$(cache)"
 for v in 0 abc ''; do
@@ -260,7 +262,7 @@ for v in 0 abc ''; do
   mkdir -p .sdlc && printf '[sdlc]\n\tupdateCheckTimeout = %s\n' "$v" > .sdlc/config
   export GH_SLEEP=1
   lance "$vieux" board
-  verifie "délai « $v » : 5 s par défaut, réponse en 1 s acceptée" contient "$err" "26.11.12 disponible"
+  verifie "délai « ${v:-vide} » : 5 s par défaut, réponse en 1 s acceptée" contient "$err" "26.11.12 disponible"
 done
 
 exit $fail

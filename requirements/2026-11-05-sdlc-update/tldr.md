@@ -11,7 +11,7 @@
 
 <!-- Trois à cinq lignes : le problème, ce qui est livré, et où en est le besoin (étape en cours). -->
 
-Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié à la main sur chaque poste, et le kit d'un dépôt produit n'est mis à jour que via `deploy.sh update` depuis un clone. Les commandes `git sdlc` signaleront, au plus une fois par jour, qu'une release plus récente existe et comment se mettre à jour. `git sdlc version` affiche la version, que chaque release joint en fichier `git-sdlc`, et `.sdlc/manifeste` porte le tag installé. La commande qui applique la mise à jour est un besoin séparé, `2026-11-05-sdlc-self-update`. Étape en cours : build, plan en six étapes, non à risque.
+Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié à la main sur chaque poste, et le kit d'un dépôt produit n'est mis à jour que via `deploy.sh update` depuis un clone. Les commandes `git sdlc` signaleront, au plus une fois par jour, qu'une release plus récente existe et comment se mettre à jour. `git sdlc version` affiche la version, que chaque release joint en fichier `git-sdlc`, et `.sdlc/manifeste` porte le tag installé. La commande qui applique la mise à jour est un besoin séparé, `2026-11-05-sdlc-self-update`. Étape en cours : build. Le code et les tests sont livrés (`bin/tests/update-check`, `scripts/tests/release-asset`, `scripts/tests/deploy`), et la fiche de recette `validation.md` est jointe. Il reste à publier la première release du kit avant `ready`.
 
 ## Décisions
 
@@ -45,3 +45,5 @@ Les nouvelles versions d'ai-factory passent inaperçues : `git-sdlc` est copié 
 - 2026-11-06 · build · Lecture de GitHub par `gh api`, pas `curl` (Mathieu Texier)
 - 2026-11-06 · build · Comparaison de versions dupliquée dans `git-sdlc` et `deploy.sh`, sans bibliothèque partagée (Mathieu Texier)
 - 2026-11-06 · build · Aucune requête GitHub quand rien n'est à comparer (`git-sdlc` en `dev`, sans manifeste) (Mathieu Texier)
+- 2026-11-06 · build · Cache indexé aussi par `sdlc.kitRepo` : un changement de dépôt de référence dans la journée relance la requête (Claude au build, à valider en revue)
+- 2026-11-06 · build · `validation.md` joint à la PR build, colonne « Cas » remplie (Mathieu Texier)
