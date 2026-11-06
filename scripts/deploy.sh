@@ -5,9 +5,9 @@
 set -u
 
 # Seul endroit qui décide de ce qui est copié dans un dépôt produit. Les dossiers tests/
-# (tests du kit) sont toujours exclus.
+# (tests du kit) sont toujours exclus, comme le workflow de release, propre au kit.
 LISTE_BLANCHE=(.claude .github .githooks .sdlc templates REVIEW.md)
-EXCLUS=(templates/projet)
+EXCLUS=(templates/projet .github/workflows/release.yml)
 MODELES=(CLAUDE.md README.md)
 MANIFESTE=.sdlc/manifeste
 

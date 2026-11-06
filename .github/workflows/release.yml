@@ -1,0 +1,32 @@
+# Propre au kit, jamais copié dans un dépôt produit (scripts/deploy.sh l'exclut).
+# Joint à chaque release YY.MM.DD[.V] le fichier git-sdlc dont la version vaut le tag :
+# c'est lui qu'un poste installe. Un fichier déjà joint fait échouer le job, sans remplacement.
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  git-sdlc:
+    name: git-sdlc joint à la release
+    runs-on: ubuntu-latest
+    # Seul ce job écrit : le fichier joint à la release.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Joindre git-sdlc
+        env:
+          # Passé par variable d'environnement : le tag n'est jamais interprété par le shell.
+          TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: bash scripts/release-asset.sh "$TAG"

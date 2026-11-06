@@ -27,6 +27,7 @@ ecrire .githooks/pre-commit 'exit 0'; chmod +x .githooks/pre-commit
 ecrire .githooks/lib/a.sh 'a v1'
 ecrire .githooks/lib/b.sh 'b v1'
 ecrire .github/workflows/sdlc.yml 'on: pull_request'
+ecrire .github/workflows/release.yml 'on: release'
 ecrire .sdlc/config '[sdlc]'
 ecrire templates/intent.md 'gabarit'
 ecrire templates/projet/CLAUDE.md '# {{nom-projet}}
@@ -57,6 +58,7 @@ verif "install : liste blanche copiée" [ -f "$P/.claude/skills/demo/SKILL.md" -
 verif "install : bin, scripts du kit non copiés" [ ! -e "$P/bin" -a ! -e "$P/scripts" ]
 verif "install : README.md produit depuis le modèle, pas celui du kit" [ "$(cat "$P/README.md")" = "$(printf '# demo\nreadme modèle v1')" ]
 verif "install : tests et templates/projet exclus" [ ! -e "$P/.claude/hooks/tests" -a ! -e "$P/templates/projet" ]
+verif "install : workflow de release du kit non copié, hors manifeste" sh -c "[ ! -e '$P/.github/workflows/release.yml' ] && ! grep -qF release.yml '$P/.sdlc/manifeste'"
 verif "install : bit exécutable repris" [ -x "$P/.githooks/pre-commit" -a ! -x "$P/REVIEW.md" ]
 verif "install : CLAUDE.md produit avec le nom" [ "$(head -1 "$P/CLAUDE.md")" = "# demo" ]
 verif "install : manifeste, SHA et nom" [ "$(sed -n 1,2p "$P/.sdlc/manifeste")" = "$(printf 'sdlc-kit %s\nprojet demo' "$BASE")" ]
@@ -123,6 +125,7 @@ ecrire "$K/.githooks/lib/a.sh" 'a v2'; kit_commit v2
 out=$("$D" update "$P" 2>&1); rc=$?
 verif "update : fichier intact remplacé" [ $rc -eq 0 -a "$(cat "$P/.githooks/lib/a.sh")" = 'a v2' ]
 verif "update : manifeste au nouveau SHA et à la nouvelle empreinte" [ "$(head -1 "$P/.sdlc/manifeste")" = "sdlc-kit $(git -C "$K" rev-parse HEAD)" -a "$(manif "$P" .githooks/lib/a.sh)" = "$(printf 'a v2\n' | sha | cut -d' ' -f1)" ]
+verif "update : workflow de release du kit non copié, hors manifeste" sh -c "[ ! -e '$P/.github/workflows/release.yml' ] && ! grep -qF release.yml '$P/.sdlc/manifeste'"
 verif "update : rapport, SHA et catégorie" sh -c "printf '%s' \"\$1\" | grep -qF '$BASE -> ' && printf '%s' \"\$1\" | grep -qx 'Remplacés :'" _ "$out"
 
 scenario claude
@@ -212,5 +215,6 @@ mkdir -p "$Q" && git -C "$Q" init -q && ecrire "$Q/src/app.c" 'int main;'
 "$R/scripts/deploy.sh" install "$Q" produit > /dev/null 2>&1
 cd "$Q" && git config user.email t@t && git config user.name t && git config core.hooksPath .githooks
 verif "bout en bout : commit accepté par les hooks du kit installé" sh -c 'git add -A && git commit -qm init && git log -1 --format=%B | grep -qx "Need: none"'
+verif "bout en bout : workflow de release du kit réel non copié" [ -f "$R/.github/workflows/release.yml" -a ! -e "$Q/.github/workflows/release.yml" ]
 verif "bout en bout : CLAUDE.md et README.md produits, sans tests du kit" [ "$(head -1 "$Q/CLAUDE.md")" = "# produit" -a "$(head -1 "$Q/README.md")" = "# produit" -a -z "$(git -C "$Q" ls-files '*/tests/*')" ]
 exit $fail
