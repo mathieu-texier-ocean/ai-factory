@@ -45,6 +45,8 @@ SHA_REL=$(printf '%040d' 12) SHA_VIEUX=$(printf '%040d' 5)
 contient() { printf '%s' "$1" | grep -qF -- "$2"; }
 lignes() { if [ -z "$1" ]; then echo 0; else printf '%s\n' "$1" | wc -l | tr -d ' '; fi; }
 appels() { grep -c "$1" "$GH_LOG"; }
+cache() { echo "$(git rev-parse --git-common-dir)/sdlc-update-check"; }
+sans_cache() { rm -f "$(cache)"; }
 
 # depot <nom> : nouveau dépôt avec un commit sur main ; y entre ; gh factice remis à zéro.
 depot() {
@@ -130,7 +132,7 @@ depot l9
 export GH_TAG=26.11.05.2
 lance "$vieux" board
 verifie "26.11.05 installé, 26.11.05.2 publié : avis" contient "$err" "26.11.05 installé, 26.11.05.2 disponible"
-export GH_TAG=26.11.05.10
+export GH_TAG=26.11.05.10; sans_cache
 manifeste "$SHA_VIEUX" 26.11.05.2
 lance "$tmp/bin/26.11.12/git-sdlc" board
 verifie "26.11.05.2 installé, 26.11.05.10 publié : avis pour le kit seul" [ "$(lignes "$err")" = 1 ]
@@ -141,10 +143,10 @@ mkdir -p .sdlc && printf '[sdlc]\n\tkitRepo = autre/kit\n' > .sdlc/config
 lance "$vieux" board
 verifie "sdlc.kitRepo de .sdlc/config interrogé" [ "$(appels 'repos/autre/kit/releases/latest')" = 1 ]
 verifie "sdlc.kitRepo cité dans l'avis" contient "$err" "-R autre/kit "
-git config sdlc.kitRepo local/kit
+git config sdlc.kitRepo local/kit; sans_cache
 lance "$vieux" board
 verifie "sdlc.kitRepo : git config l'emporte sur .sdlc/config" [ "$(appels 'repos/local/kit/releases/latest')" = 1 ]
-git config --unset sdlc.kitRepo; rm .sdlc/config
+git config --unset sdlc.kitRepo; rm .sdlc/config; sans_cache
 lance "$vieux" board
 verifie "sans sdlc.kitRepo : ocean-shiftmove/ai-factory" [ "$(appels 'repos/ocean-shiftmove/ai-factory/releases/latest')" = 1 ]
 
@@ -182,5 +184,83 @@ verifie "sdlc.updateCheck false : aucun appel de release, aucun avis" [ "$(appel
 depot sans
 for c in help version --version inconnue; do lance "$vieux" "$c"; done
 verifie "help, version, usage invalide : aucune vérification" [ "$(appels releases)" = 0 ]
+
+# --- une interrogation de GitHub par jour ---
+depot a9
+lance "$vieux" board
+lance "$vieux" board
+verifie "deux commandes le même jour : GitHub interrogé une fois" [ "$(appels releases/latest)" = 1 ]
+verifie "depuis le cache : l'avis se refait" contient "$err" "26.11.12 disponible"
+verifie "cache sous le dossier git commun, non suivi" [ -f .git/sdlc-update-check -a -z "$(git status --porcelain)" ]
+lance "$neuf" board
+verifie "git-sdlc mis à jour dans la journée : plus d'avis, sans requête" [ -z "$err" -a "$(appels releases/latest)" = 1 ]
+git worktree add -q ../wt 2>/dev/null; cd ../wt
+lance "$vieux" board
+verifie "autre worktree du dépôt : cache partagé, aucune requête" [ "$(appels releases/latest)" = 1 ] && contient "$err" "26.11.12 disponible"
+cd ../repo
+depot l11
+lance "$vieux" board
+verifie "autre dépôt le même jour : nouvelle requête" [ "$(appels releases/latest)" = 1 ]
+
+depot l12
+printf '2000-01-01\tok\tocean-shiftmove/ai-factory\t26.11.12\t%s\n' "$SHA_REL" > "$(cache)"
+lance "$vieux" board
+verifie "cache de la veille : nouvelle requête" [ "$(appels releases/latest)" = 1 ]
+verifie "cache de la veille : réécrit au jour" grep -q "^$(date +%Y-%m-%d)	ok	" "$(cache)"
+
+depot l19
+printf '%s\tok\tocean-shi' "$(date +%Y-%m-%d)" > "$(cache)"
+lance "$vieux" board
+verifie "cache tronqué : traité comme absent, nouvelle requête" [ "$(appels releases/latest)" = 1 ] && contient "$err" "26.11.12 disponible"
+printf '%s\tok\tocean-shiftmove/ai-factory\tabc\tdef\n' "$(date +%Y-%m-%d)" > "$(cache)"
+lance "$vieux" board
+verifie "cache corrompu : nouvelle requête" [ "$(appels releases/latest)" = 2 ]
+
+# --- échec mis en cache ---
+depot c18
+export GH_FAIL=1
+lance "$vieux" board
+verifie "échec : avis la première fois" contient "$err" "vérification des mises à jour impossible"
+lance "$vieux" board
+verifie "échec mis en cache : ni requête ni avis le même jour" [ "$(appels releases/latest)" = 1 -a -z "$err" -a "$rc" = 0 ]
+
+# --- désactivation ---
+depot c19
+lance "$vieux" board; avant=$(cat "$(cache)")
+printf '2000-01-01\tok\tx\t26.11.12\t%s\n' "$SHA_REL" > "$(cache)"; avant=$(cat "$(cache)")
+git config sdlc.updateCheck false
+lance "$vieux" board
+verifie "désactivée : cache ni lu ni réécrit" [ "$(cat "$(cache)")" = "$avant" -a "$(appels releases/latest)" = 1 ]
+depot c19b
+git config sdlc.updateCheck false
+lance "$vieux" board
+verifie "désactivée : aucun cache écrit" [ ! -e "$(cache)" ]
+depot l16
+printf '[sdlc]\n\tupdateCheck = false\n' > "$tmp/global"
+git config sdlc.updateCheck true
+GIT_CONFIG_GLOBAL="$tmp/global" lance "$vieux" board
+verifie "false en global, true en local : vérification active" [ "$(appels releases/latest)" = 1 ]
+depot l16b
+GIT_CONFIG_GLOBAL="$tmp/global" lance "$vieux" board
+verifie "false en global seul : désactivée" [ "$(appels releases/latest)" = 0 -a -z "$err" ]
+
+# --- délai ---
+depot a16
+mkdir -p .sdlc && printf '[sdlc]\n\tupdateCheckTimeout = 1\n' > .sdlc/config
+export GH_SLEEP=3
+debut=$(date +%s)
+lance "$vieux" board
+duree=$(( $(date +%s) - debut ))
+verifie "délai dépassé : avis vérification impossible (délai dépassé)" contient "$err" "vérification des mises à jour impossible (délai dépassé)"
+verifie "délai dépassé : commande terminée en moins de 3 s ($duree s)" [ "$duree" -lt 3 ]
+verifie "délai dépassé : commande exécutée, code inchangé" [ "$rc" = 0 -a "$out" = "Aucun besoin en cours." ]
+verifie "délai dépassé : échec mis en cache" grep -q '	ko	.*délai dépassé' "$(cache)"
+for v in 0 abc ''; do
+  depot "l21-${v:-vide}"
+  mkdir -p .sdlc && printf '[sdlc]\n\tupdateCheckTimeout = %s\n' "$v" > .sdlc/config
+  export GH_SLEEP=1
+  lance "$vieux" board
+  verifie "délai « $v » : 5 s par défaut, réponse en 1 s acceptée" contient "$err" "26.11.12 disponible"
+done
 
 exit $fail

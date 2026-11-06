@@ -49,7 +49,13 @@ RED_PR=""
 ID=""
 MAIN_REF=""
 
-cleanup() { [ -z "$PRS" ] || rm -f "$PRS"; }
+UC_DIR=""     # fichiers de la requête de mise à jour en cours
+UC_WATCH=""   # garde-fou du délai de cette requête
+cleanup() {
+  [ -z "$PRS" ] || rm -f "$PRS"
+  [ -z "$UC_WATCH" ] || kill "$UC_WATCH" 2>/dev/null || true
+  [ -z "$UC_DIR" ] || rm -rf "$UC_DIR"
+}
 trap cleanup EXIT
 
 # ---------------------------------------------------------------- utilitaires git
@@ -507,29 +513,73 @@ version_lt() {
   return 1
 }
 
-# uc_fetch <dépôt> : dernière release du kit. UC_TAG et UC_SHA (commit visé par le tag), ou
-# UC_FAIL, la raison courte. En 404, gh api écrit le corps d'erreur sur la sortie standard :
-# seules des valeurs au bon format sont gardées.
+# uc_query <dépôt> : tag de la dernière release, puis SHA du commit qu'il vise, une ligne
+# chacun. Lancé en arrière-plan par uc_fetch.
+uc_query() {
+  local t
+  t=$(gh api "repos/$1/releases/latest" --jq .tag_name) || return $?
+  printf '%s\n' "$t"
+  is_release "$t" || return 0
+  gh api "repos/$1/commits/$t" --jq .sha
+}
+
+# uc_fetch <dépôt> : dernière release du kit. UC_TAG et UC_SHA, ou UC_FAIL, la raison courte.
+# La requête est abandonnée au-delà de sdlc.updateCheckTimeout secondes : macOS n'a pas de
+# timeout, un garde-fou en arrière-plan la tue. En 404, gh api écrit le corps d'erreur sur la
+# sortie standard : seules des valeurs au bon format sont gardées.
 uc_fetch() {
-  local repo=$1 err rc=0
+  local repo=$1 delay pid rc=0
   UC_TAG="" UC_SHA="" UC_FAIL=""
-  err=$(mktemp)
-  UC_TAG=$(gh api "repos/$repo/releases/latest" --jq .tag_name 2>"$err") || rc=$?
+  delay=$(cfg updateCheckTimeout 5)
+  { [[ $delay =~ ^[0-9]+$ ]] && [ "$((10#$delay))" -gt 0 ]; } || delay=5
+  UC_DIR=$(mktemp -d) || { UC_DIR=""; UC_FAIL="dossier temporaire impossible"; return 0; }
+  ( uc_query "$repo" ) > "$UC_DIR/out" 2> "$UC_DIR/err" < /dev/null &
+  pid=$!
+  ( trap 'kill "${s:-}" 2>/dev/null; exit 0' TERM
+    sleep "$delay" & s=$!
+    wait "$s"
+    : > "$UC_DIR/delai"
+    pkill -TERM -P "$pid" 2>/dev/null || true
+    kill "$pid" 2>/dev/null || true ) > /dev/null 2>&1 &
+  UC_WATCH=$!
+  wait "$pid" 2>/dev/null || rc=$?
+  kill "$UC_WATCH" 2>/dev/null || true
+  wait "$UC_WATCH" 2>/dev/null || true
+  UC_WATCH=""
   if [ "$rc" = 0 ]; then
-    if is_release "$UC_TAG"; then
-      UC_SHA=$(gh api "repos/$repo/commits/$UC_TAG" --jq .sha 2>"$err") || rc=$?
-      [ "$rc" != 0 ] || [[ $UC_SHA =~ ^[0-9a-f]{40}$ ]] || UC_FAIL="commit de la release $UC_TAG illisible"
-    else
-      UC_FAIL="dernière release de $repo hors du format YY.MM.DD[.V]"
-    fi
-  fi
-  if [ "$rc" != 0 ]; then
-    if [ "$rc" = 4 ]; then UC_FAIL="gh non authentifié"
-    elif grep -q 'HTTP 404' "$err"; then UC_FAIL="$repo ou sa dernière release introuvable"
-    else UC_FAIL="GitHub injoignable ou $repo illisible"; fi
-  fi
-  rm -f "$err"
+    { IFS= read -r UC_TAG; IFS= read -r UC_SHA; } < "$UC_DIR/out" || true
+    if ! is_release "${UC_TAG:-}"; then UC_FAIL="dernière release de $repo hors du format YY.MM.DD[.V]"
+    elif ! [[ ${UC_SHA:-} =~ ^[0-9a-f]{40}$ ]]; then UC_FAIL="commit de la release $UC_TAG illisible"; fi
+  elif [ -e "$UC_DIR/delai" ]; then UC_FAIL="délai dépassé"
+  elif [ "$rc" = 4 ]; then UC_FAIL="gh non authentifié"
+  elif grep -q 'HTTP 404' "$UC_DIR/err"; then UC_FAIL="$repo ou sa dernière release introuvable"
+  else UC_FAIL="GitHub injoignable ou $repo illisible"; fi
+  rm -rf "$UC_DIR"; UC_DIR=""
   [ -z "$UC_FAIL" ] || UC_TAG="" UC_SHA=""
+}
+
+# uc_reference <dépôt> : UC_TAG et UC_SHA, ou UC_FAIL, depuis le cache du jour, sinon depuis
+# GitHub, cache réécrit. Le cache, une ligne « <date> ok <dépôt> <tag> <sha> » ou
+# « <date> ko <dépôt> <raison> » séparée par des tabulations, est sous le dossier git commun,
+# partagé par les worktrees ; illisible ou d'un autre dépôt du kit, il vaut un cache absent.
+# UC_NEW=1 si GitHub vient d'être interrogé.
+uc_reference() {
+  local repo=$1 file today d="" st="" k="" a="" b=""
+  file="$(git rev-parse --git-common-dir)/sdlc-update-check"
+  today=$(date +%Y-%m-%d)
+  UC_TAG="" UC_SHA="" UC_FAIL="" UC_NEW=0
+  if [ -f "$file" ]; then IFS=$'\t' read -r d st k a b < "$file" || true; fi
+  if [ "$d" = "$today" ] && [ "$k" = "$repo" ]; then
+    case $st in
+      ok) if is_release "$a" && [[ $b =~ ^[0-9a-f]{40}$ ]]; then UC_TAG=$a UC_SHA=$b; return 0; fi ;;
+      ko) if [ -n "$a" ]; then UC_FAIL=$a; return 0; fi ;;
+    esac
+  fi
+  uc_fetch "$repo"
+  UC_NEW=1
+  if [ -n "$UC_FAIL" ]; then printf '%s\tko\t%s\t%s\n' "$today" "$repo" "$UC_FAIL"
+  else printf '%s\tok\t%s\t%s\t%s\n' "$today" "$repo" "$UC_TAG" "$UC_SHA"; fi > "$file.$$" 2>/dev/null \
+    && mv -f "$file.$$" "$file" 2>/dev/null || rm -f "$file.$$"
 }
 
 # Compare git-sdlc et le kit du dépôt à la dernière release de sdlc.kitRepo ; un avis d'une
@@ -548,9 +598,10 @@ update_check() {
   # Rien à comparer : aucune requête.
   { is_release "$VERSION" || [ -n "$msha" ]; } || return 0
   repo=$(cfg kitRepo ocean-shiftmove/ai-factory)
-  uc_fetch "$repo"
+  uc_reference "$repo"
   if [ -n "$UC_FAIL" ]; then
-    warn "vérification des mises à jour impossible ($UC_FAIL)"
+    # Un échec mis en cache ne se signale qu'une fois par jour.
+    [ "$UC_NEW" = 0 ] || warn "vérification des mises à jour impossible ($UC_FAIL)"
     return 0
   fi
   if is_release "$VERSION" && version_lt "$VERSION" "$UC_TAG"; then
