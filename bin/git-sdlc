@@ -22,6 +22,9 @@ warn() { printf 'git-sdlc : %s\n' "$*" >&2; }
 # Sans dépôt ni réseau : la version se lit partout.
 case ${1:-} in version|--version) printf '%s\n' "$VERSION"; exit 0 ;; esac
 
+# Chemin de ce script, cité par l'avis de mise à jour (avant le cd vers la racine).
+case $0 in /*) SELF=$0 ;; *) SELF=$PWD/$0 ;; esac
+
 git rev-parse --git-dir >/dev/null 2>&1 || die "à lancer dans un dépôt git"
 command -v gh >/dev/null 2>&1 || die "gh introuvable : installez GitHub CLI (https://cli.github.com)"
 
@@ -485,6 +488,80 @@ resolve_target() {
   fi
   stage_of "$T_STEP" >/dev/null || die "étape inconnue : $T_STEP (intent, spec ou build)"
   [ $# -ge 2 ] || echo "Besoin $T_ID, étape $T_STEP."
+}
+
+# ------------------------------------------------- mises à jour du kit
+
+# Tags de release YY.MM.DD[.V] comparés champ par champ, numériquement ; sans .V, le tag vaut .1.
+is_release() { [[ $1 =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$ ]]; }
+version_lt() {
+  local a b i x y
+  IFS=. read -r -a a <<<"$1"; IFS=. read -r -a b <<<"$2"
+  [ ${#a[@]} -eq 4 ] || a+=(1)
+  [ ${#b[@]} -eq 4 ] || b+=(1)
+  for i in 0 1 2 3; do
+    x=$((10#${a[i]})) y=$((10#${b[i]}))
+    [ "$x" -lt "$y" ] && return 0
+    [ "$x" -gt "$y" ] && return 1
+  done
+  return 1
+}
+
+# uc_fetch <dépôt> : dernière release du kit. UC_TAG et UC_SHA (commit visé par le tag), ou
+# UC_FAIL, la raison courte. En 404, gh api écrit le corps d'erreur sur la sortie standard :
+# seules des valeurs au bon format sont gardées.
+uc_fetch() {
+  local repo=$1 err rc=0
+  UC_TAG="" UC_SHA="" UC_FAIL=""
+  err=$(mktemp)
+  UC_TAG=$(gh api "repos/$repo/releases/latest" --jq .tag_name 2>"$err") || rc=$?
+  if [ "$rc" = 0 ]; then
+    if is_release "$UC_TAG"; then
+      UC_SHA=$(gh api "repos/$repo/commits/$UC_TAG" --jq .sha 2>"$err") || rc=$?
+      [ "$rc" != 0 ] || [[ $UC_SHA =~ ^[0-9a-f]{40}$ ]] || UC_FAIL="commit de la release $UC_TAG illisible"
+    else
+      UC_FAIL="dernière release de $repo hors du format YY.MM.DD[.V]"
+    fi
+  fi
+  if [ "$rc" != 0 ]; then
+    if [ "$rc" = 4 ]; then UC_FAIL="gh non authentifié"
+    elif grep -q 'HTTP 404' "$err"; then UC_FAIL="$repo ou sa dernière release introuvable"
+    else UC_FAIL="GitHub injoignable ou $repo illisible"; fi
+  fi
+  rm -f "$err"
+  [ -z "$UC_FAIL" ] || UC_TAG="" UC_SHA=""
+}
+
+# Compare git-sdlc et le kit du dépôt à la dernière release de sdlc.kitRepo ; un avis d'une
+# ligne par élément en retard, sur la sortie d'erreur. Ne change ni la sortie standard ni le
+# code de retour de la commande.
+update_check() {
+  local repo mtag="" msha="" l1="" l3=""
+  [ "$(git config --get sdlc.updateCheck 2>/dev/null || true)" != false ] || return 0
+  if [ -f "$ROOT/.sdlc/manifeste" ]; then
+    { IFS= read -r l1; IFS= read -r _; IFS= read -r l3; } < "$ROOT/.sdlc/manifeste" || true
+    msha=${l1#sdlc-kit }
+    case ${l3:-} in "tag "*) mtag=${l3#tag } ;; esac
+    [[ $msha =~ ^[0-9a-f]{40}$ ]] || msha=""
+    is_release "$mtag" || mtag=""
+  fi
+  # Rien à comparer : aucune requête.
+  { is_release "$VERSION" || [ -n "$msha" ]; } || return 0
+  repo=$(cfg kitRepo ocean-shiftmove/ai-factory)
+  uc_fetch "$repo"
+  if [ -n "$UC_FAIL" ]; then
+    warn "vérification des mises à jour impossible ($UC_FAIL)"
+    return 0
+  fi
+  if is_release "$VERSION" && version_lt "$VERSION" "$UC_TAG"; then
+    warn "git-sdlc $VERSION installé, $UC_TAG disponible : gh release download $UC_TAG -R $repo -p git-sdlc -O $SELF --clobber && chmod +x $SELF"
+  fi
+  if [ -n "$mtag" ]; then
+    version_lt "$mtag" "$UC_TAG" || return 0
+  else
+    [ -n "$msha" ] && [ "$msha" != "$UC_SHA" ] || return 0
+  fi
+  warn "kit du dépôt ${mtag:-${msha:0:12}} installé, $UC_TAG disponible : <clone du kit au tag $UC_TAG>/scripts/deploy.sh update $ROOT"
 }
 
 # -------------------------------------------------------------- commandes
@@ -1387,6 +1464,9 @@ JSON
 resolve_main
 cmd=${1:-help}
 [ $# -gt 0 ] && shift
+case $cmd in
+  status|board|metrics|new|claim|ready|merge|reject|release|setup) update_check || true ;;
+esac
 case $cmd in
   status)  cmd_status "$@" ;;
   board)   cmd_board "$@" ;;

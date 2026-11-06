@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# gh factice des tests de la vérification des mises à jour. Journalise ses arguments dans
+# $GH_LOG, une ligne par appel, et répond :
+#   api repos/<r>/releases/latest … → $GH_TAG
+#   api repos/<r>/commits/<tag> …   → $GH_SHA
+#   pr list …                        → rien (aucune PR)
+# GH_SLEEP=<s> retarde chaque réponse. GH_FAIL=1 simule GitHub injoignable, GH_AUTH=1 un gh
+# non authentifié (code 4), GH_404=1 un dépôt ou une release introuvable (corps d'erreur sur
+# la sortie standard, comme le vrai gh api). Toute autre commande échoue.
+set -u
+printf '%s\n' "$*" >> "${GH_LOG:-/dev/null}"
+[ -z "${GH_SLEEP:-}" ] || sleep "$GH_SLEEP"
+case "${1:-} ${2:-}" in
+  "pr list") exit 0 ;;
+  "api "*) ;;
+  *) echo "gh factice : commande non prévue : $*" >&2; exit 1 ;;
+esac
+[ "${GH_FAIL:-0}" = 0 ] || { echo "error connecting to api.github.com" >&2; exit 1; }
+[ "${GH_AUTH:-0}" = 0 ] || { echo "To get started with GitHub CLI, please run:  gh auth login" >&2; exit 4; }
+if [ "${GH_404:-0}" != 0 ]; then
+  echo '{"message":"Not Found","status":"404"}'
+  echo "gh: Not Found (HTTP 404)" >&2
+  exit 1
+fi
+case $2 in
+  repos/*/releases/latest) printf '%s\n' "${GH_TAG:-}" ;;
+  repos/*/commits/*)       printf '%s\n' "${GH_SHA:-}" ;;
+  *) echo "gh factice : api non prévue : $2" >&2; exit 1 ;;
+esac

@@ -73,7 +73,7 @@ Couvre : C8, C9, A4, L17, L18.
 
 ### 4. Vérification et avis
 
-Couvre : C1, C2, C10, C11, C12, C13, L1–L9, L14, L15, A5, A6, A7, A8, A13, A14.
+Couvre : C1, C2, C10, C11, C12, C13, C19, L1–L9, L14, L15, A5, A6, A7, A8, A12, A13, A14.
 
 - `update_check` est appelée dans le `case` final de `bin/git-sdlc`, avant chaque commande sauf `help`, `version`, `--version` et un usage invalide.
 - Rien à comparer (`VERSION=dev` et pas de `.sdlc/manifeste`) : aucune requête.
@@ -81,16 +81,19 @@ Couvre : C1, C2, C10, C11, C12, C13, L1–L9, L14, L15, A5, A6, A7, A8, A13, A14
 - Comparaison `YY.MM.DD[.V]` champ par champ (C2) ; `git-sdlc` selon C11 ; kit selon C12, par le tag du manifeste ou, à défaut, par le SHA.
 - Un avis par élément en retard, par `warn`, au format des Contrats ; le chemin de `git-sdlc` vient de `$0`.
 - Aucun `die` dans la vérification : la sortie standard et le code de retour de la commande sont inchangés.
+- `sdlc.updateCheck=false` : ni requête ni avis. Prévu à l'étape 5, avancé ici : c'est le témoin des tests de cette étape.
 - Tests : une copie de `git-sdlc` avec `VERSION=26.11.05` et un `gh` factice (tag, SHA, échec, 404, délai, journal des appels). La sortie standard et le code de retour sont comparés à une exécution avec `sdlc.updateCheck=false`.
 
 ### 5. Cache, échec, délai, désactivation
 
 Couvre : C14, C15, C16, C17, C18, C19, C20, L10–L13, L16, L19–L21, A9, A10, A11, A12, A16.
 
+C17, A10 et A11 (avis d'échec) sont déjà posés à l'étape 4 ; cette étape y ajoute la mise en cache de l'échec.
+
 - Cache : `$(git rev-parse --git-common-dir)/sdlc-update-check`, une ligne `<date>\tok\t<tag>\t<sha>` ou `<date>\tko\t<raison>`. Si sa date est le jour local, il sert sans requête. S'il est illisible, il vaut un cache absent.
 - Échec : une ligne « vérification impossible (<raison>) », puis l'échec est mis en cache. Aucun nouvel avis le même jour.
 - Délai : `gh` tourne en arrière-plan, avec un garde-fou `sleep <délai>; kill` en sous-shell. Un dépassement donne la raison « délai dépassé ». `sdlc.updateCheckTimeout` vaut `5` s'il n'est pas un entier positif. Le garde-fou et les fichiers temporaires sont arrêtés ou supprimés par `cleanup`, `die` compris.
-- `sdlc.updateCheck=false` : ni requête, ni lecture ou écriture du cache, ni avis.
+- `sdlc.updateCheck=false` (étape 4) : ni lecture ni écriture du cache non plus.
 - Tests :
   - deux commandes le même jour : un seul appel au journal ;
   - cache partagé avec un worktree ; nouvelle requête depuis un autre dépôt ;
@@ -126,14 +129,15 @@ Couvre : A15.
 | C5, C6, C7 | 2 |
 | C8, C9 | 3 |
 | C10, C11, C12, C13 | 4 |
-| C14–C20 | 5 |
+| C14–C18, C20 | 5 |
+| C17, C19 | 4, 5 |
 | L1–L9, L14, L15 | 4 |
 | L10–L13, L16, L19–L21 | 5 |
 | L17, L18 | 3 |
 | A1, A3 | 2 |
 | A2 | 1 |
 | A4 | 3 |
-| A5–A8, A13, A14 | 4 |
+| A5–A8, A10–A14 | 4 |
 | A9–A12, A16 | 5 |
 | A15 | 1–6 |
 
